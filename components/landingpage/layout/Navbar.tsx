@@ -1,7 +1,7 @@
-import { Button } from "../ui/Button";
+import { Button } from "../../ui/Button";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import LoginButton from "../ui/LoginButton";
+import LoginButton from "../../ui/LoginButton";
 
 export default function Navbar() {
   return (
@@ -9,19 +9,21 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-blue-600">MedAdmit AI</h1>
+            <h1 className="text-2xl font-bold text-cyan-600 hover:text-cyan-700">
+              MedAdmit AI
+            </h1>
           </Link>
 
           <div className="hidden md:flex items-center gap-4">
             <div className="relative group">
-              <button className="py-2 px-3 text-gray-700 font-medium group-hover:text-blue-600 transition-colors">
+              <button className="py-2 px-3 text-gray-700 font-medium group-hover:text-cyan-500 transition-colors">
                 Study Tools
                 <span className="ml-1">▼</span>
               </button>
             </div>
 
             <div className="relative group">
-              <button className="py-2 px-3 text-gray-700 font-medium group-hover:text-blue-600 transition-colors">
+              <button className="py-2 px-3 text-gray-700 font-medium group-hover:text-cyan-500 transition-colors">
                 Subjects
                 <span className="ml-1">▼</span>
               </button>
@@ -36,7 +38,7 @@ export default function Navbar() {
             </div>
             <input
               type="search"
-              className="pl-10 pr-4 py-2 bg-gray-100/80 rounded-full w-[300px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="pl-10 pr-4 py-2 bg-gray-100/80 rounded-full w-[300px] focus:outline-none focus:ring-2 focus:ring-cyan-600 text-sm"
               placeholder="Search for study materials, resources..."
             />
           </div>

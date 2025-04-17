@@ -1,4 +1,5 @@
-import { Button } from "../ui/Button";
+import { Button } from "../../ui/Button";
+import GetStartedButton from "../../ui/GetStartedButton";
 
 const CallToAction = () => {
   return (
@@ -19,17 +20,18 @@ const CallToAction = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            {/* <Button
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg"
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-6 text-lg"
             >
               Get Started for Free
-            </Button>
+            </Button> */}
+            <GetStartedButton />
 
             <Button
               variant="outline"
               size="lg"
-              className="bg-white/80 backdrop-blur-sm border-blue-200 text-blue-600 px-8 py-6 text-lg"
+              className="bg-white/80 backdrop-blur-sm border-cyan-200 text-cyan-600 px-8 py-6 text-lg"
             >
               Schedule a Demo
             </Button>
