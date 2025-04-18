@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { Button } from "../ui/Button";
+import { Button } from "../../ui/Button";
 
 interface FeatureCardProps {
   title: string;
@@ -17,8 +17,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 }) => {
   return (
     <div
-      className={`flex-shrink-0 w-full sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] h-[400px] rounded-3xl overflow-hidden transition-all duration-500 ease-in-out ${isActive ? "scale-105 shadow-lg" : "scale-95 opacity-80"
-        }`}
+      className={`flex-shrink-0 w-full sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] h-[400px] rounded-3xl overflow-hidden transition-all duration-500 ease-in-out ${
+        isActive ? "scale-105 shadow-lg" : "scale-95 opacity-80"
+      }`}
       style={{ backgroundColor: color }}
     >
       <div className="p-8 h-full flex flex-col">
@@ -42,11 +43,11 @@ const FEATURES = [
         <div className="bg-white rounded-lg p-2 md:p-3 mb-2">
           <div className="flex justify-between">
             <span className="text-xs md:text-sm">Biochemistry</span>
-            <span className="text-xs md:text-sm text-blue-600">89%</span>
+            <span className="text-xs md:text-sm text-cyan-600">89%</span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
             <div
-              className="bg-blue-600 h-2 rounded-full"
+              className="bg-cyan-600 h-2 rounded-full"
               style={{ width: "89%" }}
             ></div>
           </div>
@@ -54,11 +55,11 @@ const FEATURES = [
         <div className="bg-white rounded-lg p-2 md:p-3">
           <div className="flex justify-between">
             <span className="text-xs md:text-sm">Anatomy</span>
-            <span className="text-xs md:text-sm text-blue-600">76%</span>
+            <span className="text-xs md:text-sm text-cyan-600">76%</span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
             <div
-              className="bg-blue-600 h-2 rounded-full"
+              className="bg-cyan-600 h-2 rounded-full"
               style={{ width: "76%" }}
             ></div>
           </div>
@@ -197,13 +198,13 @@ const FEATURES = [
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs md:text-sm">School Selection</span>
-            <span className="text-xs md:text-sm font-medium text-blue-500">
+            <span className="text-xs md:text-sm font-medium text-cyan-600">
               8/12
             </span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full">
             <div
-              className="bg-blue-500 h-2 rounded-full"
+              className="bg-cyan-600 h-2 rounded-full"
               style={{ width: "67%" }}
             ></div>
           </div>
@@ -341,8 +342,9 @@ const FeatureCarousel = () => {
           {FEATURES.map((_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full ${visibleIndices.includes(index) ? "bg-blue-600" : "bg-gray-300"
-                }`}
+              className={`w-3 h-3 rounded-full ${
+                visibleIndices.includes(index) ? "bg-cyan-600" : "bg-gray-300"
+              }`}
               onClick={() => setActiveIndex(index)}
             />
           ))}

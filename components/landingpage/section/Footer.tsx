@@ -6,9 +6,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-4 gap-8">
           <div>
-            <h2 className="text-xl font-bold text-blue-600 mb-4">
-              Gyanet
-            </h2>
+            <h2 className="text-xl font-bold text-cyan-600 mb-4">Gyanet</h2>
             <p className="text-gray-600 mb-4">
               Your AI-powered companion for medical school admissions success.
             </p>
@@ -18,22 +16,22 @@ const Footer = () => {
             <h3 className="font-medium mb-4">Study Tools</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Flashcards
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Practice Tests
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Study Guides
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Progress Tracking
                 </Link>
               </li>
@@ -44,22 +42,22 @@ const Footer = () => {
             <h3 className="font-medium mb-4">Subjects</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   MCAT Prep
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Biology
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Biochemistry
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Anatomy
                 </Link>
               </li>
@@ -70,22 +68,22 @@ const Footer = () => {
             <h3 className="font-medium mb-4">About</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Help Center
                 </Link>
               </li>
               <li>
-                <Link href="/" className="text-gray-600 hover:text-blue-600">
+                <Link href="/" className="text-gray-600 hover:text-cyan-700">
                   Contact
                 </Link>
               </li>
@@ -100,13 +98,13 @@ const Footer = () => {
           <div className="flex gap-4 mt-4 md:mt-0">
             <Link
               href="/"
-              className="text-gray-500 hover:text-blue-600 text-sm"
+              className="text-gray-500 hover:text-cyan-700 text-sm"
             >
               Privacy Policy
             </Link>
             <Link
               href="/"
-              className="text-gray-500 hover:text-blue-600 text-sm"
+              className="text-gray-500 hover:text-cyan-700 text-sm"
             >
               Terms of Service
             </Link>
