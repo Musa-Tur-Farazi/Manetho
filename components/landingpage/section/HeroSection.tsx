@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 
 export default function HeroSection() {
-  const router = useRouter();
   const { isSignedIn } = useAuth();
   // const { isSigneIn } = useAuth();
 
