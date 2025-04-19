@@ -1,168 +1,99 @@
 "use client";
 
 import { Button } from "../../ui/Button";
-import LoginButton from "../../ui/LoginButton";
-import GetStartedButton from "../../ui/GetStartedButton";
-import { useAuth } from "@clerk/nextjs";
-import { useState, useEffect, useRef } from "react";
-import { ArrowRight, Send, Bot } from "lucide-react";
+import { motion } from "framer-motion";
+import AuthProtectedLink from "../AuthProtectedLink";
 
 export default function HeroSection() {
-  const { isSignedIn } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [demoQuestion, setDemoQuestion] = useState("");
-  const [demoResponse, setDemoResponse] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [showResponse, setShowResponse] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  const handleDemoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!demoQuestion.trim()) return;
-
-    setIsTyping(true);
-    setShowResponse(true);
-
-    // Simulate AI typing response
-    let response = "";
-    const possibleResponses = [
-      "Photosynthesis is the process where plants convert light energy into chemical energy. The basic equation is: 6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂. This happens in the chloroplasts of plant cells, using chlorophyll to capture light energy.",
-      "The Pythagorean theorem states that in a right-angled triangle, the square of the hypotenuse equals the sum of the squares of the other two sides: a² + b² = c², where c is the hypotenuse and a and b are the other two sides.",
-      "Newton's Second Law of Motion states that the force acting on an object is equal to the mass of that object times its acceleration (F = ma). This fundamental law helps us understand the relationship between force, mass, and motion.",
-      "The water cycle, or hydrologic cycle, describes how water moves continuously on Earth between the atmosphere, land, and ocean. The main processes include evaporation, condensation, precipitation, infiltration, and runoff."
-    ];
-
-    // Pick a response based on the question content
-    if (demoQuestion.toLowerCase().includes("photo") || demoQuestion.toLowerCase().includes("plant")) {
-      response = possibleResponses[0];
-    } else if (demoQuestion.toLowerCase().includes("pythag") || demoQuestion.toLowerCase().includes("triangle")) {
-      response = possibleResponses[1];
-    } else if (demoQuestion.toLowerCase().includes("newton") || demoQuestion.toLowerCase().includes("force")) {
-      response = possibleResponses[2];
-    } else if (demoQuestion.toLowerCase().includes("water") || demoQuestion.toLowerCase().includes("cycle")) {
-      response = possibleResponses[3];
-    } else {
-      // Default response if no keywords match
-      response = "I understand your question about \"" + demoQuestion + "\". This is a complex topic with several aspects to consider. In a complete answer, I would explain the fundamental concepts, provide relevant examples, and address common misconceptions.";
-    }
-
-    let currentCharIndex = 0;
-    const typingInterval = setInterval(() => {
-      if (currentCharIndex < response.length) {
-        setDemoResponse(response.substring(0, currentCharIndex + 1));
-        currentCharIndex++;
-      } else {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-      }
-    }, 20);
-  };
-
   return (
-    <section className="pt-32 pb-16 px-6 md:px-10 relative">
-      <div
-        ref={heroRef}
-        className={`max-w-7xl mx-auto transition-all duration-700 transform ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
-      >
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 dark:text-white">
-              Transform your study experience with{" "}
-              <span className="text-cyan-600 dark:text-cyan-400">Manetho</span>
+    <section className="pt-32 pb-24 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+              Your AI-Powered{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400">
+                Learning Partner
+              </span>
             </h1>
-
-            <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-10 max-w-xl mx-auto md:mx-0">
-              Get instant doubt solving, rich study materials, and collaborative group study tools - all powered by AI to help you learn better and faster.
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-lg">
+              Personalized learning experience powered by AI. Get instant answers to your academic questions, create custom study materials, and track your progress.
             </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
-              <GetStartedButton className="w-full sm:w-auto" />
-
-              <Button
-                variant="outline"
-                className="text-cyan-600 dark:text-cyan-400 dark:border-cyan-800/50 w-full sm:w-auto flex items-center gap-2"
-                href="/explore"
-              >
-                Explore Features
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-                <Bot className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                <h3 className="font-medium dark:text-white">Manetho AI Doubt Solver</h3>
-              </div>
-
-              <div className="flex flex-col space-y-4 mb-4 min-h-[200px]">
-                {showResponse && (
-                  <>
-                    <div className="bg-gray-100 dark:bg-slate-700 rounded-lg py-2 px-3 max-w-[80%] self-start">
-                      <p className="text-sm text-gray-800 dark:text-gray-200">{demoQuestion}</p>
-                    </div>
-
-                    <div className="bg-cyan-600 dark:bg-cyan-700 rounded-lg py-2 px-3 max-w-[80%] self-end text-white">
-                      <p className="text-sm">{demoResponse}</p>
-                      {isTyping && (
-                        <div className="flex space-x-1 mt-1">
-                          <div className="typing-dot"></div>
-                          <div className="typing-dot animation-delay-200"></div>
-                          <div className="typing-dot animation-delay-400"></div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <form onSubmit={handleDemoSubmit} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={demoQuestion}
-                  onChange={(e) => setDemoQuestion(e.target.value)}
-                  placeholder="Ask any academic question..."
-                  className="flex-1 py-2 px-3 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                />
-                <Button type="submit" size="sm" disabled={isTyping} className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800">
-                  <Send className="h-4 w-4" />
+            <div className="flex flex-wrap gap-4">
+              <AuthProtectedLink href="/tools/doubt-solving">
+                <Button size="lg">
+                  Start Learning
                 </Button>
-              </form>
+              </AuthProtectedLink>
+              <AuthProtectedLink href="/tools/flashcards">
+                <Button variant="outline" size="lg">
+                  Explore Tools
+                </Button>
+              </AuthProtectedLink>
             </div>
-          </div>
+            <div className="mt-8 flex items-center text-sm text-gray-500 dark:text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 mr-2">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Trusted by 10,000+ students and educators worldwide</span>
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+              <div className="p-1 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
+              <div className="p-8">
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-cyan-600 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    AI Doubt Solving
+                  </h3>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 font-medium">
+                    Can you explain how photosynthesis works?
+                  </p>
+                </div>
+                <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4 mb-4 border-l-4 border-cyan-500 dark:border-cyan-400">
+                  <p className="text-gray-700 dark:text-gray-300">
+                    Photosynthesis is the process where plants convert light energy into chemical energy. It happens in chloroplasts using chlorophyll, which captures sunlight. This energy is used to convert CO<sub>2</sub> and water into glucose and oxygen.
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300 mt-2">
+                    The process has two stages:
+                  </p>
+                  <ul className="list-disc ml-5 text-gray-700 dark:text-gray-300 mt-2">
+                    <li>Light-dependent reactions</li>
+                    <li>Calvin cycle (light-independent)</li>
+                  </ul>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                  <span>Instant answers to your questions</span>
+                  <AuthProtectedLink href="/tools/doubt-solving" className="text-cyan-600 dark:text-cyan-400 font-medium flex items-center">
+                    Try it now
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </AuthProtectedLink>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -right-12 -bottom-12 w-40 h-40 bg-cyan-400/20 dark:bg-cyan-700/20 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute -left-16 -top-16 w-72 h-72 bg-blue-400/10 dark:bg-blue-700/10 rounded-full blur-3xl -z-10"></div>
+          </motion.div>
         </div>
       </div>
-
-      <style jsx>{`
-        .typing-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background-color: white;
-          display: inline-block;
-          animation: typing 1.4s infinite both;
-        }
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-        .animation-delay-400 {
-          animation-delay: 0.4s;
-        }
-        @keyframes typing {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-4px);
-          }
-        }
-      `}</style>
     </section>
   );
 }

@@ -14,6 +14,7 @@ import FAQ from "../../../components/landingpage/section/FAQ";
 import StatisticsSection from "../../../components/landingpage/section/StatisticsSection";
 import { ThemeProvider } from "../../../components/theme/ThemeProvider";
 import ThemeToggle from "../../../components/theme/ThemeToggle";
+import AuthProtectedLink from "../../../components/landingpage/AuthProtectedLink";
 
 function Landingpage() {
   const { isSignedIn } = useAuth();

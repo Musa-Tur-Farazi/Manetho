@@ -34,7 +34,14 @@ export default function RootLayout({
         },
         elements: {
           formButtonPrimary: "bg-cyan-600 hover:bg-cyan-700 text-sm normal-case",
-        },
+          card: "bg-white dark:bg-gray-800 rounded-xl shadow-xl",
+          headerTitle: "text-gray-900 dark:text-white",
+          headerSubtitle: "text-gray-600 dark:text-gray-300",
+          formFieldLabel: "text-gray-700 dark:text-gray-300",
+          formFieldInput: "bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100",
+          footerActionText: "text-gray-600 dark:text-gray-400",
+          footerActionLink: "text-cyan-600 dark:text-cyan-400",
+        }
       }}
       afterSignInUrl="/home"
       afterSignUpUrl="/home"

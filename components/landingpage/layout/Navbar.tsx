@@ -3,9 +3,11 @@
 import { Button } from "../../ui/Button";
 import { Search, Menu, X } from "lucide-react";
 import Link from "next/link";
-import LoginButton from "../../ui/LoginButton";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
+import { useAuth, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import AuthProtectedLink from "../AuthProtectedLink";
 
 interface NavbarProps {
   isScrolled?: boolean;
@@ -14,6 +16,8 @@ interface NavbarProps {
 export default function Navbar({ isScrolled = false }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
+  const { isSignedIn } = useAuth();
+  const router = useRouter();
 
   // Close mobile menu on window resize
   useEffect(() => {
@@ -27,11 +31,15 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handleDashboard = () => {
+    router.push('/home');
+  };
+
   return (
     <nav
       className={`w-full py-4 px-6 md:px-10 fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? "bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg shadow-md"
-          : "bg-white/10 dark:bg-slate-900/10 backdrop-blur-lg border-b border-white/20 dark:border-gray-800/20"
+        ? "bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg shadow-md"
+        : "bg-white/10 dark:bg-slate-900/10 backdrop-blur-lg border-b border-white/20 dark:border-gray-800/20"
         }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -49,18 +57,30 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 <span className="ml-1">▼</span>
               </button>
               <div className="absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <Link href="/tools/doubt-solving" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                <AuthProtectedLink
+                  href="/tools/doubt-solving"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   AI Doubt Solving
-                </Link>
-                <Link href="/tools/flashcards" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/tools/flashcards"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Flashcards
-                </Link>
-                <Link href="/tools/study-materials" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/tools/study-materials"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Study Materials
-                </Link>
-                <Link href="/tools/group-study" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/tools/group-study"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Group Study
-                </Link>
+                </AuthProtectedLink>
               </div>
             </div>
 
@@ -70,28 +90,46 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 <span className="ml-1">▼</span>
               </button>
               <div className="absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <Link href="/subjects/mathematics" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                <AuthProtectedLink
+                  href="/subjects/mathematics"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Mathematics
-                </Link>
-                <Link href="/subjects/physics" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/subjects/physics"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Physics
-                </Link>
-                <Link href="/subjects/chemistry" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/subjects/chemistry"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Chemistry
-                </Link>
-                <Link href="/subjects/biology" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md">
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/subjects/biology"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
                   Biology
-                </Link>
+                </AuthProtectedLink>
               </div>
             </div>
 
-            <Link href="/pricing" className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors">
+            <AuthProtectedLink
+              href="/pricing"
+              className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors"
+            >
               Pricing
-            </Link>
+            </AuthProtectedLink>
 
-            <Link href="/blog" className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors">
+            <AuthProtectedLink
+              href="/blog"
+              className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors"
+            >
               Blog
-            </Link>
+            </AuthProtectedLink>
           </div>
         </div>
 
@@ -108,10 +146,27 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            <Button variant="outline" className="hidden md:inline-flex dark:border-gray-700 dark:text-gray-300 dark:hover:bg-slate-800">
-              Create
-            </Button>
-            <LoginButton />
+            {isSignedIn ? (
+              <Button onClick={handleDashboard}>
+                Dashboard
+              </Button>
+            ) : (
+              <>
+                <SignInButton mode="modal">
+                  <Button
+                    variant="outline"
+                    className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-slate-800"
+                  >
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button>
+                    Sign Up
+                  </Button>
+                </SignUpButton>
+              </>
+            )}
           </div>
 
           <Button
@@ -147,34 +202,34 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 Study Tools
               </div>
               <div className="ml-4">
-                <Link
+                <AuthProtectedLink
                   href="/tools/doubt-solving"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   AI Doubt Solving
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/tools/flashcards"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Flashcards
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/tools/study-materials"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Study Materials
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/tools/group-study"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Group Study
-                </Link>
+                </AuthProtectedLink>
               </div>
             </div>
 
@@ -183,64 +238,83 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 Subjects
               </div>
               <div className="ml-4">
-                <Link
+                <AuthProtectedLink
                   href="/subjects/mathematics"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Mathematics
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/subjects/physics"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Physics
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/subjects/chemistry"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Chemistry
-                </Link>
-                <Link
+                </AuthProtectedLink>
+                <AuthProtectedLink
                   href="/subjects/biology"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Biology
-                </Link>
+                </AuthProtectedLink>
               </div>
             </div>
 
-            <Link
+            <AuthProtectedLink
               href="/pricing"
               className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
-            </Link>
+            </AuthProtectedLink>
 
-            <Link
+            <AuthProtectedLink
               href="/blog"
               className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
               Blog
-            </Link>
+            </AuthProtectedLink>
 
             <div className="pt-4 flex flex-col gap-3">
-              <Button
-                variant="outline"
-                className="w-full dark:border-gray-700 dark:text-gray-300"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Create
-              </Button>
-              <div onClick={() => setMobileMenuOpen(false)}>
-                <LoginButton className="w-full" />
-              </div>
+              {isSignedIn ? (
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleDashboard();
+                  }}
+                >
+                  Dashboard
+                </Button>
+              ) : (
+                <>
+                  <SignInButton mode="modal">
+                    <Button
+                      variant="outline"
+                      className="w-full dark:border-gray-700 dark:text-gray-300"
+                    >
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <Button
+                      className="w-full"
+                    >
+                      Sign Up
+                    </Button>
+                  </SignUpButton>
+                </>
+              )}
             </div>
           </div>
         </div>
