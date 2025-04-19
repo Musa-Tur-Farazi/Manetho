@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Footer from "../../components/landingpage/section/Footer";
+import { ThemeProvider } from "../../components/theme/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gyanet",
-  description: "",
+  title: "Manetho",
+  description: "AI-powered learning platform",
 };
 
 export default function RootLayout({
@@ -25,12 +26,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        layout: {
+          socialButtonsVariant: "iconButton",
+          socialButtonsPlacement: "bottom",
+        },
+        elements: {
+          formButtonPrimary: "bg-cyan-600 hover:bg-cyan-700 text-sm normal-case",
+        },
+      }}
+      afterSignInUrl="/home"
+      afterSignUpUrl="/home"
+    >
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

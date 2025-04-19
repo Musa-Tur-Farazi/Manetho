@@ -1,18 +1,34 @@
-import { SignInButton, useAuth } from "@clerk/nextjs";
+"use client";
+
+import { Button } from "./Button";
+import { UserButton, SignInButton, useAuth } from "@clerk/nextjs";
 import { LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-function LoginButton() {
-  return (
-    <SignInButton forceRedirectUrl={"/home"}>
-      <button
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-700 hover:to-cyan-900 text-white rounded-lg
-             transition-all duration-200 font-semibold font-sans shadow-lg shadow-blue-500/20"
+type LoginButtonProps = {
+  className?: string;
+};
+
+export default function LoginButton({ className = "" }: LoginButtonProps) {
+  const { isSignedIn } = useAuth();
+
+  return isSignedIn ? (
+    <UserButton
+      afterSignOutUrl="/"
+      appearance={{
+        elements: {
+          userButtonAvatarBox: "w-9 h-9",
+          userButtonBox: className,
+        },
+      }}
+    />
+  ) : (
+    <SignInButton>
+      <Button
+        className={`bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800 ${className}`}
       >
-        <LogIn className="w-3 h-3 transition-transform" />
-        <span>Login</span>
-      </button>
+        Login
+      </Button>
     </SignInButton>
   );
 }
-export default LoginButton;

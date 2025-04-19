@@ -1,18 +1,34 @@
-import { SignInButton, useAuth } from "@clerk/nextjs";
-import { LogIn } from "lucide-react";
-import { useRouter } from "next/navigation";
+"use client";
 
-function GetStartedButton() {
-  return (
-    <SignInButton forceRedirectUrl={"/home"}>
-      <button
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-700 hover:to-cyan-900 text-white rounded-lg
-             transition-all duration-200 font-semibold font-sans shadow-lg shadow-blue-500/20"
+import { Button } from "./Button";
+import { SignUpButton, useAuth } from "@clerk/nextjs";
+import { ArrowRight } from "lucide-react";
+
+type GetStartedButtonProps = {
+  className?: string;
+};
+
+export default function GetStartedButton({ className = "" }: GetStartedButtonProps) {
+  const { isSignedIn } = useAuth();
+
+  return !isSignedIn ? (
+    <SignUpButton>
+      <Button
+        size="lg"
+        className={`bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-600 dark:to-blue-700 hover:from-cyan-700 hover:to-blue-700 dark:hover:from-cyan-700 dark:hover:to-blue-800 text-white px-8 py-6 text-lg ${className}`}
       >
-        <LogIn className="w-4 h-4 transition-transform" />
-        <span>Get started </span>
-      </button>
-    </SignInButton>
+        Get Started
+        <ArrowRight className="ml-2 h-5 w-5" />
+      </Button>
+    </SignUpButton>
+  ) : (
+    <Button
+      size="lg"
+      className={`bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-600 dark:to-blue-700 hover:from-cyan-700 hover:to-blue-700 dark:hover:from-cyan-700 dark:hover:to-blue-800 text-white px-8 py-6 text-lg ${className}`}
+      href="/dashboard"
+    >
+      Go to Dashboard
+      <ArrowRight className="ml-2 h-5 w-5" />
+    </Button>
   );
 }
-export default GetStartedButton;

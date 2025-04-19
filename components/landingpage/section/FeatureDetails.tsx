@@ -39,9 +39,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 const FeatureDetails = () => {
   const features = [
     {
-      title: "Smart Study Resources",
+      title: "AI Doubt Solving",
       description:
-        "AI-powered study materials tailored to medical school requirements.",
+        "Get instant answers to your academic questions with our advanced AI technology.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -55,21 +55,22 @@ const FeatureDetails = () => {
           strokeLinejoin="round"
           className="text-cyan-600"
         >
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
       ),
       benefits: [
-        "Personalized study plans based on your strengths and weaknesses",
-        "High-yield content focused on what matters most for admissions",
-        "Progress tracking to optimize your study efficiency",
+        "24/7 instant help with complex concepts and problems",
+        "Detailed explanations tailored to your learning style",
+        "Support across all major subjects and topics",
       ],
       color: "bg-blue-100",
     },
     {
-      title: "Comprehensive Study Guides",
+      title: "Comprehensive Study Materials",
       description:
-        "Detailed study guides covering all topics for medical school entrance exams.",
+        "Access a vast library of high-quality study resources for all subjects and levels.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -83,24 +84,21 @@ const FeatureDetails = () => {
           strokeLinejoin="round"
           className="text-purple-600"
         >
-          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" x2="8" y1="13" y2="13"></line>
-          <line x1="16" x2="8" y1="17" y2="17"></line>
-          <line x1="10" x2="8" y1="9" y2="9"></line>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
         </svg>
       ),
       benefits: [
-        "Concept maps and visual learning tools",
-        "Quick reference guides for rapid review",
-        "Annotated explanations from medical professionals",
+        "Well-structured notes, summaries, and guides",
+        "Visual learning aids like diagrams and charts",
+        "Practice problems with step-by-step solutions",
       ],
       color: "bg-purple-100",
     },
     {
-      title: "Interactive Flashcards",
+      title: "Collaborative Learning",
       description:
-        "Master medical terminology and concepts with our intelligent flashcard system.",
+        "Connect with peers in virtual study groups to learn together and share knowledge.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -114,21 +112,23 @@ const FeatureDetails = () => {
           strokeLinejoin="round"
           className="text-indigo-600"
         >
-          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-          <path d="M3 15h18"></path>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
       ),
       benefits: [
-        "Spaced repetition algorithm for optimal retention",
-        "Rich media integration with anatomical diagrams",
-        "Create your own custom flashcard decks",
+        "Create or join subject-specific study groups",
+        "Schedule group study sessions with shared resources",
+        "Engage in academic discussions and problem-solving",
       ],
       color: "bg-indigo-100",
     },
     {
-      title: "Realistic Practice Tests",
+      title: "Smart Learning Tools",
       description:
-        "Simulate the real exam experience with our adaptive practice tests.",
+        "Leverage AI-powered learning tools designed to make studying more effective and efficient.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -142,16 +142,17 @@ const FeatureDetails = () => {
           strokeLinejoin="round"
           className="text-orange-600"
         >
-          <path d="M15 7v2a2 2 0 0 1-2 2H9v6"></path>
-          <line x1="21" x2="3" y1="11" y2="11"></line>
-          <path d="M18 16v2a2 2 0 0 1-2 2H6v-3"></path>
-          <path d="M12 3v14"></path>
+          <path d="M12 2v8"></path>
+          <path d="m16 6-4-4-4 4"></path>
+          <rect x="2" y="14" width="20" height="8" rx="2"></rect>
+          <path d="M6 18h.01"></path>
+          <path d="M10 18h.01"></path>
         </svg>
       ),
       benefits: [
-        "MCAT, DAT, and other exam-style questions",
-        "Detailed performance analytics to target weak areas",
-        "Timed sections to build test-taking stamina",
+        "Flashcards with spaced repetition for better retention",
+        "Personalized study schedules based on your goals",
+        "Progress tracking across subjects and topics",
       ],
       color: "bg-orange-100",
     },
@@ -162,11 +163,10 @@ const FeatureDetails = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Features Designed for Medical School Success
+            Features Designed for Learning Success
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Our AI-powered platform provides everything you need to prepare for
-            medical school admissions in one place.
+            Manetho's AI-powered platform provides everything you need to enhance your learning experience and achieve academic excellence.
           </p>
         </div>
 

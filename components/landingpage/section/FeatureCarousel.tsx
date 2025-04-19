@@ -17,9 +17,8 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 }) => {
   return (
     <div
-      className={`flex-shrink-0 w-full sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] h-[400px] rounded-3xl overflow-hidden transition-all duration-500 ease-in-out ${
-        isActive ? "scale-105 shadow-lg" : "scale-95 opacity-80"
-      }`}
+      className={`flex-shrink-0 w-full sm:w-[calc(50%-12px)] md:w-[calc(33.33%-16px)] lg:w-[calc(25%-18px)] h-[400px] rounded-3xl overflow-hidden transition-all duration-500 ease-in-out ${isActive ? "scale-105 shadow-lg" : "scale-95 opacity-80"
+        }`}
       style={{ backgroundColor: color }}
     >
       <div className="p-8 h-full flex flex-col">
@@ -35,33 +34,21 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 const FEATURES = [
   {
     id: 1,
-    title: "Study Resources",
+    title: "AI Doubt Solving",
     color: "rgba(142, 209, 252, 0.8)",
     content: (
       <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm h-full">
-        <h4 className="text-sm md:text-lg mb-2">MCAT Study Materials</h4>
+        <h4 className="text-sm md:text-lg mb-2">Instant Help</h4>
         <div className="bg-white rounded-lg p-2 md:p-3 mb-2">
-          <div className="flex justify-between">
-            <span className="text-xs md:text-sm">Biochemistry</span>
-            <span className="text-xs md:text-sm text-cyan-600">89%</span>
+          <div className="flex items-start mb-2">
+            <div className="bg-cyan-100 rounded-lg p-2 max-w-[80%]">
+              <p className="text-xs md:text-sm">Could you explain how photosynthesis works?</p>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
-            <div
-              className="bg-cyan-600 h-2 rounded-full"
-              style={{ width: "89%" }}
-            ></div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg p-2 md:p-3">
-          <div className="flex justify-between">
-            <span className="text-xs md:text-sm">Anatomy</span>
-            <span className="text-xs md:text-sm text-cyan-600">76%</span>
-          </div>
-          <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
-            <div
-              className="bg-cyan-600 h-2 rounded-full"
-              style={{ width: "76%" }}
-            ></div>
+          <div className="flex items-start justify-end">
+            <div className="bg-cyan-600 text-white rounded-lg p-2 max-w-[80%]">
+              <p className="text-xs md:text-sm">Photosynthesis is the process where plants use sunlight to convert CO₂ and water into glucose and oxygen...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -69,29 +56,28 @@ const FEATURES = [
   },
   {
     id: 2,
-    title: "Study Guides",
+    title: "Study Materials",
     color: "rgba(241, 180, 255, 0.8)",
     content: (
       <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm h-full">
-        <h4 className="text-sm md:text-lg mb-2">Medical Terminology</h4>
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-purple-500 flex items-center justify-center text-white">
-              <span className="text-xs md:text-sm">A</span>
-            </div>
-            <div className="h-[2px] w-10 md:w-16 bg-gray-300"></div>
+        <h4 className="text-sm md:text-lg mb-2">Comprehensive Resources</h4>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="bg-white p-2 rounded-lg shadow-sm">
+            <p className="text-xs font-medium text-purple-700">Physics</p>
+            <p className="text-xs text-gray-600">12 Chapters</p>
           </div>
-          <div className="flex items-center">
-            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-xs md:text-sm">B</span>
-            </div>
+          <div className="bg-white p-2 rounded-lg shadow-sm">
+            <p className="text-xs font-medium text-purple-700">Chemistry</p>
+            <p className="text-xs text-gray-600">15 Chapters</p>
           </div>
-        </div>
-        <div className="flex justify-between text-xs md:text-sm text-gray-600">
-          <span>Outline</span>
-          <span className="text-purple-700 border-b-2 border-purple-700 font-medium">
-            Quick reference
-          </span>
+          <div className="bg-white p-2 rounded-lg shadow-sm">
+            <p className="text-xs font-medium text-purple-700">Biology</p>
+            <p className="text-xs text-gray-600">14 Chapters</p>
+          </div>
+          <div className="bg-white p-2 rounded-lg shadow-sm">
+            <p className="text-xs font-medium text-purple-700">Mathematics</p>
+            <p className="text-xs text-gray-600">10 Chapters</p>
+          </div>
         </div>
       </div>
     ),
@@ -104,58 +90,38 @@ const FEATURES = [
       <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm h-full">
         <div className="relative h-32 md:h-40 w-full bg-white rounded-xl shadow-md p-3 md:p-4 flex items-center justify-center transform rotate-3">
           <div className="text-center">
-            <h4 className="text-sm md:text-lg font-medium">superior</h4>
-            <h4 className="text-sm md:text-lg font-medium">vena cava</h4>
+            <h4 className="text-sm md:text-lg font-medium">What is the capital</h4>
+            <h4 className="text-sm md:text-lg font-medium">of France?</h4>
           </div>
-          <div className="absolute -right-3 -bottom-3 md:-right-4 md:-bottom-4">
-            <img
-              src="/lovable-uploads/2f36f0e3-9b06-410e-bdde-4c767ca2290b.png"
-              alt="Heart anatomy illustration"
-              className="w-20 h-20 md:w-28 md:h-28"
-            />
-          </div>
+        </div>
+        <div className="mt-4 flex justify-center">
+          <button className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Reveal Answer</button>
         </div>
       </div>
     ),
   },
   {
     id: 4,
-    title: "Practice Tests",
+    title: "Group Study",
     color: "rgba(255, 198, 140, 0.8)",
     content: (
       <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm h-full">
-        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-3">
-          <div>
-            <p className="text-xs md:text-sm text-gray-600">Score</p>
-            <p className="text-xs md:text-sm font-bold">84%</p>
+        <h4 className="text-sm md:text-lg mb-2">Study Groups</h4>
+        <div className="bg-white rounded-lg p-2 md:p-3 mb-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-full bg-green-500"></div>
+            <span className="text-xs md:text-sm">Physics Study Group</span>
+            <span className="ml-auto text-xs bg-green-100 text-green-800 px-1 rounded">Live</span>
           </div>
-          <div>
-            <p className="text-xs md:text-sm text-gray-600">Results</p>
-            <p className="text-xs md:text-sm font-bold">76/90</p>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-full bg-blue-500"></div>
+            <span className="text-xs md:text-sm">Chemistry Group</span>
+            <span className="ml-auto text-xs bg-gray-100 text-gray-800 px-1 rounded">In 2h</span>
           </div>
-          <div>
-            <p className="text-xs md:text-sm text-gray-600">Time</p>
-            <p className="text-xs md:text-sm font-bold">70m</p>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center mb-2">
-            <span className="mr-2 text-sm md:text-base">1.</span>
-            <div className="w-full bg-gray-200 h-2 rounded-full">
-              <div
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: "100%" }}
-              ></div>
-            </div>
-          </div>
-          <div className="flex items-center mb-2">
-            <span className="mr-2 text-sm md:text-base">2.</span>
-            <div className="w-full bg-gray-200 h-2 rounded-full">
-              <div
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: "85%" }}
-              ></div>
-            </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-purple-500"></div>
+            <span className="text-xs md:text-sm">Math Problems</span>
+            <span className="ml-auto text-xs bg-gray-100 text-gray-800 px-1 rounded">Tomorrow</span>
           </div>
         </div>
       </div>
@@ -167,45 +133,45 @@ const FEATURES = [
     color: "rgba(144, 238, 144, 0.8)",
     content: (
       <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 md:p-4 shadow-sm h-full">
-        <h4 className="text-sm md:text-lg mb-2">Application Progress</h4>
+        <h4 className="text-sm md:text-lg mb-2">Learning Progress</h4>
         <div className="mb-2">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs md:text-sm">Personal Statement</span>
+            <span className="text-xs md:text-sm">Physics</span>
             <span className="text-xs md:text-sm font-medium text-green-600">
-              Complete
+              85%
             </span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full">
-            <div className="bg-green-500 h-2 rounded-full w-full"></div>
+            <div className="bg-green-500 h-2 rounded-full" style={{ width: "85%" }}></div>
           </div>
         </div>
         <div className="mb-2">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs md:text-sm">
-              Letters of Recommendation
+              Chemistry
             </span>
             <span className="text-xs md:text-sm font-medium text-amber-500">
-              In Progress
+              67%
             </span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full">
             <div
               className="bg-amber-500 h-2 rounded-full"
-              style={{ width: "65%" }}
+              style={{ width: "67%" }}
             ></div>
           </div>
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs md:text-sm">School Selection</span>
+            <span className="text-xs md:text-sm">Mathematics</span>
             <span className="text-xs md:text-sm font-medium text-cyan-600">
-              8/12
+              92%
             </span>
           </div>
           <div className="w-full bg-gray-200 h-2 rounded-full">
             <div
               className="bg-cyan-600 h-2 rounded-full"
-              style={{ width: "67%" }}
+              style={{ width: "92%" }}
             ></div>
           </div>
         </div>
@@ -342,9 +308,8 @@ const FeatureCarousel = () => {
           {FEATURES.map((_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full ${
-                visibleIndices.includes(index) ? "bg-cyan-600" : "bg-gray-300"
-              }`}
+              className={`w-3 h-3 rounded-full ${visibleIndices.includes(index) ? "bg-cyan-600" : "bg-gray-300"
+                }`}
               onClick={() => setActiveIndex(index)}
             />
           ))}
