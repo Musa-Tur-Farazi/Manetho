@@ -1,13 +1,14 @@
 "use client";
 
 import { Button } from "../../ui/Button";
-import { Search, Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useAuth, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import AuthProtectedLink from "../AuthProtectedLink";
+import ThemeToggle from "../../theme/ThemeToggle";
 
 interface NavbarProps {
   isScrolled?: boolean;
@@ -35,6 +36,10 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
     router.push('/home');
   };
 
+  const handleLogin = () => {
+    router.push('/custom-auth/sign-in?redirect_url=%2Fhome');
+  };
+
   return (
     <nav
       className={`w-full py-4 px-6 md:px-10 fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
@@ -53,120 +58,72 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
           <div className="hidden md:flex items-center gap-4">
             <div className="relative group">
               <button className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors">
-                Study Tools
+                Explore
                 <span className="ml-1">▼</span>
               </button>
               <div className="absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 <AuthProtectedLink
-                  href="/tools/doubt-solving"
+                  href="/ai-solver"
                   className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
                 >
-                  AI Doubt Solving
+                  AI-doubt solver
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/flashcards"
+                  href="/flashcards"
                   className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
                 >
-                  Flashcards
+                  FlashCards
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/study-materials"
+                  href="/mind-maps"
                   className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
                 >
-                  Study Materials
+                  Mind Maps
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/group-study"
+                  href="/progress"
                   className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
                 >
-                  Group Study
+                  Progress Tracking
                 </AuthProtectedLink>
               </div>
             </div>
 
-            <div className="relative group">
-              <button className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium group-hover:text-cyan-500 dark:group-hover:text-cyan-400 transition-colors">
-                Subjects
-                <span className="ml-1">▼</span>
-              </button>
-              <div className="absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <AuthProtectedLink
-                  href="/subjects/mathematics"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Mathematics
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/physics"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Physics
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/chemistry"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Chemistry
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/biology"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Biology
-                </AuthProtectedLink>
-              </div>
-            </div>
-
-            <AuthProtectedLink
-              href="/pricing"
+            <Link
+              href="/community"
               className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors"
             >
-              Pricing
-            </AuthProtectedLink>
+              Join our community
+            </Link>
 
-            <AuthProtectedLink
-              href="/blog"
+            <Link
+              href="/faq"
               className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors"
             >
-              Blog
-            </AuthProtectedLink>
+              FAQ
+            </Link>
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="relative hidden md:block">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <Search className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            </div>
-            <input
-              type="search"
-              className="pl-10 pr-4 py-2 bg-gray-100/80 dark:bg-slate-800/80 rounded-full w-[300px] focus:outline-none focus:ring-2 focus:ring-cyan-600 text-sm dark:text-gray-300 dark:placeholder-gray-500"
-              placeholder="Search for study materials, resources..."
-            />
-          </div>
-
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             {isSignedIn ? (
-              <Button onClick={handleDashboard}>
+              <Button
+                onClick={handleDashboard}
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+              >
                 Dashboard
               </Button>
             ) : (
-              <>
-                <SignInButton mode="modal">
-                  <Button
-                    variant="outline"
-                    className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-slate-800"
-                  >
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button>
-                    Sign Up
-                  </Button>
-                </SignUpButton>
-              </>
+              <Button
+                variant="outline"
+                className="bg-gradient-to-r from-white to-purple-50 dark:from-purple-900/30 dark:to-indigo-900/40 border border-purple-200 dark:border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 dark:hover:from-purple-800/40 dark:hover:to-indigo-700/50 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-300 px-5 py-2.5"
+                onClick={handleLogin}
+              >
+                Log in
+              </Button>
             )}
+            <ThemeToggle />
           </div>
 
           <Button
@@ -199,96 +156,60 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
 
             <div>
               <div className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium">
-                Study Tools
+                Explore
               </div>
               <div className="ml-4">
                 <AuthProtectedLink
-                  href="/tools/doubt-solving"
+                  href="/ai-solver"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  AI Doubt Solving
+                  AI-doubt solver
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/flashcards"
+                  href="/flashcards"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Flashcards
+                  FlashCards
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/study-materials"
+                  href="/mind-maps"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Study Materials
+                  Mind Maps
                 </AuthProtectedLink>
                 <AuthProtectedLink
-                  href="/tools/group-study"
+                  href="/progress"
                   className="block py-2 text-gray-600 dark:text-gray-400"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Group Study
+                  Progress Tracking
                 </AuthProtectedLink>
               </div>
             </div>
 
-            <div>
-              <div className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium">
-                Subjects
-              </div>
-              <div className="ml-4">
-                <AuthProtectedLink
-                  href="/subjects/mathematics"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Mathematics
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/physics"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Physics
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/chemistry"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Chemistry
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/subjects/biology"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Biology
-                </AuthProtectedLink>
-              </div>
-            </div>
-
-            <AuthProtectedLink
-              href="/pricing"
+            <Link
+              href="/community"
               className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Pricing
-            </AuthProtectedLink>
+              Join our community
+            </Link>
 
-            <AuthProtectedLink
-              href="/blog"
+            <Link
+              href="/faq"
               className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Blog
-            </AuthProtectedLink>
+              FAQ
+            </Link>
 
             <div className="pt-4 flex flex-col gap-3">
               {isSignedIn ? (
                 <Button
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     handleDashboard();
@@ -297,24 +218,21 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                   Dashboard
                 </Button>
               ) : (
-                <>
-                  <SignInButton mode="modal">
-                    <Button
-                      variant="outline"
-                      className="w-full dark:border-gray-700 dark:text-gray-300"
-                    >
-                      Sign In
-                    </Button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <Button
-                      className="w-full"
-                    >
-                      Sign Up
-                    </Button>
-                  </SignUpButton>
-                </>
+                <Button
+                  variant="outline"
+                  className="w-full bg-gradient-to-r from-white to-purple-50 dark:from-purple-900/30 dark:to-indigo-900/40 border border-purple-200 dark:border-purple-500/40 text-purple-600 dark:text-purple-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 dark:hover:from-purple-800/40 dark:hover:to-indigo-700/50 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogin();
+                  }}
+                >
+                  Log in
+                </Button>
               )}
+
+              <div className="flex justify-center mt-2">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </div>

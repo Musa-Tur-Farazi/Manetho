@@ -25,7 +25,7 @@ export default function AuthCheck({
       setIsChecking(false);
       if (!isSignedIn && !fallback) {
         // If no fallback is provided, redirect to sign-in
-        router.push("/sign-in");
+        router.push("/custom-auth/sign-in");
       }
     }
   }, [isLoaded, isSignedIn, router, fallback]);

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun, User, LogOut, ChevronDown, LayoutDashboard, Menu, X, BookOpen, BookMarked, Network, FileText } from "lucide-react";
+import { Moon, Sun, User, LogOut, ChevronDown, LayoutDashboard, Menu, X, BookOpen, BookMarked, Network, FileText, Brain } from "lucide-react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Button } from "../ui/Button";
 
@@ -46,8 +46,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 px-4 lg:px-8 transition-all duration-300 ${isScrolled
-          ? "py-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-md"
-          : "py-4 bg-transparent"
+        ? "py-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-md"
+        : "py-4 bg-transparent"
         }`}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -55,8 +55,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         <Link href="/home" className="flex items-center">
           <span
             className={`text-2xl font-bold ${isScrolled
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-900 dark:text-white"
+              ? "text-gray-900 dark:text-white"
+              : "text-gray-900 dark:text-white"
               }`}
           >
             Manetho
@@ -68,8 +68,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           <button
             onClick={() => scrollToSection('learning-section')}
             className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
           >
             My Learning
@@ -77,8 +77,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           <button
             onClick={() => scrollToSection('resources-section')}
             className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
           >
             Resources
@@ -86,12 +86,22 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           <button
             onClick={() => scrollToSection('tools-section')}
             className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
           >
             Tools
           </button>
+          <Link
+            href="/tools/doubt-solving"
+            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${isScrolled
+              ? "text-cyan-600 hover:bg-gray-100 dark:text-cyan-400 dark:hover:bg-gray-800"
+              : "text-cyan-600 hover:bg-white/20 dark:text-cyan-400 dark:hover:bg-gray-800/20"
+              } transition-colors duration-200`}
+          >
+            <Brain className="w-4 h-4 mr-1.5" />
+            Doubt-Solving
+          </Link>
         </div>
 
         {/* Right-side buttons */}
@@ -100,8 +110,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className={`p-2 rounded-lg ${isScrolled
-                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               }`}
             aria-label="Toggle theme"
           >
@@ -113,8 +123,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${isScrolled
-                  ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                  : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
                 }`}
             >
               <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
@@ -189,8 +199,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className={`md:hidden p-2 rounded-lg ${isScrolled
-                ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               }`}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -227,6 +237,15 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               >
                 Tools
               </button>
+              <Link
+                href="/tools/doubt-solving"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <div className="flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  Doubt-Solving
+                </div>
+              </Link>
               <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <Link
                 href="/profile"

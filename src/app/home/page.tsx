@@ -138,7 +138,7 @@ const studyTools = [
   { name: "Study Analytics", icon: <BarChart3 className="w-5 h-5" />, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", href: "/tools/analytics" },
   { name: "Mind Maps", icon: <Network className="w-5 h-5" />, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", href: "/tools/mind-maps" },
   { name: "Achievements", icon: <Trophy className="w-5 h-5" />, color: "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", href: "/tools/achievements" },
-  { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, color: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400", href: "/dashboard" },
+  { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, color: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400", href: "/home" },
 ];
 
 // Sample learning stats
@@ -233,9 +233,6 @@ const HomePage = () => {
           >
             <div className="p-4">
               <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Navigation
-                </h3>
                 <nav className="space-y-1.5">
                   <Link
                     href="/home"
@@ -557,78 +554,6 @@ const HomePage = () => {
               </div>
             </section>
           </div>
-
-          {/* AI Study Assistant Card */}
-          <section className="mb-12">
-            <div className="bg-gradient-to-r from-cyan-50 to-indigo-50 dark:from-cyan-900/20 dark:to-indigo-900/20 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/5 rounded-full -mr-20 -mt-20 pointer-events-none"></div>
-              <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full -ml-10 -mb-10 pointer-events-none"></div>
-
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
-                <div className="max-w-xl">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
-                      <Brain className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AI Study Assistant</h2>
-                  </div>
-                  <p className="text-gray-700 dark:text-gray-300 mb-6">
-                    Get instant help with your study questions, exam preparation, or any academic doubts. Our AI assistant can explain complex concepts, provide practice questions, and help you master difficult topics.
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    <span className="px-3 py-1 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 rounded-full shadow-sm">
-                      Concept Explanations
-                    </span>
-                    <span className="px-3 py-1 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 rounded-full shadow-sm">
-                      Practice Questions
-                    </span>
-                    <span className="px-3 py-1 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 rounded-full shadow-sm">
-                      Study Planning
-                    </span>
-                    <span className="px-3 py-1 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 rounded-full shadow-sm">
-                      Exam Preparation
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full md:w-auto">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 max-w-md w-full">
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-start gap-2">
-                        <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center flex-shrink-0 mt-1">
-                          <Brain className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        </div>
-                        <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl rounded-tl-none text-sm text-gray-800 dark:text-gray-200">
-                          How can I help with your studies today?
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1 justify-center bg-cyan-600 hover:bg-cyan-700"
-                        onClick={() => {
-                          // Find the AI component and expand it
-                          const aiComponent = document.querySelector('.ai-doubt-solver');
-                          if (aiComponent) {
-                            aiComponent.click();
-                          }
-                        }}
-                      >
-                        Ask a Question
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1 justify-center border-gray-200 dark:border-gray-700"
-                      >
-                        View Examples
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
       </main>
 

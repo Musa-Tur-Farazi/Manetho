@@ -3,7 +3,6 @@
 import { X, UserRound, ArrowRight } from "lucide-react";
 import { Button } from "../ui/Button";
 import { useRouter } from "next/navigation";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,6 +16,12 @@ export default function AuthModal({
   redirectPath = "/"
 }: AuthModalProps) {
   const router = useRouter();
+
+  const handleSignIn = () => {
+    onClose();
+    // Always redirect to home after sign-in
+    router.push(`/custom-auth/sign-in?redirect_url=${encodeURIComponent("/home")}`);
+  };
 
   if (!isOpen) return null;
 
@@ -40,28 +45,18 @@ export default function AuthModal({
             <UserRound className="h-16 w-16 text-cyan-600 dark:text-cyan-400" />
           </div>
           <p className="text-gray-600 dark:text-gray-300 text-center">
-            Please sign in or create an account to access this page and all our learning features.
+            Please sign in to access this page and all our learning features.
           </p>
         </div>
 
         <div className="space-y-4">
-          <SignInButton mode="modal" afterSignInUrl={redirectPath}>
-            <Button
-              className="w-full justify-center py-6"
-            >
-              Sign In
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </SignInButton>
-
-          <SignUpButton mode="modal" afterSignUpUrl={redirectPath}>
-            <Button
-              variant="outline"
-              className="w-full justify-center py-6"
-            >
-              Create Account
-            </Button>
-          </SignUpButton>
+          <Button
+            className="w-full justify-center py-6"
+            onClick={handleSignIn}
+          >
+            Sign In
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
 
           <div className="text-center mt-6">
             <button

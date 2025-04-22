@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, ReactNode } from "react";
-import { useAuth, SignInButton } from "@clerk/nextjs";
+import { ReactNode } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import AuthModal from "../auth/AuthModal";
+import { Button } from "../ui/Button";
 
 interface AuthProtectedLinkProps {
   href: string;
@@ -19,7 +19,6 @@ export default function AuthProtectedLink({
   onClick
 }: AuthProtectedLinkProps) {
   const { isSignedIn, isLoaded } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
 
   const handleClick = (e: React.MouseEvent) => {
@@ -32,26 +31,18 @@ export default function AuthProtectedLink({
       router.push(href);
       if (onClick) onClick();
     } else {
-      // If not authenticated, show auth modal
-      setShowAuthModal(true);
+      // If not authenticated, redirect to our custom sign-in page with redirect to home
+      router.push(`/custom-auth/sign-in?redirect_url=${encodeURIComponent("/home")}`);
     }
   };
 
   return (
-    <>
-      <a
-        href={href}
-        onClick={handleClick}
-        className={className}
-      >
-        {children}
-      </a>
-
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        redirectPath={href}
-      />
-    </>
+    <a
+      href={href}
+      onClick={handleClick}
+      className={className}
+    >
+      {children}
+    </a>
   );
 } 
