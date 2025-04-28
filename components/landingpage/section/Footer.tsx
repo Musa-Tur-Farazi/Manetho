@@ -63,7 +63,7 @@ const Footer = () => {
             transition={{ duration: 0.7, delay: 0.1 }}
           >
             <div className="flex items-center gap-2 mb-5">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">Manetho</h2>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 dark:from-cyan-400 dark:to-blue-500 bg-clip-text text-transparent">Manetho</h2>
             </div>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
               Your AI-powered companion for learning, doubt solving, and academic success.
