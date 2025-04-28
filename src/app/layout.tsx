@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider, dark } from "@clerk/nextjs";
 import Footer from "../../components/landingpage/section/Footer";
 import { ThemeProvider } from "../../components/theme/ThemeProvider";
+import { UserDatabaseSync } from "../../components/auth/UserDatabaseSync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -111,11 +112,12 @@ export default function RootLayout({
       afterSignInUrl="/home"
       afterSignUpUrl="/home"
     >
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <ThemeProvider>
+            <UserDatabaseSync />
             {children}
           </ThemeProvider>
         </body>
