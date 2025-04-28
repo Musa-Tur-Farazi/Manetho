@@ -86,6 +86,12 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 >
                   Progress Tracking
                 </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/group-study"
+                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
+                >
+                  Group Study
+                </AuthProtectedLink>
               </div>
             </div>
 
@@ -186,6 +192,13 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Progress Tracking
+                </AuthProtectedLink>
+                <AuthProtectedLink
+                  href="/group-study"
+                  className="block py-2 text-gray-600 dark:text-gray-400"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Group Study
                 </AuthProtectedLink>
               </div>
             </div>

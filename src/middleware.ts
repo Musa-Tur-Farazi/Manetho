@@ -1,32 +1,45 @@
+import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Map of redirect paths
-const redirects = {
+const redirectPaths: Record<string, string> = {
   '/ai-solver': '/tools/doubt-solving',
   '/flashcards': '/tools/flashcards',
   '/mind-maps': '/tools/mind-maps',
   '/progress': '/tools/progress-tracking'
 };
 
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+// Define public routes - any routes not in this list will require authentication
+const publicPaths = [
+  "/",
+  "/sign-in*",
+  "/sign-up*",
+  "/api*",
+  "/custom-auth/sign-in*",
+  "/custom-auth/sign-up*",
+  "/custom-auth/reset-password*",
+  "/sso-callback*",
+];
 
-  // If the path matches one of our redirect paths
-  if (path in redirects) {
-    // Create a new URL with the destination path
-    const url = new URL(redirects[path], request.url);
+export default clerkMiddleware((auth, req) => {
+  const url = req.nextUrl;
+  const path = url.pathname;
 
-    // Preserve any query parameters
-    url.search = request.nextUrl.search;
-
-    // Return a 307 temporary redirect
-    return NextResponse.redirect(url);
+  // Handle redirects
+  if (path in redirectPaths) {
+    const redirectUrl = new URL(redirectPaths[path], req.url);
+    redirectUrl.search = url.search;
+    return NextResponse.redirect(redirectUrl);
   }
 
-  // For all other paths, continue the request
   return NextResponse.next();
-}
+});
 
 export const config = {
-  matcher: ['/ai-solver', '/flashcards', '/mind-maps', '/progress'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };
