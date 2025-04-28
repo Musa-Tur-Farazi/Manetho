@@ -13,6 +13,8 @@ export function UserDatabaseSync() {
       if (!user || synced) return;
 
       try {
+        console.log("Starting user sync to database:", user.id);
+
         // Create a user object with data from Clerk
         const userData = {
           clerkId: user.id,
@@ -24,6 +26,8 @@ export function UserDatabaseSync() {
           name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         };
 
+        console.log("User data to sync:", userData);
+
         // Send the user data to an API endpoint that will create or update the user in the database
         const response = await fetch("/api/user/sync", {
           method: "POST",
@@ -34,10 +38,12 @@ export function UserDatabaseSync() {
         });
 
         if (response.ok) {
-          console.log("User successfully synced to database");
+          const data = await response.json();
+          console.log("User successfully synced to database:", data);
           setSynced(true);
         } else {
-          console.error("Failed to sync user to database");
+          const errorData = await response.json().catch(e => ({ error: "Could not parse error response" }));
+          console.error("Failed to sync user to database. Status:", response.status, "Error:", errorData);
         }
       } catch (error) {
         console.error("Error syncing user to database:", error);

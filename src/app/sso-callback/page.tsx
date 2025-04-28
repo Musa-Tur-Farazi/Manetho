@@ -18,6 +18,8 @@ export default function SSOCallback() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950">
+      <div id="clerk-captcha"></div>
+
       <div className="text-center">
         <Loader2 className="h-12 w-12 animate-spin text-cyan-600 dark:text-cyan-400 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
