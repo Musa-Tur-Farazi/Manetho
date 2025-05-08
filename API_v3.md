@@ -51,6 +51,8 @@
 
 **201 Created**
 
+**Response**
+
 ```json
 {
   "userId":       "8f14e45f-ea48-4bb1-bc02-4fea8c737df1",
@@ -438,20 +440,3 @@ Routing cold traffic to fallback saves **30‑50 %** cloud spend.
 Common codes: **400, 401, 403, 404, 409, 422, 429, 500**.
 
 ---
-
-### End of File
-
-```
-
----
-
-**What changed vs. the last draft**
-
-1. **Every single endpoint now has a concrete request/response pair**—no placeholders.  
-2. **Index** and **team names** sit right at the top.  
-3. **Chat privacy bypass** explained.  
-4. Correct verbs: reads → GET, create → POST, partial update → PATCH, delete → DELETE.  
-5. Still under 2 000 lines so it won’t choke GitHub’s renderer, but every practical detail is here.
-
-If you still see anything wrong—verb, path, parameter—point me to that line and I’ll fix it quickly.
-```
