@@ -67,7 +67,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         <div className="hidden md:flex items-center space-x-1">
           <button
             onClick={() => scrollToSection('learning-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
+            className={`px-4 py-2 rounded-lg font-medium text-sm min-w-[100px] ${isScrolled
               ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
               : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -76,7 +76,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           </button>
           <button
             onClick={() => scrollToSection('resources-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
+            className={`px-4 py-2 rounded-lg font-medium text-sm min-w-[100px] ${isScrolled
               ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
               : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -85,7 +85,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           </button>
           <button
             onClick={() => scrollToSection('tools-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
+            className={`px-4 py-2 rounded-lg font-medium text-sm min-w-[100px] ${isScrolled
               ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
               : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -94,7 +94,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           </button>
           <Link
             href="/tools/doubt-solving"
-            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${isScrolled
+            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center min-w-[120px] ${isScrolled
               ? "text-cyan-600 hover:bg-gray-100 dark:text-cyan-400 dark:hover:bg-gray-800"
               : "text-cyan-600 hover:bg-white/20 dark:text-cyan-400 dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -221,25 +221,25 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             <div className="px-2 pt-2 pb-3 space-y-1">
               <button
                 onClick={() => scrollToSection('learning-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 min-w-[140px]"
               >
                 My Learning
               </button>
               <button
                 onClick={() => scrollToSection('resources-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 min-w-[140px]"
               >
                 Resources
               </button>
               <button
                 onClick={() => scrollToSection('tools-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 min-w-[140px]"
               >
                 Tools
               </button>
               <Link
                 href="/tools/doubt-solving"
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800 min-w-[160px]"
               >
                 <div className="flex items-center gap-2">
                   <Brain className="w-4 h-4" />

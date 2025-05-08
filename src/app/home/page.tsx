@@ -137,8 +137,6 @@ const studyTools = [
   { name: "Practice Tests", icon: <FileText className="w-5 h-5" />, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", href: "/tools/practice-tests" },
   { name: "Study Analytics", icon: <BarChart3 className="w-5 h-5" />, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", href: "/tools/analytics" },
   { name: "Mind Maps", icon: <Network className="w-5 h-5" />, color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", href: "/tools/mind-maps" },
-  { name: "Achievements", icon: <Trophy className="w-5 h-5" />, color: "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400", href: "/tools/achievements" },
-  { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, color: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400", href: "/home" },
 ];
 
 // Sample learning stats
@@ -336,13 +334,13 @@ const HomePage = () => {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="border-gray-200 dark:border-gray-700"
+                  className="border-gray-200 dark:border-gray-700 min-w-[120px]"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   Study Planner
                 </Button>
                 <Button
-                  className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800 text-white"
+                  className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800 text-white min-w-[120px]"
                 >
                   <PlusCircle className="w-4 h-4 mr-2" />
                   New Study Session
@@ -424,16 +422,16 @@ const HomePage = () => {
                     </div>
                   </div>
 
-                  <div className="flex justify-between gap-2">
+                  <div className="flex justify-between gap-3">
                     <Button
                       variant="outline"
-                      className="w-1/2"
+                      className="w-1/2 min-w-[130px]"
                       size="sm"
                     >
                       Review Notes
                     </Button>
                     <Button
-                      className={`w-1/2 ${subject.textColor.replace('text-', 'bg-')} hover:${subject.textColor.replace('text-', 'bg-').replace('600', '700').replace('400', '500')} text-white`}
+                      className={`w-1/2 min-w-[100px] ${subject.textColor.replace('text-', 'bg-')} hover:${subject.textColor.replace('text-', 'bg-').replace('600', '700').replace('400', '500')} text-white`}
                       size="sm"
                     >
                       Continue
@@ -554,6 +552,156 @@ const HomePage = () => {
               </div>
             </section>
           </div>
+
+          {/* My Subjects Section (New) */}
+          <section className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Subjects</h2>
+              <Link href="/subjects" className="text-cyan-600 dark:text-cyan-400 flex items-center text-sm font-medium hover:underline">
+                View all subjects
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {["Mathematics", "Physics", "Chemistry", "Biology"].map((subject, index) => (
+                <motion.div
+                  key={subject}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 dark:border-gray-700 p-4 flex flex-col items-center text-center"
+                >
+                  <div className={`p-3 rounded-full ${
+                    ["bg-blue-100 dark:bg-blue-900/30", 
+                     "bg-purple-100 dark:bg-purple-900/30", 
+                     "bg-emerald-100 dark:bg-emerald-900/30", 
+                     "bg-amber-100 dark:bg-amber-900/30"][index % 4]
+                  } mb-3`}>
+                    {[
+                      <Network key="math" className="w-6 h-6 text-blue-600 dark:text-blue-400" />,
+                      <FileText key="phys" className="w-6 h-6 text-purple-600 dark:text-purple-400" />,
+                      <BookOpen key="chem" className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />,
+                      <BookMarked key="bio" className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    ][index % 4]}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{subject}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{Math.floor(Math.random() * 12) + 1} topics • {Math.floor(Math.random() * 40) + 10} resources</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-auto"
+                  >
+                    Open Subject
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+
+          {/* Study Calendar Section (New) */}
+          <section className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Study Calendar</h2>
+              <Link href="/calendar" className="text-cyan-600 dark:text-cyan-400 flex items-center text-sm font-medium hover:underline">
+                View full calendar
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-gray-900 dark:text-white">Upcoming Sessions</h3>
+                <Button variant="ghost" size="sm" className="text-cyan-600 dark:text-cyan-400">
+                  <PlusCircle className="w-4 h-4 mr-1" />
+                  Add Session
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {["Physics Review - Thermodynamics", "Biology Study Group", "Chemistry Quiz Preparation"].map((session, index) => (
+                  <motion.div
+                    key={session}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    className="p-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium text-gray-900 dark:text-white">{session}</h4>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {["Tomorrow", "Thursday", "Friday"][index]}
+                      </span>
+                    </div>
+                    <div className="flex items-center mt-2">
+                      <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500 mr-1" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-3">
+                        {["10:00 AM - 11:30 AM", "2:00 PM - 3:30 PM", "4:00 PM - 5:00 PM"][index]}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Resources Section (New) */}
+          <section className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Resources Library</h2>
+              <Link href="/resources" className="text-cyan-600 dark:text-cyan-400 flex items-center text-sm font-medium hover:underline">
+                Browse library
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { name: "Video Lectures", icon: <BookOpen />, count: 127 },
+                { name: "Practice Tests", icon: <FileText />, count: 45 },
+                { name: "Study Notes", icon: <BookMarked />, count: 92 },
+                { name: "Reference Materials", icon: <Network />, count: 38 }
+              ].map((resource, index) => (
+                <motion.div
+                  key={resource.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 dark:border-gray-700 p-4"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`p-2 rounded-lg ${
+                      ["bg-cyan-100 dark:bg-cyan-900/30", 
+                       "bg-violet-100 dark:bg-violet-900/30", 
+                       "bg-pink-100 dark:bg-pink-900/30", 
+                       "bg-indigo-100 dark:bg-indigo-900/30"][index]
+                    }`}>
+                      <span className={`${
+                        ["text-cyan-600 dark:text-cyan-400", 
+                         "text-violet-600 dark:text-violet-400", 
+                         "text-pink-600 dark:text-pink-400", 
+                         "text-indigo-600 dark:text-indigo-400"][index]
+                      } w-5 h-5`}>
+                        {resource.icon}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{resource.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{resource.count} items</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 justify-start text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 pl-2"
+                  >
+                    Browse collection
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+          </section>
         </div>
       </main>
 

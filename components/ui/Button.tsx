@@ -35,8 +35,8 @@ export const buttonVariants = cva(
           "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-lg hover:from-indigo-600 hover:to-purple-700 active:scale-[0.98] after:absolute after:inset-0 after:bg-gradient-to-r after:from-indigo-600 after:to-purple-700 after:opacity-0 after:transition-opacity hover:after:opacity-100 after:-z-10",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
+        default: "h-10 px-5 py-2",
+        sm: "h-9 rounded-md px-4 py-2",
         lg: "h-12 rounded-lg px-8 text-base",
         xl: "h-14 rounded-xl px-10 text-lg",
         icon: "h-10 w-10",
