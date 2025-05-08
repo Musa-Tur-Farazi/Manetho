@@ -279,15 +279,3 @@ X-RateLimit-Reset: 1715253600
 ```
 
 Exceed → **429** with `Retry‑After`.
-
----
-
-## Change‑log
-
-* **v 1.2 (2025‑05‑09)** – Modular index, WealthE‑style samples; IDs strictly in body; added DM WebSocket spec; unified `/create /get /update /delete` verbs for all study resources; explicit admin section.
-
----
-
-### 🚀 Ready to ship.
-
-Need more examples, Postman collection, or an OpenAPI file auto‑generated from this? Let me know!
