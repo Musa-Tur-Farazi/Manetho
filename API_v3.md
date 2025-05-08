@@ -1,7 +1,8 @@
-# <div align="center">Manetho REST API Documentation (v 1.4) — *Comprehensive Edition*</div>
+# <div align="center">Manetho API Documentation </div>
 
-> **Purpose:** A professional‑grade reference with **full request/response pairs** and operations tables for every module. Designed for supervisors, external auditors, SDK generators, and future teammates.
-> *Approx. length ≈ 2,000 markup lines.*
+### <div align="center">Structuring the Future of Learning</div>
+
+<div align="center">2005032 · Rifat Hossain  2005034 · Gourab Biswas  2005038 · Musa Tur Farazi</div>
 
 ---
 
