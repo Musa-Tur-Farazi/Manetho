@@ -20,7 +20,6 @@
 9. [Admin Endpoints](#admin-endpoints)
 10. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)
 11. [Rate Limits & Headers](#rate-limits--headers)
-12. [Change‑Log](#change-log)
 
 ---
 
