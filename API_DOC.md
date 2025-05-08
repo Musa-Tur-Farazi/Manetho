@@ -1,15 +1,3 @@
-**Providing API details**
-
-The user wants an updated version of the previous API response with a more detailed breakdown. This time, they need the request and response pairs for each endpoint, but with IDs placed in the request body rather than in the URL path. They specifically mentioned that the IDs should not be in the path, and referenced a change in endpoint usage, such as switching from GET /payments/{paymentId} to POST /payments/get. I will reply directly here, giving a more detailed, formatted version of the API, suitable for GitHub.
-
-**Crafting elaborative API documentation**
-
-I’ll need to create a detailed API documentation snippet that includes the various endpoints. Each endpoint should define the correct method and reflect requests with IDs in the request body rather than the URL path. I’ll include examples for various successful and error responses (200 OK, 404 Not Found). I'll group the endpoints by category like Payments, Routine, Flashcards, and others. The goal is to provide a clean, concise document without overwhelming details, clearly mentioning the use of authentication tokens and IDs in the body where applicable. This will be delivered in chat.
-
-
-Thought for 17 seconds
-
-
 # Manetho API — Request / Response Cookbook
 
 *(v1 · IDs always travel in the JSON body, never in the URL path)*
