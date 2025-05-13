@@ -7,19 +7,20 @@
 ---
 
 ## Index
-1. [Auth Module](#auth-module)  
-2. [AI‑Chat Module](#ai-chat-module)  
-3. [Normal Chat (DM)](#normal-chat-dm)  
+1. [Auth Module](#-auth-module)  
+2. [AI-Chat Module](#ai-chat-module)  
+3. [Normal Chat (DM)](#normal-chat-dm)  
 4. [Flashcards](#flashcards)  
-5. [Routine Planner](#routine-planner)  
-6. [Mind Maps](#mind-maps)  
-7. [Practice Tests](#practice-tests)  
+5. [Routine Planner](#routine-planner)  
+6. [Mind Maps](#mind-maps)  
+7. [Practice Tests](#practice-tests)  
 8. [Payments](#payments)  
 9. [Analytics](#analytics)  
-10. [Community Threads](#community-threads)  
-11. [Admin Module](#admin-module)  
-12. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)  
-13. [Standard Error Envelope](#standard-error-envelope)  
+10. [Community Threads](#community-threads)  
+11. [Admin Module](#admin-module)  
+12. [Cost-Efficiency Playbook](#cost-efficiency-playbook)  
+13. [Standard Error Envelope](#standard-error-envelope)  
+14. [Forgot Password and Reset Password](#-forgot-password-and-reset-password) 
 
 ---
 
