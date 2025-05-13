@@ -8,7 +8,7 @@
 
 ## Index
 1. [Auth Module](#-auth-module)
-2. [Admin Module](#admin)   
+2. [Admin](#-admin)   
 3. [AI‑Chat Module](#ai-chat-module)  
 4. [Normal Chat (DM)](#normal-chat-dm)  
 5. [Flashcards](#flashcards)  
