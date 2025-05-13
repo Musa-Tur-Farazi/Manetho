@@ -668,7 +668,8 @@ Completes the password reset process using a valid reset token.
 
 ## AI‑Chat Module
 
-### Ask AI `POST /ai-chat`
+### Ask AI 
+`POST /ai-chat`
 
 <details><summary>Details</summary>
 
@@ -705,11 +706,13 @@ Completes the password reset process using a valid reset token.
 > • To **send** a message you either provide a `threadToken` (issued when the chat opens)
 >   or just the `recipientId` (server resolves/creates the room).
 
-### WebSocket `GET /chat/ws`
+### WebSocket 
+`GET /chat/ws`
 
 Upgrades with `Sec‑WebSocket‑Protocol: bearer,<JWT>`.
 
-### Send Message `POST /chat/send`
+### Send Message 
+`POST /chat/send`
 
 <details><summary>Details</summary>
 
@@ -732,7 +735,8 @@ Upgrades with `Sec‑WebSocket‑Protocol: bearer,<JWT>`.
 
 </details>
 
-### History `GET /chat/history?threadToken=th_f94c8e...&limit=50&cursor=1683631306`
+### History 
+`GET /chat/history?threadToken=th_f94c8e...&limit=50&cursor=1683631306`
 
 <details><summary>Response Body</summary>
 
