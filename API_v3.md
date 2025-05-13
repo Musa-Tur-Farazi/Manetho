@@ -55,6 +55,13 @@ Optional headers:
 
 ---
 
+```yaml
+"password": {
+  "type": "string",
+  "description": "Plain text password. Will be bcrypt-hashed before storage."
+}
+```
+
 ### 🆕 Sign-Up
 
 **`POST /auth/signup`**
@@ -668,7 +675,54 @@ Completes the password reset process using a valid reset token.
 
 ---
 
-Here’s your **complete and cleanly structured API documentation** for the **AI-Chat Module** — covering only realistic, essential endpoints with professional tone, accurate behavior, and clarity for developers:
+## 📊 Dashboard API (User Metrics)
+
+Endpoints to support the user's dashboard with personalized summaries.
+
+### `GET /dashboard/summary`
+
+Returns an overview of the user’s academic activity.
+
+#### ✅ Success — `200 OK`
+
+**Response:**
+
+```json
+{
+  "streakDays": 7,
+  "flashcardsReviewed": 120,
+  "practiceTestsTaken": 3,
+  "mindMapsCreated": 2,
+  "routineAdherenceRate": 87
+}
+```
+
+---
+
+### `GET /dashboard/activity-feed`
+
+Returns recent learning actions in chronological order.
+
+#### ✅ Success — `200 OK`
+
+**Response:**
+
+```json
+{
+  "events": [
+    {
+      "type": "flashcard-review",
+      "detail": "Reviewed 20 flashcards from 'Biology'",
+      "timestamp": "2025-05-12T19:30:00Z"
+    },
+    {
+      "type": "practice-test",
+      "detail": "Scored 82% on 'Algebra Midterm'",
+      "timestamp": "2025-05-12T17:15:00Z"
+    }
+  ]
+}
+```
 
 ---
 
