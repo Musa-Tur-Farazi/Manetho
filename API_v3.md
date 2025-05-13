@@ -9,7 +9,7 @@
 ## Index
 1. [Auth Module](#-auth-module)
 2. [Admin](#admin)   
-3. [AI‑Chat](#ai-chat)  
+3. [AI‑Chat](#-ai-chat)  
 4. [Normal Chat (DM)](#normal-chat-dm)  
 5. [Flashcards](#flashcards)  
 6. [Routine Planner](#routine-planner)  
@@ -672,7 +672,7 @@ Here’s your **complete and cleanly structured API documentation** for the **AI
 
 ---
 
-## 🤖 AI-Chat API
+## 🤖 AI-Chat
 
 Manetho’s AI Chat module enables users to interact with an AI assistant using conversational prompts. Users can manage chats, upload files for context, view chat history, flag inappropriate content, and delete messages or sessions — all securely and scoped per user.
 
