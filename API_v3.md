@@ -8,7 +8,7 @@
 
 ## Index
 1. [Auth Module](#-auth-module)  
-2. [AI-Chat Module](#ai-chat-module)  
+2. [AI‑Chat Module](#ai-chat-module)  
 3. [Normal Chat (DM)](#normal-chat-dm)  
 4. [Flashcards](#flashcards)  
 5. [Routine Planner](#routine-planner)  
@@ -18,9 +18,10 @@
 9. [Analytics](#analytics)  
 10. [Community Threads](#community-threads)  
 11. [Admin Module](#admin-module)  
-12. [Cost-Efficiency Playbook](#cost-efficiency-playbook)  
+12. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)  
 13. [Standard Error Envelope](#standard-error-envelope)  
-14. [Forgot Password and Reset Password](#-forgot-password-and-reset-password) 
+14. [User Profile](#️-user-profile)  
+15. [Forgot Password and Reset Password](#-forgot-password-and-reset-password)
 
 ---
 
