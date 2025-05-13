@@ -8,7 +8,7 @@
 
 ## Index
 1. [Auth Module](#-auth-module)
-2. [Admin](#-admin)   
+2. [Admin](#admin)   
 3. [AI‑Chat](#-ai-chat)  
 4. [Normal Chat (DM)](#normal-chat-dm)  
 5. [Flashcards](#flashcards)  
@@ -840,7 +840,7 @@ Returns basic usage summary (for user/account dashboards).
 
 
 
-## 🛡️ Admin
+## Admin
 
 Admin-only endpoints for moderation and financial analytics.
 
