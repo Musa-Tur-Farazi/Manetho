@@ -8,8 +8,8 @@
 
 ## Index
 1. [Auth Module](#-auth-module)
-2. [Admin](#-admin)   
-3. [AI‑Chat Module](#ai-chat-module)  
+2. [Admin](#admin)   
+3. [AI‑Chat](#ai-chat)  
 4. [Normal Chat (DM)](#normal-chat-dm)  
 5. [Flashcards](#flashcards)  
 6. [Routine Planner](#routine-planner)  
@@ -668,39 +668,177 @@ Completes the password reset process using a valid reset token.
 
 ---
 
-## AI‑Chat Module
+Here’s your **complete and cleanly structured API documentation** for the **AI-Chat Module** — covering only realistic, essential endpoints with professional tone, accurate behavior, and clarity for developers:
 
-### Ask AI 
-`POST /ai-chat`
+---
 
-<details><summary>Details</summary>
+## 🤖 AI-Chat API
 
-**Request**
+Manetho’s AI Chat module enables users to interact with an AI assistant using conversational prompts. Users can manage chats, upload files for context, view chat history, flag inappropriate content, and delete messages or sessions — all securely and scoped per user.
+
+> 🔒 All endpoints require a valid JWT. Admins can only access flagged content. Private data is not visible across accounts.
+
+---
+
+### 1. `POST /ai-chat/message`
+
+Send a message to the AI and receive a response.
+
+**Request:**
 
 ```json
 {
-  "message": "Explain Maxwell's equations in simple terms",
-  "context": [
-    { "role": "assistant", "message": "Sure — what background do you have?" }
+  "chatId": "abc123-chat-id",
+  "message": "Explain Maxwell's equations in simple terms"
+}
+```
+
+**Response:**
+
+```json
+{
+  "reply": "Maxwell's equations describe how electric and magnetic fields interact...",
+  "citations": [
+    { "title": "Griffiths EM 4th ed.", "page": 300 }
   ]
 }
 ```
 
-**200 OK**
+---
+
+### 2. `GET /ai-chat/history`
+
+Retrieve full conversation history for a given chat session.
+
+**Query Parameters:**
+
+* `chatId` (string, required)
+* `limit` (int, optional, default: 50)
+* `cursor` (timestamp, optional)
+
+**Response:**
 
 ```json
 {
-  "reply": "Maxwell's equations describe how electric and magnetic fields...",
-  "citations": [
-    { "title": "Griffiths EM 4th ed.", "page": 300 }
-  ],
-  "usage": { "promptTokens": 45, "completionTokens": 120, "costUSD": 0.001 }
+  "messages": [
+    {
+      "messageId": "msg_101",
+      "role": "user",
+      "content": "Explain Maxwell's equations.",
+      "timestamp": "2025-05-09T15:22:11Z"
+    },
+    {
+      "messageId": "msg_102",
+      "role": "assistant",
+      "content": "Maxwell's equations describe...",
+      "timestamp": "2025-05-09T15:22:12Z"
+    }
+  ]
+},
+  "nextCursor": "1683631306"
+}
+
+```
+
+---
+
+### 3. `GET /ai-chat/message/{messageId}`
+
+Fetch details of a specific message.
+
+**Response:**
+
+```json
+{
+  "messageId": "msg_101",
+  "chatId": "abc123-chat-id",
+  "role": "assistant",
+  "content": "Here’s a simplified explanation...",
+  "timestamp": "2025-05-09T15:22:11Z"
 }
 ```
 
-</details>
+---
+
+### 4. `DELETE /ai-chat/message/{messageId}`
+
+Delete a specific message from a chat.
+
+> ⚠️ This is irreversible. Client UI should confirm before sending the request.
+
+**Response:**
+`204 No Content`
 
 ---
+
+### 5. `DELETE /ai-chat/chat/{chatId}`
+
+Delete a full chat and all associated messages.
+
+> ⚠️ This is irreversible. Prompt user confirmation in frontend.
+
+**Response:**
+`204 No Content`
+
+---
+
+### 6. `POST /ai-chat/upload`
+
+Upload a file (e.g., PDF, DOCX, TXT) to be used as context in chat.
+
+**Headers:**
+`Content-Type: multipart/form-data`
+`Authorization: Bearer <token>`
+
+**Form Data:**
+
+* `file`: attached file
+* `chatId`: (optional) attach to an existing chat
+
+**Response:**
+
+```json
+{
+  "fileId": "file_98a73df",
+  "fileName": "lecture_notes.pdf",
+  "uploadTime": "2025-05-13T10:45:00Z",
+  "message": "File uploaded successfully."
+}
+```
+
+---
+
+### 7. `GET /ai-chat/usage-summary`
+
+Returns basic usage summary (for user/account dashboards).
+
+**Response:**
+
+```json
+{
+  "totalQueries": 1250
+}
+```
+
+> ⚠️ Token-level usage (e.g., prompt/completion tokens) is tracked internally and not exposed via public API.
+
+---
+
+### 🔴 Error Responses
+
+| Status | Reason         | Example                                                                             |
+| -----: | -------------- | ----------------------------------------------------------------------------------- |
+|  `400` | Invalid Input  | `{ "error": "InvalidInput", "message": "'message' is required." }`                  |
+|  `401` | Unauthorized   | `{ "error": "Unauthorized", "message": "Missing or invalid token." }`               |
+|  `403` | Forbidden      | `{ "error": "ForbiddenAction", "message": "Not allowed to access this resource." }` |
+|  `404` | Not Found      | `{ "error": "NotFound", "message": "Chat or message does not exist." }`             |
+|  `413` | File Too Large | `{ "error": "FileTooLarge", "message": "Upload must be under 10MB." }`              |
+|  `500` | Internal Error | `{ "error": "AIProcessingError", "message": "Unexpected server error." }`           |
+
+
+---
+
+
 
 ## 🛡️ Admin
 
