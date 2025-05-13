@@ -29,7 +29,7 @@
 | **Base URL** | `https://api.manetho.io/v1` |
 | **Content‑Type** | `application/json` |
 | **Auth Header** | `Authorization: Bearer <JWT>` |
-| **Version Pin** | `X‑API‑Version: 1.6` (optional) |
+| **Version Pin** | `X‑API‑Version: 1.1` (optional) |
 | **Trace Header** | `X‑Request‑Id: <uuid>` (optional) |
 | **Rate‑Limit Headers** | `X‑RateLimit‑Limit / Remaining / Reset` |
 
@@ -308,6 +308,169 @@ Revokes a refresh token.
 | **500** | Server error    | —               | `{ "error": "LogoutFailed", "message": "Internal server error." }`         |
 
 ---
+
+## 🙍‍♂️ User Profile
+
+Manage user profile information.
+
+### 📌 Get Profile
+
+**`GET /auth/profile`**
+Fetches profile details of the authenticated user.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
+*No request body needed.*
+
+**Response:**
+
+```json
+{
+  "userId": "uuid",
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "joinedAt": "2025-05-01T12:00:00Z",
+  "subscriptionPlan": "Premium"
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+**Unauthorized — `401 Unauthorized`**
+
+**Request:**
+*No JWT or invalid JWT token.*
+
+**Response:**
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Authentication token is missing or invalid."
+}
+```
+
+---
+
+**Server Error — `500 Internal Server Error`**
+
+**Request:**
+*Valid JWT provided, but server fails to retrieve profile.*
+
+**Response:**
+
+```json
+{
+  "error": "ProfileFetchFailed",
+  "message": "Unable to retrieve profile information."
+}
+```
+
+---
+
+### ✏️ Update Profile
+
+**`PATCH /auth/profile`**
+Updates user profile details.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
+
+```json
+{
+  "fullName": "Augusta Ada Lovelace"
+}
+```
+
+**Response:**
+
+```json
+{
+  "userId": "uuid",
+  "fullName": "Augusta Ada Lovelace",
+  "email": "ada@example.com",
+  "joinedAt": "2025-05-01T12:00:00Z",
+  "subscriptionPlan": "Premium"
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+**Invalid Fields — `400 Bad Request`**
+
+**Request:**
+
+```json
+{
+  "fullName": ""
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "InvalidInput",
+  "message": "'fullName' must not be empty."
+}
+```
+
+---
+
+**Unauthorized — `401 Unauthorized`**
+
+**Request:**
+*No JWT or invalid JWT token.*
+
+**Response:**
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Authentication token is missing or invalid."
+}
+```
+
+---
+
+**Rate Limit Exceeded — `429 Too Many Requests`**
+
+**Request:**
+*Exceeding update frequency limits (e.g., >5 attempts/min).*
+
+**Response:**
+
+```json
+{
+  "error": "RateLimitExceeded",
+  "message": "Too many profile updates. Please try again later."
+}
+```
+
+---
+
+**Internal Error — `500 Internal Server Error`**
+
+**Request:**
+*Server-side failure during profile update.*
+
+**Response:**
+
+```json
+{
+  "error": "ProfileUpdateFailed",
+  "message": "Unable to update profile at this time."
+}
+```
+
+---
+
 
 ## AI‑Chat Module
 
