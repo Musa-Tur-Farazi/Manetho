@@ -8,20 +8,21 @@
 
 ## Index
 1. [Auth Module](#-auth-module)
-2. [Admin](#admin)   
-3. [AI‑Chat](#-ai-chat)  
-4. [Normal Chat (DM)](#normal-chat-dm)  
-5. [Flashcards](#flashcards)  
-6. [Routine Planner](#routine-planner)  
-7. [Mind Maps](#mind-maps)  
-8. [Practice Tests](#practice-tests)  
-9. [Payments](#payments)  
-10. [Analytics](#analytics)  
-11. [Community Threads](#community-threads)  
-12. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)  
-13. [Standard Error Envelope](#standard-error-envelope)  
-14. [User Profile](#️-user-profile)  
-15. [Forgot Password and Reset Password](#-forgot-password-and-reset-password)
+2. [Admin](#admin)
+3. [Dashboard](#-dashboard)   
+4. [AI‑Chat](#-ai-chat)  
+5. [Normal Chat (DM)](#normal-chat-dm)  
+6. [Flashcards](#flashcards)  
+7. [Routine Planner](#routine-planner)  
+8. [Mind Maps](#mind-maps)  
+9. [Practice Tests](#practice-tests)  
+10. [Payments](#payments)  
+11. [Analytics](#analytics)  
+12. [Community Threads](#community-threads)  
+13. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)  
+14. [Standard Error Envelope](#standard-error-envelope)  
+15. [User Profile](#️-user-profile)  
+16. [Forgot Password and Reset Password](#-forgot-password-and-reset-password)
 
 ---
 
@@ -675,7 +676,7 @@ Completes the password reset process using a valid reset token.
 
 ---
 
-## 📊 Dashboard API (User Metrics)
+## 📊 Dashboard
 
 Endpoints to support the user's dashboard with personalized summaries.
 
