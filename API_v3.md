@@ -471,6 +471,200 @@ Updates user profile details.
 
 ---
 
+## 🔑 Forgot Password and Reset Password
+
+### 📩 Forgot Password
+
+**`POST /auth/forgot-password`**
+Initiates a password reset process by sending a reset link or OTP to the user's email.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
+
+```json
+{
+  "email": "ada@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "If this email is registered, a reset link has been sent."
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+**Missing Email — `400 Bad Request`**
+
+**Request:**
+
+```json
+{}
+```
+
+**Response:**
+
+```json
+{
+  "error": "MissingEmail",
+  "message": "The 'email' field is required."
+}
+```
+
+**Rate Limit Exceeded — `429 Too Many Requests`**
+
+**Request:**
+
+```json
+{
+  "email": "ada@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "RateLimitExceeded",
+  "message": "Too many reset attempts. Please wait before retrying."
+}
+```
+
+**Server Error — `500 Internal Server Error`**
+
+**Request:**
+
+```json
+{
+  "email": "ada@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "ForgotPasswordError",
+  "message": "A server error occurred. Please try again later."
+}
+```
+
+---
+
+### 🔄 Reset Password
+
+**`POST /auth/reset-password`**
+Completes the password reset process using a valid reset token.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
+
+```json
+{
+  "resetToken": "abc123-reset-token",
+  "newPassword": "NewStr0ngP@ss!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Your password has been successfully reset."
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+**Missing Fields — `400 Bad Request`**
+
+**Request:**
+
+```json
+{
+  "resetToken": ""
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "InvalidRequest",
+  "message": "Both 'resetToken' and 'newPassword' fields are required."
+}
+```
+
+**Invalid or Expired Token — `401 Unauthorized`**
+
+**Request:**
+
+```json
+{
+  "resetToken": "expired-token",
+  "newPassword": "NewStr0ngP@ss!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "InvalidOrExpiredToken",
+  "message": "The provided reset token is invalid or has expired."
+}
+```
+
+**Weak Password — `422 Unprocessable Entity`**
+
+**Request:**
+
+```json
+{
+  "resetToken": "valid-token",
+  "newPassword": "weak"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "WeakPassword",
+  "message": "Password must be at least 8 characters, including an uppercase letter, a number, and a special character."
+}
+```
+
+**Server Error — `500 Internal Server Error`**
+
+**Request:**
+
+```json
+{
+  "resetToken": "valid-token",
+  "newPassword": "NewStr0ngP@ss!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "ResetPasswordError",
+  "message": "A server error occurred. Please try again later."
+}
+```
+
+---
 
 ## AI‑Chat Module
 
