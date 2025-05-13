@@ -7,17 +7,17 @@
 ---
 
 ## Index
-1. [Auth Module](#-auth-module)  
-2. [AI‑Chat Module](#ai-chat-module)  
-3. [Normal Chat (DM)](#normal-chat-dm)  
-4. [Flashcards](#flashcards)  
-5. [Routine Planner](#routine-planner)  
-6. [Mind Maps](#mind-maps)  
-7. [Practice Tests](#practice-tests)  
-8. [Payments](#payments)  
-9. [Analytics](#analytics)  
-10. [Community Threads](#community-threads)  
-11. [Admin Module](#admin-module)  
+1. [Auth Module](#-auth-module)
+2. [Admin Module](#admin)   
+3. [AI‑Chat Module](#ai-chat-module)  
+4. [Normal Chat (DM)](#normal-chat-dm)  
+5. [Flashcards](#flashcards)  
+6. [Routine Planner](#routine-planner)  
+7. [Mind Maps](#mind-maps)  
+8. [Practice Tests](#practice-tests)  
+9. [Payments](#payments)  
+10. [Analytics](#analytics)  
+11. [Community Threads](#community-threads)  
 12. [Cost‑Efficiency Playbook](#cost-efficiency-playbook)  
 13. [Standard Error Envelope](#standard-error-envelope)  
 14. [User Profile](#️-user-profile)  
@@ -702,6 +702,105 @@ Completes the password reset process using a valid reset token.
 
 ---
 
+## 🛡️ Admin
+
+Admin-only endpoints for moderation and financial analytics.
+
+> 🔒 All routes require JWT with `role: admin` and are audit-logged. No private messages, academic notes, or unflagged content can be accessed.
+
+---
+
+### `GET /admin/reports`
+
+Retrieve content reported by users or flagged by AI.
+
+#### ✅ `200 OK`
+
+```json
+{
+  "reports": [
+    {
+      "reportId": "rpt_2451",
+      "type": "thread",
+      "itemId": "th_1021",
+      "reason": "Slang used in academic post",
+      "reportedBy": "usr_3004",
+      "timestamp": "2025-05-12T14:10:00Z",
+      "status": "pending"
+    }
+  ]
+}
+```
+
+---
+
+### `DELETE /admin/threads/{threadId}`
+
+Delete a reported public thread.
+
+#### ✅ `204 No Content`
+
+#### 🔴 `403 Forbidden` — if thread is unflagged
+
+```json
+{
+  "error": "ForbiddenAction",
+  "message": "Thread is not flagged. Admin cannot delete unreported content."
+}
+```
+
+---
+
+### `GET /admin/moderation-stats`
+
+View platform-wide moderation metrics.
+
+#### ✅ `200 OK`
+
+```json
+{
+  "totalReports": 120,
+  "autoFlaggedByAI": 74,
+  "resolvedReports": 95,
+  "pendingReports": 25
+}
+```
+
+---
+
+### `GET /admin/revenue-summary`
+
+Aggregated financial data across plans. No personal billing info is returned.
+
+#### ✅ `200 OK`
+
+```json
+{
+  "month": "May 2025",
+  "totalRevenueUSD": 12850,
+  "activePlans": {
+    "Basic": 120,
+    "Standard": 85,
+    "Premium": 45
+  },
+  "trends": {
+    "monthOverMonth": "+12.4%",
+    "churnRate": 3.1
+  }
+}
+```
+
+---
+
+### Security Summary
+
+* Admin-only JWT required
+* All endpoints are rate-limited and audit-logged
+* No access to unflagged content or private user data
+* Designed for governance, not surveillance
+
+---
+
 ## Normal Chat (DM)
 
 
@@ -948,30 +1047,6 @@ Upgrades with `Sec‑WebSocket‑Protocol: bearer,<JWT>`.
 ```
 
 *Get Messages* `GET /threads/messages?threadId=<id>&limit=50&cursor=<ts>`
-
-</details>
-
----
-
-## Admin Module
-
-*Only JWT with `role=admin` may call these.*
-
-<details><summary>Sample – income slab update</summary>
-
-`PATCH /admin/income-slabs`
-
-```json
-{
-  "category": "regular",
-  "slabs": [
-    { "slabNo": 1, "amount": 350000, "rate": 0 },
-    { "slabNo": 2, "amount": 100000, "rate": 5 }
-  ]
-}
-```
-
-→ **200** `{ "message":"Income slabs updated" }`
 
 </details>
 
