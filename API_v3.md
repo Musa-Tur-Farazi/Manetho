@@ -674,10 +674,6 @@ Here’s your **complete and cleanly structured API documentation** for the **AI
 
 ## 🤖 AI-Chat
 
-Manetho’s AI Chat module enables users to interact with an AI assistant using conversational prompts. Users can manage chats, upload files for context, view chat history, flag inappropriate content, and delete messages or sessions — all securely and scoped per user.
-
-> 🔒 All endpoints require a valid JWT. Admins can only access flagged content. Private data is not visible across accounts.
-
 ---
 
 ### 1. `POST /ai-chat/message`
