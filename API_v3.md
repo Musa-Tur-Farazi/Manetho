@@ -35,77 +35,176 @@
 
 ---
 
-## Auth Module
+## 🔐 Auth Module
 
-### Sign‑Up `POST /auth/signup`
-<details><summary>Details</summary>
+Authentication is handled via JSON Web Tokens (**JWT**). Tokens are issued upon **login** or **sign-up** and must be included as a `Bearer` token in the `Authorization` header for protected endpoints.
 
-**Request**
+### 🔑 Required Headers for Authenticated Requests
+
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+Optional headers:
+
+* `X-API-Version: 1.6`
+* `X-Request-Id: <uuid>`
+
+---
+
+### 🆕 Sign-Up
+
+**`POST /auth/signup`**
+Registers a new user.
+
+#### ✅ Success — `201 Created`
+
+**Request:**
+
 ```json
 {
   "fullName": "Ada Lovelace",
-  "email":    "ada@example.com",
-  "password": "Str0ngP@ssw0rd!"
-}
-````
-
-**201 Created**
-
-**Response**
-
-```json
-{
-  "userId":       "8f14e45f-ea48-4bb1-bc02-4fea8c737df1",
-  "fullName":     "Ada Lovelace",
-  "email":        "ada@example.com",
-  "accessToken":  "eyJhbGciOi...",
-  "refreshToken": "df1fb2e0-bb56-4e77-86ba-79ab0407a1af",
-  "expiresIn":    900
-}
-```
-
-</details>
-
-### Login `POST /auth/login`
-
-<details><summary>Details</summary>
-
-**Request**
-
-```json
-{
-  "email":    "ada@example.com",
+  "email": "ada@example.com",
   "password": "Str0ngP@ssw0rd!"
 }
 ```
 
-**200 OK** – same envelope as Sign‑up.
-
-</details>
-
-### Refresh Token `POST /auth/refresh`
-
-<details><summary>Details</summary>
+**Response:**
 
 ```json
-{ "refreshToken": "df1fb2e0-bb56-4e77-86ba-79ab0407a1af" }
+{
+  "userId": "uuid",
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "accessToken": "jwt-access-token",
+  "refreshToken": "refresh-token",
+  "expiresIn": 900
+}
 ```
 
-Returns new `accessToken`, rotated `refreshToken`, `expiresIn`.
+---
 
-</details>
+#### 🔴 Error Responses
 
-### Logout `POST /auth/logout`
+| Status  | Meaning                | Example Request                  | Example Response                                                                                    |
+| ------- | ---------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **400** | Missing/invalid fields | `{ "email": "" }`                | `{ "error": "InvalidInput", "message": "'email' is required." }`                                    |
+| **409** | Email already exists   | `{ "email": "ada@example.com" }` | `{ "error": "EmailExists", "message": "This email is already registered." }`                        |
+| **422** | Weak password          | `{ "password": "password" }`     | `{ "error": "WeakPassword", "message": "Password must include uppercase, number, and symbol." }`    |
+| **429** | Too many requests      | >5 attempts/min                  | `{ "error": "RateLimitExceeded", "message": "Too many sign-up attempts. Please try again later." }` |
+| **500** | Internal error         | —                                | `{ "error": "SignupFailed", "message": "Internal server error occurred." }`                         |
 
-<details><summary>Details</summary>
+---
+
+### 🔓 Login
+
+**`POST /auth/login`**
+Authenticates an existing user.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
 
 ```json
-{ "refreshToken": "df1fb2e0-bb56-4e77-86ba-79ab0407a1af" }
+{
+  "email": "ada@example.com",
+  "password": "Str0ngP@ssw0rd!"
+}
 ```
 
-**204 No Content**
+**Response:** *(same format as Sign-Up response)*
 
-</details>
+```json
+{
+  "userId": "uuid",
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "accessToken": "jwt-access-token",
+  "refreshToken": "refresh-token",
+  "expiresIn": 900
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+| Status  | Meaning             | Example Request                | Example Response                                                                 |
+| ------- | ------------------- | ------------------------------ | -------------------------------------------------------------------------------- |
+| **400** | Missing field       | `{ "email": "" }`              | `{ "error": "MissingField", "message": "'email' is required." }`                 |
+| **401** | Invalid credentials | `{ "password": "wrongpass" }`  | `{ "error": "InvalidCredentials", "message": "Incorrect email or password." }`   |
+| **403** | Account locked      | After multiple failed attempts | `{ "error": "AccountLocked", "message": "Your account is temporarily locked." }` |
+| **429** | Rate limit hit      | >5 attempts/min                | `{ "error": "RateLimitExceeded", "message": "Too many login attempts." }`        |
+| **500** | Server error        | —                              | `{ "error": "LoginFailed", "message": "Internal server error occurred." }`       |
+
+---
+
+### 🔁 Refresh Token
+
+**`POST /auth/refresh`**
+Generates new access and refresh tokens using a valid refresh token.
+
+#### ✅ Success — `200 OK`
+
+**Request:**
+
+```json
+{
+  "refreshToken": "valid-refresh-token"
+}
+```
+
+**Response:**
+
+```json
+{
+  "accessToken": "new-access-token",
+  "refreshToken": "rotated-refresh-token",
+  "expiresIn": 900
+}
+```
+
+---
+
+#### 🔴 Error Responses
+
+| Status  | Meaning               | Example Request | Example Response                                                                  |
+| ------- | --------------------- | --------------- | --------------------------------------------------------------------------------- |
+| **400** | Missing field         | `{}`            | `{ "error": "MissingRefreshToken", "message": "Refresh token is required." }`     |
+| **401** | Invalid/expired token | invalid token   | `{ "error": "InvalidToken", "message": "Provided token is invalid or expired." }` |
+| **403** | Token reuse detected  | replayed token  | `{ "error": "TokenReuseDetected", "message": "Refresh token reuse detected." }`   |
+| **429** | Too many attempts     | Abuse detection | `{ "error": "RateLimitExceeded", "message": "Too many refresh requests." }`       |
+| **500** | Server error          | —               | `{ "error": "TokenRefreshFailed", "message": "Could not refresh token." }`        |
+
+---
+
+### 🚪 Logout
+
+**`POST /auth/logout`**
+Revokes a refresh token.
+
+#### ✅ Success — `204 No Content`
+
+**Request:**
+
+```json
+{
+  "refreshToken": "valid-refresh-token"
+}
+```
+
+*(No response body returned.)*
+
+---
+
+#### 🔴 Error Responses
+
+| Status  | Meaning         | Example Request | Example Response                                                           |
+| ------- | --------------- | --------------- | -------------------------------------------------------------------------- |
+| **400** | Missing token   | `{}`            | `{ "error": "MissingRefreshToken", "message": "Refresh token required." }` |
+| **401** | Token not found | unknown token   | `{ "error": "InvalidToken", "message": "Refresh token not recognized." }`  |
+| **500** | Server error    | —               | `{ "error": "LogoutFailed", "message": "Internal server error." }`         |
 
 ---
 
@@ -436,7 +535,3 @@ Routing cold traffic to fallback saves **30‑50 %** cloud spend.
   "requestId": "9a8d..."
 }
 ```
-
-Common codes: **400, 401, 403, 404, 409, 422, 429, 500**.
-
----
