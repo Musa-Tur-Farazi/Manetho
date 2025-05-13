@@ -50,7 +50,7 @@ Content-Type: application/json
 
 Optional headers:
 
-* `X-API-Version: 1.6`
+* `X-API-Version: 1.1`
 * `X-Request-Id: <uuid>`
 
 ---
