@@ -9,7 +9,7 @@
 ## Index
 1. [Auth Module](#-auth-module)  
 2. [AI‑Chat Module](#ai-chat-module)  
-3. [Normal Chat (DM)](#normal-chat-dm)  
+3. [Normal Chat (DM)](#normal-chat-(dm))  
 4. [Flashcards](#flashcards)  
 5. [Routine Planner](#routine-planner)  
 6. [Mind Maps](#mind-maps)  
@@ -703,6 +703,7 @@ Completes the password reset process using a valid reset token.
 ---
 
 ## Normal Chat (DM)
+
 
 > **Privacy bypass** – the client never sees raw `chatId`.
 > • To **send** a message you either provide a `threadToken` (issued when the chat opens)
