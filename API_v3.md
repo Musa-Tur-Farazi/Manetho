@@ -87,15 +87,116 @@ Registers a new user.
 
 #### 🔴 Error Responses
 
-| Status  | Meaning                | Example Request                  | Example Response                                                                                    |
-| ------- | ---------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **400** | Missing/invalid fields | `{ "email": "" }`                | `{ "error": "InvalidInput", "message": "'email' is required." }`                                    |
-| **409** | Email already exists   | `{ "email": "ada@example.com" }` | `{ "error": "EmailExists", "message": "This email is already registered." }`                        |
-| **422** | Weak password          | `{ "password": "password" }`     | `{ "error": "WeakPassword", "message": "Password must include uppercase, number, and symbol." }`    |
-| **429** | Too many requests      | >5 attempts/min                  | `{ "error": "RateLimitExceeded", "message": "Too many sign-up attempts. Please try again later." }` |
-| **500** | Internal error         | —                                | `{ "error": "SignupFailed", "message": "Internal server error occurred." }`                         |
+**Missing or Invalid Fields — `400 Bad Request`**
+
+**Request:**
+
+```json
+{
+  "email": ""
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "InvalidInput",
+  "message": "'email' is required."
+}
+```
 
 ---
+
+**Email Already Exists — `409 Conflict`**
+
+**Request:**
+
+```json
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "password": "Str0ngP@ssw0rd!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "EmailExists",
+  "message": "This email is already registered."
+}
+```
+
+---
+
+**Weak Password — `422 Unprocessable Entity`**
+
+**Request:**
+
+```json
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "password": "password"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "WeakPassword",
+  "message": "Password must include uppercase, number, and symbol."
+}
+```
+
+---
+
+**Too Many Requests — `429 Too Many Requests`**
+
+**Request:**
+
+```json
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "password": "Str0ngP@ssw0rd!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "RateLimitExceeded",
+  "message": "Too many sign-up attempts. Please try again later."
+}
+```
+
+---
+
+**Internal Server Error — `500 Internal Server Error`**
+
+**Request:**
+
+```json
+{
+  "fullName": "Ada Lovelace",
+  "email": "ada@example.com",
+  "password": "Str0ngP@ssw0rd!"
+}
+```
+
+**Response:**
+
+```json
+{
+  "error": "SignupFailed",
+  "message": "Internal server error occurred."
+}
+```
 
 ### 🔓 Login
 
