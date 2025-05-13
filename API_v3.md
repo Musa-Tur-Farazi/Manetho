@@ -9,7 +9,7 @@
 ## Index
 1. [Auth Module](#-auth-module)  
 2. [AI‑Chat Module](#ai-chat-module)  
-3. [Normal Chat (DM)](#normal-chat-(dm))  
+3. [Normal Chat (DM)](#normal-chat-dm)  
 4. [Flashcards](#flashcards)  
 5. [Routine Planner](#routine-planner)  
 6. [Mind Maps](#mind-maps)  
