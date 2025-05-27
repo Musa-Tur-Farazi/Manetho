@@ -15,6 +15,13 @@
       "when": 1745608439461,
       "tag": "0001_mushy_fenris",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748278488376,
+      "tag": "0002_rare_komodo",
+      "breakpoints": true
     }
   ]
 }

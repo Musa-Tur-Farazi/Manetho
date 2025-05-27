@@ -29,12 +29,26 @@ export default function CustomSignUp() {
     setError("");
 
     try {
+      // Try with just email and password first to isolate the issue
+      console.log('Attempting sign-up with email:', email);
+
       const result = await signUp.create({
-        firstName,
-        lastName,
         emailAddress: email,
         password,
       });
+
+      // If successful, try to update the user profile with names
+      if (result && (firstName || lastName)) {
+        try {
+          await result.update({
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+          });
+        } catch (updateError) {
+          console.warn('Could not update user profile:', updateError);
+          // Don't fail the whole process if profile update fails
+        }
+      }
 
       // Start email verification
       await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
@@ -62,6 +76,22 @@ export default function CustomSignUp() {
       if (result.status === "complete") {
         // Sign up and verification successful
         await setActive({ session: result.createdSessionId });
+
+        // Sync user to database after successful signup
+        try {
+          const syncResponse = await fetch('/api/auth/sync-user', {
+            method: 'POST',
+          });
+
+          if (syncResponse.ok) {
+            console.log('User synced to database successfully');
+          } else {
+            console.warn('Failed to sync user to database');
+          }
+        } catch (syncError) {
+          console.error('Error syncing user to database:', syncError);
+        }
+
         router.push(redirectUrl);
       } else {
         // Handle other status
@@ -211,6 +241,9 @@ export default function CustomSignUp() {
                     Password must be at least 8 characters
                   </p>
                 </div>
+
+                {/* Clerk CAPTCHA element - required for bot protection */}
+                <div id="clerk-captcha"></div>
 
                 <button
                   type="submit"

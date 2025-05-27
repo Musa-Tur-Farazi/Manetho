@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, Bot, User, XCircle, ChevronUp, ChevronDown, Sparkles } from "lucide-react";
+import { Send, Bot, User, XCircle, ChevronUp, ChevronDown, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,27 +19,49 @@ const AiDoubtSolver = ({ expanded = false }: AiDoubtSolverProps) => {
   const [isExpanded, setIsExpanded] = useState(expanded);
   const [inputValue, setInputValue] = useState("");
   const [conversation, setConversation] = useState(sampleConversation);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    // Add user message
-    setConversation([...conversation, { role: "user", content: inputValue }]);
-
-    // In a real app, you would send this to your AI backend
-    // For demo, we'll just add a placeholder response after a short delay
-    setTimeout(() => {
-      setConversation(prev => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "I'm analyzing your question about \"" + inputValue + "\". In a real implementation, this would be processed by an AI model that would provide a helpful, accurate response."
-        }
-      ]);
-    }, 1000);
-
+    // Add user message locally
+    const updatedConversation = [...conversation, { role: "user", content: inputValue }];
+    setConversation(updatedConversation);
     setInputValue("");
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/doubt-solving", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updatedConversation }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`API error: ${res.status} - ${errorText}`);
+      }
+
+      const data = await res.json();
+
+      setConversation((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply || "Sorry, I couldn't generate a response." },
+      ]);
+    } catch (error) {
+      console.error("AI request failed", error);
+      const errorMessage = error instanceof Error
+        ? `Error: ${error.message}`
+        : "Oops! Something went wrong while generating a response.";
+
+      setConversation((prev) => [
+        ...prev,
+        { role: "assistant", content: errorMessage },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -128,8 +150,8 @@ const AiDoubtSolver = ({ expanded = false }: AiDoubtSolverProps) => {
                     <XCircle className="w-5 h-5" />
                   </Button>
                 )}
-                <Button type="submit" variant="default" size="sm" className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800 text-white">
-                  <Send className="w-4 h-4" />
+                <Button type="submit" variant="default" size="sm" className="bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-700 dark:hover:bg-cyan-800 text-white" disabled={isLoading}>
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </form>
             </div>
