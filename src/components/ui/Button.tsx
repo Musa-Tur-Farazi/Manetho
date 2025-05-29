@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import Link from "next/link";
 import { Slot } from "@radix-ui/react-slot";
 import { motion } from "framer-motion";
-import { cn } from "../../utils/cn";
+import { cn } from "@/lib/utils";
 
 // Define common props that should be excluded from DOM elements
 const nonDOMProps = [

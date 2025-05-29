@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Search, BookOpen, Clock, User } from "lucide-react";
-import { Button } from "../../../../components/ui/Button";
-import PageHeader from "../../../../components/ui/PageHeader";
-import ContentCard from "../../../../components/ui/ContentCard";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import ContentCard from "@/components/ui/ContentCard";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");

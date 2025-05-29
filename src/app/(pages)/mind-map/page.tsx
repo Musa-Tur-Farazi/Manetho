@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../../../../components/ui/Button";
-import PageHeader from "../../../../components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 import { Check, ChevronRight, Edit, Trash, Plus, BookOpen, Brain, ClipboardList, GraduationCap, Clock, Flag, Calendar } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 

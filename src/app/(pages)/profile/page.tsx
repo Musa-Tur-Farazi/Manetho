@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../../../../components/ui/Button";
-import PageHeader from "../../../../components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 import {
   User, Edit, BookOpen, Calendar, Award, BarChart, Clock,
   Save, X, ChevronRight, Book, Pencil, MailOpen, Link as LinkIcon,

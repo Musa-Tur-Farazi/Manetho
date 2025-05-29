@@ -1,6 +1,6 @@
 "use client";
 
-import AuthCheck from "../../../../../components/auth/AuthCheck";
+import AuthCheck from "@/components/auth/AuthCheck";
 
 /**
  * ChatGPT-style layout with always-visible navbar

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../../../../components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useUser } from "@clerk/nextjs";
 
 interface DatabaseUser {

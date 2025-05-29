@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Send, Image, Loader2, Plus, Bot, User, Trash2, Copy, Check, ArrowLeft, ExternalLink, Stars, Settings, LogOut, InfoIcon, FileText, RefreshCw, X } from "lucide-react";
-import { Button } from "../../../../../components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 

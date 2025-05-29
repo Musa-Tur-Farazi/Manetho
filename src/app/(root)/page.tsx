@@ -3,16 +3,16 @@
 import { useAuth } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "../../../components/landingpage/layout/Navbar";
-import FeatureDetails from "../../../components/landingpage/section/FeatureDetails";
-import HeroSection from "../../../components/landingpage/section/HeroSection";
-import Footer from "../../../components/landingpage/section/Footer";
-import Testimonials from "../../../components/landingpage/section/Testimonials";
-import StatisticsSection from "../../../components/landingpage/section/StatisticsSection";
-import CTASection from "../../../components/landingpage/section/CTASection";
-import { ThemeProvider } from "../../../components/theme/ThemeProvider";
-import ThemeToggle from "../../../components/theme/ThemeToggle";
-import AuthProtectedLink from "../../../components/landingpage/AuthProtectedLink";
+import Navbar from "@/components/landingpage/layout/Navbar";
+import FeatureDetails from "@/components/landingpage/section/FeatureDetails";
+import HeroSection from "@/components/landingpage/section/HeroSection";
+import Footer from "@/components/landingpage/section/Footer";
+import Testimonials from "@/components/landingpage/section/Testimonials";
+import StatisticsSection from "@/components/landingpage/section/StatisticsSection";
+import CTASection from "@/components/landingpage/section/CTASection";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import ThemeToggle from "@/components/theme/ThemeToggle";
+import AuthProtectedLink from "@/components/landingpage/AuthProtectedLink";
 
 function Landingpage() {
   const { isSignedIn } = useAuth();

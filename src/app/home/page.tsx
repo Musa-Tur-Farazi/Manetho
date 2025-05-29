@@ -24,12 +24,12 @@ import {
   DollarSign,
   PenTool,
 } from "lucide-react";
-import { Button } from "../../../components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "../../../components/theme/ThemeProvider";
-import AuthenticatedNavbar from "../../../components/homepage/AuthenticatedNavbar";
-import Footer from "../../../components/landingpage/section/Footer";
-import AiDoubtSolver from "../../../components/homepage/AiDoubtSolver";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import AuthenticatedNavbar from "@/components/homepage/AuthenticatedNavbar";
+import Footer from "@/components/landingpage/section/Footer";
+import AiDoubtSolver from "@/components/homepage/AiDoubtSolver";
 
 const HomePage = () => {
   const { user } = useUser();

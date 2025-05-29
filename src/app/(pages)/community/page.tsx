@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Search, Star, MessageCircle, User, ThumbsUp, Clock, Filter, Trash2, Plus, X, Image, Smile } from "lucide-react";
-import { Button } from "../../../../components/ui/Button";
-import PageHeader from "../../../../components/ui/PageHeader";
-import ContentCard from "../../../../components/ui/ContentCard";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import ContentCard from "@/components/ui/ContentCard";
 import { useUser } from "@clerk/nextjs";
 
 interface Comment {

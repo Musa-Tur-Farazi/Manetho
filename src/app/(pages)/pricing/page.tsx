@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
-import { Button } from "../../../../components/ui/Button";
-import PageHeader from "../../../../components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default function PricingPage() {
   const [annual, setAnnual] = useState(true);

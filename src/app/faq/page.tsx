@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "../../../components/landingpage/layout/Navbar";
-import Footer from "../../../components/landingpage/section/Footer";
+import Navbar from "@/components/landingpage/layout/Navbar";
+import Footer from "@/components/landingpage/section/Footer";
 import { ChevronDown, ChevronUp, Search, Users, BookOpen, Brain, Award, CheckCircle, HelpCircle, Star, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 

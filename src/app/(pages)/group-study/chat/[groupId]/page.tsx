@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "../../../../../../components/ui/Button";
-import PageHeader from "../../../../../../components/ui/PageHeader";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
 import { Send, ArrowLeft, Paperclip, Users, Info, Clock } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useParams } from "next/navigation";

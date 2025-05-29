@@ -15,9 +15,9 @@ import {
   Infinity,
   PieChart,
 } from "lucide-react";
-import { Button } from "../../../../../components/ui/Button";
-import PageHeader from "../../../../../components/ui/PageHeader";
-import ContentCard from "../../../../../components/ui/ContentCard";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import ContentCard from "@/components/ui/ContentCard";
 
 interface TopicProps {
   title: string;

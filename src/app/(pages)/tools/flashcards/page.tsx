@@ -12,9 +12,9 @@ import {
   UserPlus,
   BarChart2,
 } from "lucide-react";
-import { Button } from "../../../../../components/ui/Button";
-import PageHeader from "../../../../../components/ui/PageHeader";
-import ContentCard from "../../../../../components/ui/ContentCard";
+import { Button } from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import ContentCard from "@/components/ui/ContentCard";
 
 interface FlashcardSet {
   id: string;

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "../../../components/landingpage/layout/Navbar";
-import Footer from "../../../components/landingpage/section/Footer";
-import AuthCheck from "../../../components/auth/AuthCheck";
+import Navbar from "@/components/landingpage/layout/Navbar";
+import Footer from "@/components/landingpage/section/Footer";
+import AuthCheck from "@/components/auth/AuthCheck";
 import { usePathname } from "next/navigation";
 
 export default function PagesLayout({
