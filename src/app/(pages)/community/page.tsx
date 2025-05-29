@@ -142,10 +142,10 @@ export default function CommunityPage() {
             ...p,
             userStarred: data.isLiked,
             stars: data.likeCount
-          };
-        }
+        };
+      }
         return p;
-      }));
+    }));
     } catch (error) {
       console.error('Error toggling like:', error);
     }
