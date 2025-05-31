@@ -10,10 +10,12 @@ export default function SSOCallback() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);
+  const [syncStatus, setSyncStatus] = useState("Initializing...");
 
   useEffect(() => {
     const processCallback = async () => {
       try {
+        setSyncStatus("Processing OAuth callback...");
         // Handle the OAuth callback first
         await handleRedirectCallback({
           afterSignInUrl: "/home",
@@ -21,8 +23,9 @@ export default function SSOCallback() {
         });
       } catch (error) {
         console.error("Error handling OAuth callback:", error);
+        setSyncStatus("OAuth callback completed with warnings");
         // Still try to redirect even if there's an error
-        router.push("/home");
+        setTimeout(() => router.push("/home"), 2000);
       }
     };
 
@@ -34,26 +37,47 @@ export default function SSOCallback() {
     const syncUser = async () => {
       if (isLoaded && user && isProcessing) {
         try {
-          console.log("Syncing OAuth user with database:", user.id);
+          console.log("Auto-syncing user to database:", user.id);
+          setSyncStatus("Syncing user to database...");
 
-          const response = await fetch('/api/auth/sync-user', {
+          // Use the dedicated auto-sync API
+          const response = await fetch('/api/auto-sync', {
             method: 'POST',
           });
 
           if (response.ok) {
             const data = await response.json();
-            console.log("User sync result:", data.message);
+            console.log("Auto-sync result:", data);
+
+            if (data.existed) {
+              setSyncStatus("Welcome back! User updated.");
+            } else {
+              setSyncStatus("Account created successfully!");
+            }
+
+            // Redirect after successful sync
+            setTimeout(() => {
+              router.push("/home");
+            }, 1500);
           } else {
             console.warn("Failed to sync user with database");
+            setSyncStatus("Sync failed, but continuing...");
+
+            // Still redirect even if sync fails
+            setTimeout(() => {
+              router.push("/home");
+            }, 2000);
           }
         } catch (error) {
-          console.error("Error syncing OAuth user:", error);
-        } finally {
-          setIsProcessing(false);
-          // Redirect to home after sync attempt
+          console.error("Error auto-syncing user:", error);
+          setSyncStatus("Sync error, but continuing...");
+
+          // Still redirect even if there's an error
           setTimeout(() => {
             router.push("/home");
-          }, 1000);
+          }, 2000);
+        } finally {
+          setIsProcessing(false);
         }
       }
     };
@@ -66,14 +90,16 @@ export default function SSOCallback() {
       <div className="text-center">
         <Loader2 className="h-12 w-12 animate-spin text-cyan-600 dark:text-cyan-400 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          {isProcessing ? "Setting up your account..." : "Completing authentication..."}
+          Setting up your account...
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mt-2">
-          {isProcessing
-            ? "We're preparing your profile and syncing your data."
-            : "Please wait while we redirect you."
-          }
+          {syncStatus}
         </p>
+        {user && (
+          <p className="text-sm text-gray-500 mt-2">
+            Welcome, {user.fullName || user.firstName}!
+          </p>
+        )}
       </div>
     </div>
   );

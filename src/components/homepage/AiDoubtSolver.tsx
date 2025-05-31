@@ -101,7 +101,7 @@ const AiDoubtSolver = ({ expanded = false }: AiDoubtSolverProps) => {
             className="flex flex-col h-[calc(70vh-3.5rem)]"
           >
             {/* Conversation area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-enhanced">
               {conversation.map((message, index) => (
                 <div
                   key={index}

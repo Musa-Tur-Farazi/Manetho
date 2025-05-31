@@ -21,8 +21,8 @@ export async function POST(
     const { threadId } = await params;
 
     // Get the user from the database
-    const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+    const userResult: any = await db.execute(sql`
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -31,6 +31,9 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    const user = userResult.rows[0];
+    const userDbId = user.user_id;
 
     // Get the current thread
     const threadResult = await db.execute(sql`

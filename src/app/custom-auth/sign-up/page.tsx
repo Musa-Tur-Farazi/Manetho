@@ -147,6 +147,9 @@ export default function CustomSignUp() {
             </div>
           )}
 
+          {/* CAPTCHA container for Clerk */}
+          <div id="clerk-captcha" className="mb-4"></div>
+
           {!verifying ? (
             <>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -241,9 +244,6 @@ export default function CustomSignUp() {
                     Password must be at least 8 characters
                   </p>
                 </div>
-
-                {/* Clerk CAPTCHA element - required for bot protection */}
-                <div id="clerk-captcha"></div>
 
                 <button
                   type="submit"

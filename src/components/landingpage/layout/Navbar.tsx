@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import AuthProtectedLink from "../AuthProtectedLink";
 import ThemeToggle from "../../theme/ThemeToggle";
 
@@ -19,6 +19,10 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
   const { theme } = useTheme();
   const { isSignedIn } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Check if we're on the community page
+  const isCommunityPage = pathname?.includes('/community');
 
   // Close mobile menu on window resize
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
         : "bg-white/10 dark:bg-slate-900/10 backdrop-blur-lg border-b border-white/20 dark:border-gray-800/20"
         }`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className={`${isCommunityPage ? 'w-full px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto'} flex items-center justify-between`}>
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center">
             <h1 className="text-2xl font-bold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300">

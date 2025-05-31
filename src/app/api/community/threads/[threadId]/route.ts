@@ -6,7 +6,7 @@ import { auth } from '@clerk/nextjs/server';
 // DELETE - Delete a thread (only by the author or admin)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -18,38 +18,38 @@ export async function DELETE(
       );
     }
 
-    const { threadId } = params;
+    const { threadId } = await params;
 
     // Get the user from the database
     const userResult: any = await db.execute(
-      sql`SELECT * FROM users WHERE "clerkId" = ${userId} LIMIT 1`
+      sql`SELECT * FROM users WHERE "clerk_id" = ${userId} LIMIT 1`
     );
 
-    if (!userResult || userResult.length === 0) {
+    if (!userResult.rows || userResult.rows.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    const user = userResult[0];
+    const user = userResult.rows[0];
 
     // Get the thread to check ownership
     const threadResult: any = await db.execute(
       sql`SELECT * FROM threads WHERE thread_id = ${threadId} LIMIT 1`
     );
 
-    if (!threadResult || threadResult.length === 0) {
+    if (!threadResult.rows || threadResult.rows.length === 0) {
       return NextResponse.json(
         { error: 'Thread not found' },
         { status: 404 }
       );
     }
 
-    const thread = threadResult[0];
+    const thread = threadResult.rows[0];
 
     // Check if user is the author or an admin
-    const isAuthor = thread.created_by === user.id;
+    const isAuthor = thread.created_by === user.user_id;
     const isAdmin = user.role === 'admin';
 
     if (!isAuthor && !isAdmin) {

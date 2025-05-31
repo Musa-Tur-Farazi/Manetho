@@ -154,7 +154,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
                 >
                   <div className="py-1">
                     <Link
-                      href="/profile"
+                      href={user?.id ? `/profile/${user.id}` : '/profile'}
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               </Link>
               <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <Link
-                href="/profile"
+                href={user?.id ? `/profile/${user.id}` : '/profile'}
                 className="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <div className="flex items-center gap-2">

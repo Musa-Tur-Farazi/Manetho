@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
       console.warn('User sync failed:', syncResult.message);
     }
 
-    // Get user's database ID
+    // Get user's database ID using correct column names
     const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userDbId = userResult.rows[0].id;
+    const userDbId = userResult.rows[0].user_id;
 
     // Fetch sessions with message count
     const sessionsResult = await db.execute(sql`
@@ -111,9 +111,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's database ID
+    // Get user's database ID using correct column names
     const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userDbId = userResult.rows[0].id;
+    const userDbId = userResult.rows[0].user_id;
 
     // Create new session
     const sessionResult = await db.execute(sql`
