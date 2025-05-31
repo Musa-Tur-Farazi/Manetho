@@ -39,6 +39,10 @@ export default function SavedPostsPage() {
   const [sortBy, setSortBy] = useState("recent");
   const [filterCategory, setFilterCategory] = useState("all");
 
+  // Full post modal state
+  const [showFullPostModal, setShowFullPostModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<SavedPost | null>(null);
+
   useEffect(() => {
     fetchSavedPosts();
   }, []);
@@ -355,12 +359,26 @@ export default function SavedPostsPage() {
                             <Bookmark className="w-3 h-3 fill-current" />
                             <span>{formatSavedTime(post.savedAt)}</span>
                           </div>
-                          <button
-                            onClick={() => handleUnsavePost(post.threadId)}
-                            className="text-xs text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors px-3 py-1.5 hover:bg-red-500/10 rounded-full"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setSelectedPost(post);
+                                setShowFullPostModal(true);
+                              }}
+                              className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all duration-200"
+                              title="View full post"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleUnsavePost(post.threadId)}
+                              className="text-xs text-gray-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors px-3 py-1.5 hover:bg-red-500/10 rounded-full"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
 
                         {/* Post Header */}
@@ -405,69 +423,147 @@ export default function SavedPostsPage() {
                           {post.images && post.images.length > 0 && (
                             <div className="mt-4">
                               {post.images.length === 1 ? (
-                                <div className="flex justify-center">
-                                  <img
-                                    src={post.images[0]}
-                                    alt="Post image"
-                                    className="max-w-full h-auto max-h-96 rounded-xl border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                    onClick={() => window.open(post.images![0], '_blank')}
-                                    style={{
-                                      maxHeight: '24rem',
-                                      height: 'auto'
-                                    }}
-                                  />
+                                <div className="w-full max-w-lg mx-auto">
+                                  <div className="relative group overflow-hidden rounded-2xl bg-gray-100 dark:bg-slate-800/50">
+                                    {/* Consistent Instagram-style container */}
+                                    <div className="aspect-[4/5] w-full">
+                                      <img
+                                        src={post.images[0]}
+                                        alt="Post image"
+                                        className="w-full h-full transition-all duration-500 cursor-pointer group-hover:scale-110 group-hover:brightness-110"
+                                        onClick={() => window.open(post.images![0], '_blank')}
+                                        style={{
+                                          objectFit: 'cover',
+                                          objectPosition: 'center'
+                                        }}
+                                        onLoad={(e) => {
+                                          const img = e.target as HTMLImageElement;
+                                          const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                          // Smart object positioning based on aspect ratio
+                                          if (aspectRatio > 2) {
+                                            // Wide/panoramic images - focus on center
+                                            img.style.objectPosition = 'center';
+                                            img.style.objectFit = 'cover';
+                                          } else if (aspectRatio < 0.6) {
+                                            // Very tall/portrait images - focus on top
+                                            img.style.objectPosition = 'center 20%';
+                                            img.style.objectFit = 'cover';
+                                          } else if (aspectRatio < 0.8) {
+                                            // Portrait images - slight top focus
+                                            img.style.objectPosition = 'center 30%';
+                                            img.style.objectFit = 'cover';
+                                          } else if (aspectRatio > 1.8) {
+                                            // Landscape images - center focus
+                                            img.style.objectPosition = 'center';
+                                            img.style.objectFit = 'cover';
+                                          } else {
+                                            // Square-ish images - perfect center
+                                            img.style.objectPosition = 'center';
+                                            img.style.objectFit = 'cover';
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
                               ) : post.images.length === 2 ? (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
                                   {post.images.map((image, index) => (
-                                    <div key={index} className="relative overflow-hidden aspect-square">
-                                      <img
-                                        src={image}
-                                        alt={`Post image ${index + 1}`}
-                                        className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                        onClick={() => window.open(image, '_blank')}
-                                      />
+                                    <div key={index} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50">
+                                      <div className="aspect-square w-full">
+                                        <img
+                                          src={image}
+                                          alt={`Post image ${index + 1}`}
+                                          className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                          onClick={() => window.open(image, '_blank')}
+                                          onLoad={(e) => {
+                                            const img = e.target as HTMLImageElement;
+                                            const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                            // Optimize cropping for square containers
+                                            if (aspectRatio > 1.5) {
+                                              img.style.objectPosition = 'center';
+                                            } else if (aspectRatio < 0.7) {
+                                              img.style.objectPosition = 'center 25%';
+                                            } else {
+                                              img.style.objectPosition = 'center';
+                                            }
+                                          }}
+                                        />
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
                               ) : post.images.length === 3 ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="relative overflow-hidden aspect-square">
-                                    <img
-                                      src={post.images[0]}
-                                      alt="Post image 1"
-                                      className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                      onClick={() => window.open(post.images[0], '_blank')}
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-2">
-                                    {post.images.slice(1, 3).map((image, index) => (
-                                      <div key={index + 1} className="relative overflow-hidden aspect-square">
-                                        <img
-                                          src={image}
-                                          alt={`Post image ${index + 2}`}
-                                          className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                          onClick={() => window.open(image, '_blank')}
-                                        />
-                                      </div>
-                                    ))}
+                                <div className="max-w-lg mx-auto">
+                                  <div className="grid grid-cols-2 gap-2 h-80">
+                                    {/* Main image - larger */}
+                                    <div className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50 row-span-2">
+                                      <img
+                                        src={post.images[0]}
+                                        alt="Post image 1"
+                                        className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                        onClick={() => window.open(post.images[0], '_blank')}
+                                        onLoad={(e) => {
+                                          const img = e.target as HTMLImageElement;
+                                          const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                          if (aspectRatio > 1.5) {
+                                            img.style.objectPosition = 'center';
+                                          } else if (aspectRatio < 0.8) {
+                                            img.style.objectPosition = 'center 30%';
+                                          } else {
+                                            img.style.objectPosition = 'center';
+                                          }
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Secondary images - smaller */}
+                                    <div className="flex flex-col gap-2">
+                                      {post.images.slice(1, 3).map((image, index) => (
+                                        <div key={index + 1} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50 flex-1">
+                                          <img
+                                            src={image}
+                                            alt={`Post image ${index + 2}`}
+                                            className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                            onClick={() => window.open(image, '_blank')}
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
                                   {post.images.slice(0, 4).map((image, index) => (
-                                    <div key={index} className="relative group overflow-hidden aspect-square">
-                                      <img
-                                        src={image}
-                                        alt={`Post image ${index + 1}`}
-                                        className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                        onClick={() => window.open(image, '_blank')}
-                                      />
+                                    <div key={index} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50">
+                                      <div className="aspect-square w-full">
+                                        <img
+                                          src={image}
+                                          alt={`Post image ${index + 1}`}
+                                          className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                          onClick={() => window.open(image, '_blank')}
+                                          onLoad={(e) => {
+                                            const img = e.target as HTMLImageElement;
+                                            const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                            // Smart positioning for grid
+                                            if (aspectRatio > 1.8) {
+                                              img.style.objectPosition = 'center';
+                                            } else if (aspectRatio < 0.6) {
+                                              img.style.objectPosition = 'center 20%';
+                                            } else {
+                                              img.style.objectPosition = 'center';
+                                            }
+                                          }}
+                                        />
+                                      </div>
                                       {index === 3 && post.images!.length > 4 && (
-                                        <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                                          <div className="text-white text-lg font-bold">
-                                            +{post.images!.length - 4} more
-                                          </div>
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center text-white">
+                                          <div className="text-lg font-bold mb-1">+{post.images!.length - 4}</div>
+                                          <div className="text-xs opacity-80">more photos</div>
                                         </div>
                                       )}
                                     </div>
@@ -608,6 +704,193 @@ export default function SavedPostsPage() {
           </div>
         </div>
       </div>
+
+      {/* Full Post Modal */}
+      {showFullPostModal && selectedPost && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowFullPostModal(false);
+              setSelectedPost(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex">
+            {/* Left Column - Image */}
+            <div className="flex-1 bg-black flex items-center justify-center min-h-[600px]">
+              {selectedPost.images && selectedPost.images.length > 0 ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={selectedPost.images[0]}
+                    alt="Full size post image"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                  {selectedPost.images.length > 1 && (
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
+                      1 of {selectedPost.images.length}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-gray-500 dark:text-slate-400">
+                  <div className="text-center">
+                    <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>No image available</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Post Details */}
+            <div className="w-96 flex flex-col bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedPost.authorImage}
+                    alt={selectedPost.author}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+                      {selectedPost.author}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      {formatTime(selectedPost.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowFullPostModal(false);
+                    setSelectedPost(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  {/* Saved Badge */}
+                  <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-full w-fit">
+                    <Bookmark className="w-3 h-3 fill-current" />
+                    <span>{formatSavedTime(selectedPost.savedAt)}</span>
+                  </div>
+
+                  {/* Post Title and Content */}
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                      {selectedPost.title}
+                    </h2>
+                    <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
+                      {selectedPost.content}
+                    </p>
+                  </div>
+
+                  {/* Poll Display */}
+                  {selectedPost.postType === 'poll' && selectedPost.pollOptions && (
+                    <div className="p-4 bg-gray-100/50 dark:bg-slate-800/30 rounded-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BarChart3 className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm font-medium text-purple-400">Poll</span>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedPost.pollOptions.map((option, index) => {
+                          const votes = selectedPost.pollVotes || {};
+                          const optionVotes = votes[index] || 0;
+                          const totalVotes = selectedPost.pollOptions!.reduce((sum, _, optionIndex) => {
+                            return sum + (votes[optionIndex] || 0);
+                          }, 0);
+                          const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
+
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-700/30 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium bg-gray-200 dark:bg-slate-600 w-5 h-5 rounded-full flex items-center justify-center">
+                                  {String.fromCharCode(65 + index)}
+                                </span>
+                                <span className="text-sm">{option}</span>
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-slate-400">
+                                {percentage}% ({optionVotes})
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Images */}
+                  {selectedPost.images && selectedPost.images.length > 1 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                        All Images ({selectedPost.images.length})
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedPost.images.slice(1).map((image, index) => (
+                          <div key={index + 1} className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800">
+                            <img
+                              src={image}
+                              alt={`Post image ${index + 2}`}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                              onClick={() => window.open(image, '_blank')}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer - Stats and Actions */}
+              <div className="p-4 border-t border-gray-200 dark:border-slate-700">
+                {/* Stats */}
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-500 mb-3">
+                  <div className="flex items-center gap-4">
+                    {selectedPost.likeCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                        <span className="text-red-400 font-medium">{selectedPost.likeCount}</span>
+                      </span>
+                    )}
+                    {selectedPost.commentCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4" />
+                        <span>{selectedPost.commentCount} comments</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => router.push(`/community?post=${selectedPost.threadId}`)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all duration-300"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Join Discussion</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleUnsavePost(selectedPost.threadId)}
+                    className="p-2 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all duration-300"
+                    title="Remove from saved"
+                  >
+                    <Bookmark className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

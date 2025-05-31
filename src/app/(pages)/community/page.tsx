@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image, Smile, Bookmark, MoreHorizontal, Send, Bell, Users, BarChart3, Moon, Sun, Move, RotateCw, ExternalLink, ChevronDown, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Smile, Bookmark, Send, Bell, Users, BarChart3, Moon, Sun, Move, RotateCw, ExternalLink, ChevronDown, UserPlus, Settings, Archive, Lock, Pin, Search } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import ChatSidebar from "@/components/ChatSidebar";
 import MyStudyGroups from "@/components/MyStudyGroups";
@@ -84,6 +84,14 @@ export default function CommunityPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteLink, setInviteLink] = useState<string>('');
   const [generatingInvite, setGeneratingInvite] = useState(false);
+
+  // Full post modal state
+  const [showFullPostModal, setShowFullPostModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
+
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   // Sync user and fetch posts from API
   const fetchPosts = useCallback(async () => {
@@ -382,15 +390,21 @@ export default function CommunityPage() {
         for (let i = 0; i < selectedImages.length; i++) {
           setUploadingFileIndex(i + 1);
           const file = selectedImages[i];
-          console.log(`Uploading file ${i + 1}/${selectedImages.length}: ${file.name}`);
+          console.log(`Uploading file ${i + 1}/${selectedImages.length}: ${file.name}, size: ${file.size}, type: ${file.type}`);
 
-          const uploadedFile = await uploadFile(file);
+          try {
+            const uploadedFile = await uploadFile(file);
 
-          if (uploadedFile && uploadedFile.url) {
-            imageUrls.push(uploadedFile.url);
-            console.log(`File ${i + 1} uploaded successfully: ${uploadedFile.url}`);
-          } else {
-            throw new Error(`Failed to upload file: ${file.name}`);
+            if (uploadedFile && uploadedFile.url) {
+              imageUrls.push(uploadedFile.url);
+              console.log(`File ${i + 1} uploaded successfully: ${uploadedFile.url}`);
+            } else {
+              console.error(`Upload failed for file: ${file.name}`, { uploadedFile });
+              throw new Error(`Failed to upload file: ${file.name}. ${uploadError || 'Unknown error occurred.'}`);
+            }
+          } catch (uploadErr) {
+            console.error(`Error uploading file ${file.name}:`, uploadErr);
+            throw new Error(`Failed to upload file: ${file.name}. ${uploadErr instanceof Error ? uploadErr.message : 'Unknown error occurred.'}`);
           }
         }
 
@@ -552,8 +566,6 @@ export default function CommunityPage() {
 
   // Handle deleting a post
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
-
     try {
       const response = await fetch(`/api/community/threads/${postId}`, {
         method: 'DELETE',
@@ -564,6 +576,10 @@ export default function CommunityPage() {
       }
 
       setCommunityPosts(communityPosts.filter(post => post.id !== postId));
+
+      // Close modal and reset state
+      setShowDeleteModal(false);
+      setPostToDelete(null);
     } catch (error) {
       console.error('Error deleting post:', error);
       setError('Failed to delete post');
@@ -822,7 +838,6 @@ export default function CommunityPage() {
           {/* Left Navigation Sidebar */}
           <div className="hidden lg:block w-64 space-y-4 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
             <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/60 dark:to-slate-800/60 backdrop-blur rounded-2xl p-4 border border-gray-200/30 dark:border-slate-700/30 shadow-xl">
-              <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Community</h3>
               <nav className="space-y-2">
                 {/* Feed */}
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 text-white bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition-all duration-200">
@@ -940,7 +955,7 @@ export default function CommunityPage() {
                     className="flex items-center gap-2 px-3 py-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all duration-300 flex-1 justify-center text-sm"
                     onClick={() => setShowCreatePostModal(true)}
                   >
-                    <Image className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                     <span className="font-medium">Photo</span>
                   </button>
 
@@ -1014,12 +1029,24 @@ export default function CommunityPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700/30 rounded-lg transition-all duration-200">
-                            <MoreHorizontal className="w-4 h-4" />
+                          <button
+                            onClick={() => {
+                              setSelectedPost(post);
+                              setShowFullPostModal(true);
+                            }}
+                            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all duration-200"
+                            title="View full post"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
                           </button>
                           {user?.fullName === post.author && (
                             <button
-                              onClick={() => handleDeletePost(post.id)}
+                              onClick={() => {
+                                setPostToDelete(post.id);
+                                setShowDeleteModal(true);
+                              }}
                               className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200"
                               title="Delete post"
                             >
@@ -1038,73 +1065,204 @@ export default function CommunityPage() {
                           {post.content}
                         </p>
 
-                        {/* Post Images */}
+                        {/* Post Images - Instagram Style */}
                         {post.images && post.images.length > 0 && (
                           <div className="mt-4">
                             {post.images.length === 1 ? (
-                              <div className="flex justify-center">
-                                <img
-                                  src={post.images[0]}
-                                  alt="Post image"
-                                  className="max-w-full h-auto max-h-96 rounded-xl border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                  onClick={() => window.open(post.images![0], '_blank')}
-                                  style={{
-                                    maxHeight: '24rem',
-                                    height: 'auto'
-                                  }}
-                                />
+                              <div className="w-full max-w-lg mx-auto">
+                                <div className="relative group overflow-hidden rounded-2xl bg-gray-100 dark:bg-slate-800/50">
+                                  {/* Consistent Instagram-style container */}
+                                  <div className="aspect-[4/5] w-full">
+                                    <img
+                                      src={post.images[0]}
+                                      alt="Post image"
+                                      className="w-full h-full transition-all duration-500 cursor-pointer group-hover:scale-110 group-hover:brightness-110"
+                                      onClick={() => window.open(post.images![0], '_blank')}
+                                      onError={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        const originalSrc = img.src;
+                                        console.error('Image failed to load:', originalSrc);
+                                        console.error('Image error event:', e);
+
+                                        // Log additional debugging info
+                                        console.log('Image details:', {
+                                          originalSrc,
+                                          naturalWidth: img.naturalWidth,
+                                          naturalHeight: img.naturalHeight,
+                                          complete: img.complete,
+                                          currentSrc: img.currentSrc
+                                        });
+
+                                        // Try to show a fallback or placeholder
+                                        img.style.display = 'none';
+
+                                        // Check if placeholder already exists
+                                        if (!img.parentNode?.querySelector('.image-error-placeholder')) {
+                                          // Create a text placeholder
+                                          const placeholder = document.createElement('div');
+                                          placeholder.className = 'image-error-placeholder w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400 rounded-2xl cursor-pointer hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors';
+                                          placeholder.innerHTML = `
+                                            <div class="text-center p-4">
+                                              <div class="text-3xl mb-2">🖼️</div>
+                                              <div class="text-sm font-medium mb-1">Image failed to load</div>
+                                              <div class="text-xs opacity-75 mb-2">Click to open in new tab</div>
+                                              <div class="text-xs opacity-50 font-mono bg-black/10 dark:bg-white/10 px-2 py-1 rounded max-w-48 truncate">
+                                                ${originalSrc}
+                                              </div>
+                                            </div>
+                                          `;
+                                          placeholder.onclick = () => window.open(originalSrc, '_blank');
+                                          img.parentNode?.appendChild(placeholder);
+                                        }
+                                      }}
+                                      onLoad={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        console.log('Image loaded successfully:', img.src, {
+                                          naturalWidth: img.naturalWidth,
+                                          naturalHeight: img.naturalHeight
+                                        });
+                                      }}
+                                      style={{
+                                        objectFit: 'cover',
+                                        objectPosition: 'center'
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Instagram-style gradient overlay */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/0 via-transparent to-black/0 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl"></div>
+
+                                  {/* Corner enhancement indicator */}
+                                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                    <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             ) : post.images.length === 2 ? (
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto aspect-[2/1]">
                                 {post.images.map((image, index) => (
-                                  <div key={index} className="relative overflow-hidden aspect-square">
-                                    <img
-                                      src={image}
-                                      alt={`Post image ${index + 1}`}
-                                      className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                      onClick={() => window.open(image, '_blank')}
-                                    />
+                                  <div key={index} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50">
+                                    <div className="aspect-square w-full">
+                                      <img
+                                        src={image}
+                                        alt={`Post image ${index + 1}`}
+                                        className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                        onClick={() => window.open(image, '_blank')}
+                                        onLoad={(e) => {
+                                          const img = e.target as HTMLImageElement;
+                                          const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                          // Optimize cropping for square containers
+                                          if (aspectRatio > 1.5) {
+                                            img.style.objectPosition = 'center';
+                                          } else if (aspectRatio < 0.7) {
+                                            img.style.objectPosition = 'center 25%';
+                                          } else {
+                                            img.style.objectPosition = 'center';
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                      <div className="text-white/90 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        Expand
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
                             ) : post.images.length === 3 ? (
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="relative overflow-hidden aspect-square">
-                                  <img
-                                    src={post.images[0]}
-                                    alt="Post image 1"
-                                    className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                    onClick={() => window.open(post.images[0], '_blank')}
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  {post.images.slice(1, 3).map((image, index) => (
-                                    <div key={index + 1} className="relative overflow-hidden aspect-square">
-                                      <img
-                                        src={image}
-                                        alt={`Post image ${index + 2}`}
-                                        className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                        onClick={() => window.open(image, '_blank')}
-                                      />
+                              <div className="max-w-lg mx-auto">
+                                <div className="grid grid-cols-2 gap-2 h-80">
+                                  {/* Main image - larger */}
+                                  <div className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50 row-span-2">
+                                    <img
+                                      src={post.images[0]}
+                                      alt="Post image 1"
+                                      className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                      onClick={() => window.open(post.images[0], '_blank')}
+                                      onLoad={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                        if (aspectRatio > 1.2) {
+                                          img.style.objectPosition = 'center';
+                                        } else if (aspectRatio < 0.8) {
+                                          img.style.objectPosition = 'center 30%';
+                                        } else {
+                                          img.style.objectPosition = 'center';
+                                        }
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                      <div className="text-white/90 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        Main
+                                      </div>
                                     </div>
-                                  ))}
+                                  </div>
+
+                                  {/* Secondary images - smaller */}
+                                  <div className="flex flex-col gap-2">
+                                    {post.images.slice(1, 3).map((image, index) => (
+                                      <div key={index + 1} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50 flex-1">
+                                        <img
+                                          src={image}
+                                          alt={`Post image ${index + 2}`}
+                                          className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                          onClick={() => window.open(image, '_blank')}
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                          <div className="text-white/90 text-xs font-medium bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm">
+                                            {index + 2}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-2 gap-2 max-w-lg mx-auto">
                                 {post.images.slice(0, 4).map((image, index) => (
-                                  <div key={index} className="relative group overflow-hidden aspect-square">
-                                    <img
-                                      src={image}
-                                      alt={`Post image ${index + 1}`}
-                                      className="w-full h-full object-cover rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all duration-300 cursor-pointer"
-                                      onClick={() => window.open(image, '_blank')}
-                                    />
+                                  <div key={index} className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50">
+                                    <div className="aspect-square w-full">
+                                      <img
+                                        src={image}
+                                        alt={`Post image ${index + 1}`}
+                                        className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
+                                        onClick={() => window.open(image, '_blank')}
+                                        onLoad={(e) => {
+                                          const img = e.target as HTMLImageElement;
+                                          const aspectRatio = img.naturalWidth / img.naturalHeight;
+
+                                          // Smart positioning for grid
+                                          if (aspectRatio > 1.8) {
+                                            img.style.objectPosition = 'center';
+                                          } else if (aspectRatio < 0.6) {
+                                            img.style.objectPosition = 'center 20%';
+                                          } else {
+                                            img.style.objectPosition = 'center';
+                                          }
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Instagram-style hover overlay */}
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                      <div className="text-white/90 text-xs font-medium bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
+                                        View
+                                      </div>
+                                    </div>
+
+                                    {/* More photos indicator */}
                                     {index === 3 && post.images!.length > 4 && (
-                                      <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
-                                        <div className="text-white text-lg font-bold">
-                                          +{post.images!.length - 4} more
-                                        </div>
+                                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center text-white">
+                                        <div className="text-lg font-bold mb-1">+{post.images!.length - 4}</div>
+                                        <div className="text-xs opacity-80">more photos</div>
                                       </div>
                                     )}
                                   </div>
@@ -1485,7 +1643,7 @@ export default function CommunityPage() {
                     <div className="mt-4 p-4 bg-gray-100/30 dark:bg-slate-800/30 rounded-xl border border-gray-200/30 dark:border-slate-700/30">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                          <Image className="w-4 h-4" />
+                          <ImageIcon className="w-4 h-4" />
                           {imagePreviewUrls.length} photo{imagePreviewUrls.length > 1 ? 's' : ''}
                         </h4>
                         <span className="text-xs text-gray-500 dark:text-slate-400">
@@ -1768,7 +1926,7 @@ export default function CommunityPage() {
                         htmlFor="image-upload"
                         className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all duration-200 cursor-pointer"
                       >
-                        <Image className="w-5 h-5" />
+                        <ImageIcon className="w-5 h-5" />
                       </label>
                       <button className="p-2 text-gray-500 dark:text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-xl transition-all duration-200">
                         <Smile className="w-5 h-5" />
@@ -1970,6 +2128,245 @@ export default function CommunityPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Post Modal */}
+      {showFullPostModal && selectedPost && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowFullPostModal(false);
+              setSelectedPost(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex">
+            {/* Left Column - Image */}
+            <div className="flex-1 bg-black flex items-center justify-center min-h-[600px]">
+              {selectedPost.images && selectedPost.images.length > 0 ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={selectedPost.images[0]}
+                    alt="Full size post image"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                  {selectedPost.images.length > 1 && (
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
+                      1 of {selectedPost.images.length}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-gray-500 dark:text-slate-400">
+                  <div className="text-center">
+                    <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>No image available</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column - Post Details */}
+            <div className="w-96 flex flex-col bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={selectedPost.authorImage}
+                    alt={selectedPost.author}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+                      {selectedPost.author}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      {selectedPost.timeAgo}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowFullPostModal(false);
+                    setSelectedPost(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500 dark:text-slate-400" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-4">
+                  {/* Post Title and Content */}
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                      {selectedPost.title}
+                    </h2>
+                    <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
+                      {selectedPost.content}
+                    </p>
+                  </div>
+
+                  {/* Poll Display */}
+                  {selectedPost.postType === 'poll' && selectedPost.pollOptions && (
+                    <div className="p-4 bg-gray-100/50 dark:bg-slate-800/30 rounded-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BarChart3 className="w-4 h-4 text-purple-400" />
+                        <span className="text-sm font-medium text-purple-400">Poll</span>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedPost.pollOptions.map((option, index) => {
+                          const votes = selectedPost.pollVotes || {};
+                          const optionVotes = votes[index] || 0;
+                          const totalVotes = selectedPost.pollOptions!.reduce((sum, _, optionIndex) => {
+                            return sum + (votes[optionIndex] || 0);
+                          }, 0);
+                          const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
+
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 bg-white/50 dark:bg-slate-700/30 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium bg-gray-200 dark:bg-slate-600 w-5 h-5 rounded-full flex items-center justify-center">
+                                  {String.fromCharCode(65 + index)}
+                                </span>
+                                <span className="text-sm">{option}</span>
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-slate-400">
+                                {percentage}% ({optionVotes})
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Images */}
+                  {selectedPost.images && selectedPost.images.length > 1 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                        All Images ({selectedPost.images.length})
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedPost.images.slice(1).map((image, index) => (
+                          <div key={index + 1} className="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800">
+                            <img
+                              src={image}
+                              alt={`Post image ${index + 2}`}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                              onClick={() => window.open(image, '_blank')}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer - Stats and Actions */}
+              <div className="p-4 border-t border-gray-200 dark:border-slate-700">
+                {/* Stats */}
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-500 mb-3">
+                  <div className="flex items-center gap-4">
+                    {selectedPost.stars > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                        <span className="text-red-400 font-medium">{selectedPost.stars}</span>
+                      </span>
+                    )}
+                    {selectedPost.comments > 0 && (
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4" />
+                        <span>{selectedPost.comments} comments</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => handleStarPost(selectedPost.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${selectedPost.userStarred
+                      ? "bg-red-500/20 text-red-400"
+                      : "text-gray-600 dark:text-slate-400 hover:bg-red-500/10 hover:text-red-400"
+                      }`}
+                  >
+                    <Heart className={`w-4 h-4 ${selectedPost.userStarred ? "fill-current" : ""}`} />
+                    <span>{selectedPost.userStarred ? 'Loved' : 'Love'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSavePost(selectedPost.id)}
+                    className={`p-2 rounded-lg transition-all duration-300 ${savedPostIds.has(selectedPost.id)
+                      ? 'text-amber-500 bg-amber-500/10 hover:text-amber-400'
+                      : 'text-gray-600 dark:text-slate-400 hover:bg-amber-500/10 hover:text-amber-400'
+                      }`}
+                    title={savedPostIds.has(selectedPost.id) ? 'Remove from saved' : 'Save post'}
+                  >
+                    <Bookmark className={`w-4 h-4 ${savedPostIds.has(selectedPost.id) ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && postToDelete && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+              setPostToDelete(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-slate-700">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                Delete Post?
+              </h3>
+              <p className="text-gray-600 dark:text-slate-400">
+                Are you sure you want to delete this post? This action cannot be undone and the post will be permanently removed.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setPostToDelete(null);
+                }}
+                className="flex-1 px-4 py-3 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl font-medium transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeletePost(postToDelete)}
+                className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
             </div>
           </div>
         </div>

@@ -539,6 +539,17 @@ export default function ChatPage() {
     return <FileText className="w-4 h-4" />;
   };
 
+  // Function to handle profile navigation
+  const handleProfileClick = (userId?: string, userName?: string) => {
+    if (userId && userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+      router.push(`/profile/${userId}`);
+    } else {
+      // Show error or search for user by name
+      console.log('Invalid user ID or missing userId for:', userName);
+      // Could implement a user search page here in the future
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
@@ -645,17 +656,33 @@ export default function ChatPage() {
                       }`}
                   >
                     <div className="relative">
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.fullName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      {isUserOnline(user.lastActiveAt) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="hover:scale-110 transition-transform duration-300"
+                      >
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.fullName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        {isUserOnline(user.lastActiveAt) && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+                        )}
+                      </button>
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-medium text-gray-900 dark:text-white">{user.fullName}</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                      >
+                        {user.fullName}
+                      </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
                   </button>
@@ -675,17 +702,33 @@ export default function ChatPage() {
                       }`}
                   >
                     <div className="relative">
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.fullName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      {isUserOnline(user.lastActiveAt) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="hover:scale-110 transition-transform duration-300"
+                      >
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.fullName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        {isUserOnline(user.lastActiveAt) && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+                        )}
+                      </button>
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-medium text-gray-900 dark:text-white">{user.fullName}</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                      >
+                        {user.fullName}
+                      </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
                   </button>
@@ -705,17 +748,33 @@ export default function ChatPage() {
                       }`}
                   >
                     <div className="relative">
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.fullName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      {isUserOnline(user.lastActiveAt) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="hover:scale-110 transition-transform duration-300"
+                      >
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.fullName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        {isUserOnline(user.lastActiveAt) && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+                        )}
+                      </button>
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-medium text-gray-900 dark:text-white">{user.fullName}</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                      >
+                        {user.fullName}
+                      </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
                   </button>
@@ -735,17 +794,33 @@ export default function ChatPage() {
                       }`}
                   >
                     <div className="relative">
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.fullName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      {isUserOnline(user.lastActiveAt) && (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="hover:scale-110 transition-transform duration-300"
+                      >
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.fullName}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                        {isUserOnline(user.lastActiveAt) && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+                        )}
+                      </button>
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-medium text-gray-900 dark:text-white">{user.fullName}</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProfileClick(user.userId, user.fullName);
+                        }}
+                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                      >
+                        {user.fullName}
+                      </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
                   </button>
@@ -790,17 +865,27 @@ export default function ChatPage() {
               <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-gray-200/30 dark:border-slate-700/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <img
-                      src={selectedUser.avatarUrl}
-                      alt={selectedUser.fullName}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    {selectedUser.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                    )}
+                    <button
+                      onClick={() => handleProfileClick(selectedUser.userId, selectedUser.fullName)}
+                      className="hover:scale-110 transition-transform duration-300"
+                    >
+                      <img
+                        src={selectedUser.avatarUrl}
+                        alt={selectedUser.fullName}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      {selectedUser.isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+                      )}
+                    </button>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{selectedUser.fullName}</h3>
+                    <button
+                      onClick={() => handleProfileClick(selectedUser.userId, selectedUser.fullName)}
+                      className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left block"
+                    >
+                      {selectedUser.fullName}
+                    </button>
                     <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(selectedUser.lastActiveAt)}</p>
                   </div>
                 </div>
@@ -839,17 +924,25 @@ export default function ChatPage() {
                       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
                         <div className={`max-w-[70%] ${isOwn ? 'flex flex-col items-end' : 'flex items-start gap-3'}`}>
                           {!isOwn && (
-                            <img
-                              src={message.senderAvatar}
-                              alt={message.senderName}
-                              className="w-8 h-8 rounded-full object-cover mt-1 flex-shrink-0"
-                            />
+                            <button
+                              onClick={() => handleProfileClick(message.senderId, message.senderName)}
+                              className="hover:scale-110 transition-transform duration-300"
+                            >
+                              <img
+                                src={message.senderAvatar}
+                                alt={message.senderName}
+                                className="w-8 h-8 rounded-full object-cover mt-1 flex-shrink-0"
+                              />
+                            </button>
                           )}
                           <div className="flex flex-col">
                             {!isOwn && (
-                              <span className="text-xs text-gray-500 dark:text-slate-400 mb-1 ml-1">
+                              <button
+                                onClick={() => handleProfileClick(message.senderId, message.senderName)}
+                                className="text-xs text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mb-1 ml-1 text-left"
+                              >
                                 {message.senderName}
-                              </span>
+                              </button>
                             )}
                             <div className={`p-3 rounded-2xl ${isOwn
                               ? 'bg-blue-500 text-white rounded-br-md'
