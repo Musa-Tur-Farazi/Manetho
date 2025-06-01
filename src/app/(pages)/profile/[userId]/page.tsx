@@ -286,11 +286,11 @@ export default function UserProfilePage() {
 
         <div className="pt-16 pb-20">
           <div className="max-w-4xl mx-auto px-6">
-          <div className="animate-pulse">
+            <div className="animate-pulse">
               <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-6">
                   <div className="w-24 h-24 bg-gray-300 dark:bg-slate-700 rounded-full"></div>
-                <div className="flex-1">
+                  <div className="flex-1">
                     <div className="h-8 w-48 bg-gray-300 dark:bg-slate-700 rounded mb-2"></div>
                     <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mb-4"></div>
                     <div className="h-10 w-24 bg-gray-300 dark:bg-slate-700 rounded"></div>
@@ -353,10 +353,10 @@ export default function UserProfilePage() {
               <User className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">User not found</h2>
               <p className="text-gray-600 dark:text-slate-400 mb-6">The profile you're looking for doesn't exist.</p>
-          <Button onClick={() => router.back()} variant="outline">
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Go Back
-          </Button>
+              <Button onClick={() => router.back()} variant="outline">
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Go Back
+              </Button>
             </div>
           </div>
         </div>
@@ -372,8 +372,8 @@ export default function UserProfilePage() {
         <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
           {/* Left: Back Arrow + Logo */}
           <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
+            <button
+              onClick={() => router.back()}
               className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-all duration-200"
               title="Back"
             >
@@ -445,99 +445,99 @@ export default function UserProfilePage() {
                   <hr className="my-2 border-gray-200 dark:border-slate-700/50" />
                   <button className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                     Sign Out
-          </button>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        </div>
+      </div>
 
       {/* Main Content */}
       <div className="pt-16 pb-20">
         <div className="max-w-4xl mx-auto px-6">
-        {/* Profile Card */}
+          {/* Profile Card */}
           <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur-sm rounded-2xl border border-gray-200/30 dark:border-slate-700/30 overflow-hidden mb-6 shadow-xl">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row items-start gap-6">
-              {/* Avatar */}
-              <div className="relative">
-                <img
-                  src={userProfile.avatarUrl}
-                  alt={userProfile.fullName}
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row items-start gap-6">
+                {/* Avatar */}
+                <div className="relative">
+                  <img
+                    src={userProfile.avatarUrl}
+                    alt={userProfile.fullName}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg"
-                />
+                  />
                   <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800"></div>
-              </div>
+                </div>
 
-              {/* User Info */}
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
+                {/* User Info */}
+                <div className="flex-1">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userProfile.fullName}</h2>
                       <p className="text-gray-600 dark:text-slate-400 text-sm mb-2">{getLastActiveText(userProfile.lastActiveAt)}</p>
 
-                    {userProfile.grade && userProfile.school && (
+                      {userProfile.grade && userProfile.school && (
                         <div className="flex items-center gap-2 text-gray-700 dark:text-slate-300 text-sm mb-2">
-                        <GraduationCap className="w-4 h-4" />
-                        <span>{userProfile.grade} • {userProfile.school}</span>
-                      </div>
-                    )}
+                          <GraduationCap className="w-4 h-4" />
+                          <span>{userProfile.grade} • {userProfile.school}</span>
+                        </div>
+                      )}
 
-                    {userProfile.country && (
+                      {userProfile.country && (
                         <p className="text-gray-600 dark:text-slate-400 text-sm">📍 {userProfile.country}</p>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={handleFollow}
+                          disabled={followLoading}
+                          className={`${isFollowing
+                            ? 'bg-gray-600 hover:bg-gray-700 text-gray-200 dark:bg-slate-600 dark:hover:bg-slate-700 dark:text-slate-200'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                            } text-white border-0 shadow-lg transform hover:scale-105 transition-all duration-200`}
+                        >
+                          {followLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          ) : isFollowing ? (
+                            <UserMinus className="w-4 h-4 mr-2" />
+                          ) : (
+                            <UserPlus className="w-4 h-4 mr-2" />
+                          )}
+                          {isFollowing ? 'Unfollow' : 'Add Learning Partner'}
+                        </Button>
+
+                        <Button
+                          onClick={handleMessage}
+                          variant="outline"
+                          className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Message
+                        </Button>
+                      </div>
                     )}
                   </div>
 
-                  {/* Action Buttons */}
-                    {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={handleFollow}
-                        disabled={followLoading}
-                        className={`${isFollowing
-                            ? 'bg-gray-600 hover:bg-gray-700 text-gray-200 dark:bg-slate-600 dark:hover:bg-slate-700 dark:text-slate-200'
-                          : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
-                          } text-white border-0 shadow-lg transform hover:scale-105 transition-all duration-200`}
-                      >
-                        {followLoading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                        ) : isFollowing ? (
-                          <UserMinus className="w-4 h-4 mr-2" />
-                        ) : (
-                          <UserPlus className="w-4 h-4 mr-2" />
-                        )}
-                        {isFollowing ? 'Unfollow' : 'Add Learning Partner'}
-                      </Button>
-
-                      <Button
-                        onClick={handleMessage}
-                        variant="outline"
-                          className="border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message
-                      </Button>
+                  {/* Bio */}
+                  {userProfile.bio && (
+                    <div className="mt-4">
+                      <p className="text-gray-700 dark:text-slate-300 leading-relaxed">{userProfile.bio}</p>
                     </div>
                   )}
                 </div>
-
-                {/* Bio */}
-                {userProfile.bio && (
-                  <div className="mt-4">
-                      <p className="text-gray-700 dark:text-slate-300 leading-relaxed">{userProfile.bio}</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        {userStats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+          {/* Stats Grid */}
+          {userStats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
               <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followersCount}</p>
                 <p className="text-xs text-gray-600 dark:text-slate-400">Learning Partners</p>
               </div>
@@ -835,31 +835,31 @@ export default function UserProfilePage() {
                     </div>
                   </div>
                 )}
-          </div>
-        )}
-          </div>
-
-        {/* Additional Info */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
-                <p className="text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
-            </div>
-            {userProfile.lastActiveAt && (
-              <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
-                  <p className="text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
               </div>
             )}
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
+                <p className="text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
+              </div>
+              {userProfile.lastActiveAt && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
+                  <p className="text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
 
 // Post Card Component
 const PostCard = ({ post }: { post: UserPost }) => {

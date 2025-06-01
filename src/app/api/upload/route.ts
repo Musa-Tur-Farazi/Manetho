@@ -30,11 +30,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate file type (images only for this route)
-    if (!file.type.startsWith('image/')) {
+    // Define allowed file types
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedDocumentTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
+
+    const allAllowedTypes = [...allowedImageTypes, ...allowedDocumentTypes];
+
+    // Validate file type
+    if (!allAllowedTypes.includes(file.type)) {
       return NextResponse.json({
         success: false,
-        error: 'Only image files are allowed.'
+        error: 'File type not supported. Allowed types: Images (JPEG, PNG, GIF, WebP), PDF, Word documents, Text files, and ZIP archives.'
       }, { status: 400 });
     }
 

@@ -23,6 +23,10 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
+import { downloadFile } from '@/lib/utils';
+import VideoCall from '@/components/chat/VideoCall';
+import AudioCall from '@/components/chat/AudioCall';
+import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
 
 interface ChatUser {
   userId: string;
@@ -82,6 +86,41 @@ export default function ChatPage() {
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default 320px (w-80)
   const [isResizing, setIsResizing] = useState(false);
   const [lastActiveUpdate, setLastActiveUpdate] = useState(Date.now());
+
+  // Call states
+  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
+  const [isAudioCallActive, setIsAudioCallActive] = useState(false);
+  const [callChannelName, setCallChannelName] = useState<string>('');
+
+  // Incoming call notification states
+  const [incomingCall, setIncomingCall] = useState<{
+    callerId: string;
+    callerName: string;
+    callerAvatar: string;
+    channelName: string;
+    isVideoCall: boolean;
+    timestamp: number;
+  } | null>(null);
+  const [showIncomingCall, setShowIncomingCall] = useState(false);
+
+  // Agora configuration (you'll need to add these to your environment variables)
+  const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+
+  // Helper function to generate valid Agora channel names
+  const generateChannelName = (userId1: string, userId2: string): string => {
+    // Remove hyphens and take first 8 characters of each UUID
+    const user1Short = userId1.replace(/-/g, '').substring(0, 8);
+    const user2Short = userId2.replace(/-/g, '').substring(0, 8);
+
+    // Sort to ensure consistent channel name regardless of who starts the call
+    const sortedUsers = [user1Short, user2Short].sort();
+
+    // Create a short timestamp (last 6 digits)
+    const shortTimestamp = Date.now().toString().slice(-6);
+
+    // Format: user1_user2_timestamp (should be well under 64 bytes)
+    return `${sortedUsers[0]}_${sortedUsers[1]}_${shortTimestamp}`;
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -145,6 +184,41 @@ export default function ChatPage() {
 
     return () => clearInterval(refreshInterval);
   }, []);
+
+  // Poll for incoming calls
+  useEffect(() => {
+    if (!user || !currentUserInternalId) return;
+
+    const pollForIncomingCalls = async () => {
+      try {
+        console.log('🔄 Polling for incoming calls...');
+        const response = await fetch('/api/call-signal');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📥 Call signal response:', data);
+
+          if (data.hasCall && data.callSignal) {
+            console.log('📞 INCOMING CALL DETECTED:', data.callSignal);
+            console.log('🎯 Setting incoming call state...');
+            setIncomingCall(data.callSignal);
+            setShowIncomingCall(true);
+            console.log('✅ Incoming call notification should show now');
+          } else {
+            console.log('❌ No incoming calls');
+          }
+        } else {
+          console.log('❌ Call signal response not ok:', response.status);
+        }
+      } catch (error) {
+        console.error('Failed to check for incoming calls:', error);
+      }
+    };
+
+    // Poll every 2 seconds for incoming calls
+    const callInterval = setInterval(pollForIncomingCalls, 2000);
+
+    return () => clearInterval(callInterval);
+  }, [user, currentUserInternalId]);
 
   // Handle mouse events for resizing
   useEffect(() => {
@@ -450,9 +524,26 @@ export default function ChatPage() {
     if (!files) return;
 
     const newFiles: FileUpload[] = [];
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+
+      // Validate file type
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+        continue;
+      }
+
+      // Validate file size
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
         alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
         continue;
@@ -460,7 +551,7 @@ export default function ChatPage() {
 
       const fileUpload: FileUpload = { file };
 
-      // Create preview for images
+      // Create preview for images only
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -473,7 +564,17 @@ export default function ChatPage() {
       newFiles.push(fileUpload);
     }
 
-    setSelectedFiles(prev => [...prev, ...newFiles]);
+    if (newFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+
+      // Show success message for PDFs and documents
+      const pdfCount = newFiles.filter(f => f.file.type === 'application/pdf').length;
+      const docCount = newFiles.filter(f => f.file.type.includes('document') || f.file.type.includes('msword')).length;
+
+      if (pdfCount > 0 || docCount > 0) {
+        console.log(`📄 Successfully selected ${pdfCount} PDF(s) and ${docCount} document(s) for upload`);
+      }
+    }
 
     // Reset input
     if (fileInputRef.current) {
@@ -536,6 +637,41 @@ export default function ChatPage() {
     if (fileType.startsWith('image/')) {
       return <ImageIcon className="w-4 h-4" />;
     }
+    if (fileType === 'application/pdf') {
+      return (
+        <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+          <path d="M14 2v6h6" />
+          <path d="M8.597 11.085h.906v2.189h-.906v-2.189zm4.045 0h.906v2.189h-.906v-2.189z" />
+        </svg>
+      );
+    }
+    if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return (
+        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+          <path d="M14 2v6h6" />
+          <path d="M10.5 12.5L9.5 16l-1-3.5L7.5 16l-1-3.5h1.25l.5 2 .5-2h.5l.5 2 .5-2h1.25z" />
+        </svg>
+      );
+    }
+    if (fileType === 'text/plain') {
+      return (
+        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      );
+    }
+    if (fileType === 'application/zip' || fileType === 'application/x-zip-compressed') {
+      return (
+        <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+          <path d="M14 2v6h6" />
+          <path d="M10 11h1v1h-1v-1zm1 1h1v1h-1v-1zm-1 1h1v1h-1v-1zm1 1h1v1h-1v-1z" />
+        </svg>
+      );
+    }
     return <FileText className="w-4 h-4" />;
   };
 
@@ -550,6 +686,121 @@ export default function ChatPage() {
     }
   };
 
+  // Call functions
+  const startVideoCall = async () => {
+    if (!selectedUser || !currentUserInternalId) return;
+
+    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
+    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
+
+    // Send call signal to recipient
+    try {
+      await fetch('/api/call-signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: selectedUser.userId,
+          channelName,
+          isVideoCall: true,
+          action: 'initiate'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send call signal:', error);
+    }
+
+    setCallChannelName(channelName);
+    setIsVideoCallActive(true);
+  };
+
+  const startAudioCall = async () => {
+    if (!selectedUser || !currentUserInternalId) return;
+
+    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
+    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
+
+    // Send call signal to recipient
+    try {
+      await fetch('/api/call-signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: selectedUser.userId,
+          channelName,
+          isVideoCall: false,
+          action: 'initiate'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send call signal:', error);
+    }
+
+    setCallChannelName(channelName);
+    setIsAudioCallActive(true);
+  };
+
+  const endCall = async () => {
+    // Cancel call signal if active
+    if (selectedUser && (isVideoCallActive || isAudioCallActive)) {
+      try {
+        await fetch('/api/call-signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientId: selectedUser.userId,
+            channelName: callChannelName,
+            isVideoCall: isVideoCallActive,
+            action: 'cancel'
+          })
+        });
+      } catch (error) {
+        console.error('Failed to cancel call signal:', error);
+      }
+    }
+
+    setIsVideoCallActive(false);
+    setIsAudioCallActive(false);
+    setCallChannelName('');
+  };
+
+  // Incoming call handlers
+  const acceptIncomingCall = () => {
+    if (!incomingCall) return;
+
+    setCallChannelName(incomingCall.channelName);
+    if (incomingCall.isVideoCall) {
+      setIsVideoCallActive(true);
+    } else {
+      setIsAudioCallActive(true);
+    }
+
+    setShowIncomingCall(false);
+    setIncomingCall(null);
+  };
+
+  const declineIncomingCall = async () => {
+    if (!incomingCall) return;
+
+    // Send decline signal
+    try {
+      await fetch('/api/call-signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: incomingCall.callerId,
+          channelName: incomingCall.channelName,
+          isVideoCall: incomingCall.isVideoCall,
+          action: 'decline'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send decline signal:', error);
+    }
+
+    setShowIncomingCall(false);
+    setIncomingCall(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center">
@@ -558,6 +809,30 @@ export default function ChatPage() {
           <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mx-auto"></div>
         </div>
       </div>
+    );
+  }
+
+  // Render call components
+  if (isVideoCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
+    return (
+      <VideoCall
+        channelName={callChannelName}
+        userId={currentUserInternalId}
+        onCallEnd={endCall}
+        appId={AGORA_APP_ID}
+      />
+    );
+  }
+
+  if (isAudioCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
+    return (
+      <AudioCall
+        channelName={callChannelName}
+        userId={currentUserInternalId}
+        onCallEnd={endCall}
+        appId={AGORA_APP_ID}
+        recipientName={selectedUser.fullName}
+      />
     );
   }
 
@@ -649,10 +924,10 @@ export default function ChatPage() {
               <div className="p-3">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Search Results</h3>
                 {searchResults.map((user) => (
-                  <button
+                  <div
                     key={user.userId}
                     onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
                       }`}
                   >
                     <div className="relative">
@@ -685,7 +960,7 @@ export default function ChatPage() {
                       </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -695,10 +970,10 @@ export default function ChatPage() {
               <div className="p-3">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Recent</h3>
                 {recentChats.map((user) => (
-                  <button
+                  <div
                     key={user.userId}
                     onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
                       }`}
                   >
                     <div className="relative">
@@ -731,7 +1006,7 @@ export default function ChatPage() {
                       </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -741,10 +1016,10 @@ export default function ChatPage() {
               <div className="p-3">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Learning Partners</h3>
                 {followingUsers.map((user) => (
-                  <button
+                  <div
                     key={user.userId}
                     onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
                       }`}
                   >
                     <div className="relative">
@@ -777,7 +1052,7 @@ export default function ChatPage() {
                       </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -787,10 +1062,10 @@ export default function ChatPage() {
               <div className="p-3">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Unknown person message</h3>
                 {unknownUsers.map((user) => (
-                  <button
+                  <div
                     key={user.userId}
                     onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
                       }`}
                   >
                     <div className="relative">
@@ -823,7 +1098,7 @@ export default function ChatPage() {
                       </button>
                       <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -891,10 +1166,20 @@ export default function ChatPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                  <button
+                    onClick={startAudioCall}
+                    disabled={!AGORA_APP_ID}
+                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!AGORA_APP_ID ? 'Audio calls not configured' : 'Start audio call'}
+                  >
                     <Phone className="w-5 h-5" />
                   </button>
-                  <button className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                  <button
+                    onClick={startVideoCall}
+                    disabled={!AGORA_APP_ID}
+                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!AGORA_APP_ID ? 'Video calls not configured' : 'Start video call'}
+                  >
                     <Video className="w-5 h-5" />
                   </button>
                   <button className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
@@ -960,12 +1245,57 @@ export default function ChatPage() {
                                         onClick={() => window.open(message.fileUrl, '_blank')}
                                       />
                                     </div>
+                                  ) : message.fileType === 'application/pdf' ? (
+                                    <div className={`p-3 rounded-lg border-2 border-dashed ${isOwn
+                                      ? 'bg-red-500/10 border-red-300 dark:border-red-400'
+                                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                                      }`}>
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex-shrink-0">
+                                          {getFileIcon(message.fileType)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'
+                                            }`}>
+                                            📄 {message.fileName}
+                                          </p>
+                                          <p className={`text-xs ${isOwn ? 'text-red-100' : 'text-red-600 dark:text-red-400'
+                                            }`}>
+                                            PDF Document • {message.fileSize && formatFileSize(message.fileSize)}
+                                          </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <button
+                                            onClick={() => window.open(message.fileUrl, '_blank')}
+                                            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${isOwn
+                                              ? 'bg-white/20 text-white hover:bg-white/30'
+                                              : 'bg-red-500 text-white hover:bg-red-600'
+                                              }`}
+                                            title="Open in new tab"
+                                          >
+                                            Preview
+                                          </button>
+                                          <button
+                                            onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.pdf')}
+                                            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${isOwn
+                                              ? 'bg-white/20 text-white hover:bg-white/30'
+                                              : 'bg-gray-500 text-white hover:bg-gray-600'
+                                              }`}
+                                            title="Download file"
+                                          >
+                                            Download
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
                                   ) : (
-                                    <div className={`flex items-center gap-2 p-3 rounded-lg border ${isOwn
+                                    <div className={`flex items-center gap-3 p-3 rounded-lg border ${isOwn
                                       ? 'bg-blue-400/20 border-blue-300'
                                       : 'bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
                                       }`}>
-                                      {getFileIcon(message.fileType || '')}
+                                      <div className="flex-shrink-0">
+                                        {getFileIcon(message.fileType || '')}
+                                      </div>
                                       <div className="flex-1 min-w-0">
                                         <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'
                                           }`}>
@@ -979,11 +1309,12 @@ export default function ChatPage() {
                                         )}
                                       </div>
                                       <button
-                                        onClick={() => window.open(message.fileUrl, '_blank')}
-                                        className={`text-xs px-2 py-1 rounded ${isOwn
+                                        onClick={() => downloadFile(message.fileUrl!, message.fileName || 'document.pdf')}
+                                        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${isOwn
                                           ? 'bg-white/20 text-white hover:bg-white/30'
-                                          : 'bg-blue-500 text-white hover:bg-blue-600'
-                                          } transition-colors`}
+                                          : 'bg-gray-500 text-white hover:bg-gray-600'
+                                          }`}
+                                        title="Download file"
                                       >
                                         Download
                                       </button>
@@ -1027,21 +1358,24 @@ export default function ChatPage() {
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {selectedFiles.map((fileUpload, index) => (
-                      <div key={index} className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-2 flex items-center gap-2 max-w-xs">
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div key={index} className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           {fileUpload.preview ? (
-                            <img src={fileUpload.preview} alt="" className="w-8 h-8 rounded object-cover" />
+                            <img src={fileUpload.preview} alt="" className="w-10 h-10 rounded object-cover" />
                           ) : (
-                            <div className="w-8 h-8 bg-gray-200 dark:bg-slate-700 rounded flex items-center justify-center">
+                            <div className={`w-10 h-10 rounded flex items-center justify-center ${fileUpload.file.type === 'application/pdf'
+                              ? 'bg-red-100 dark:bg-red-900/30'
+                              : 'bg-gray-200 dark:bg-slate-700'
+                              }`}>
                               {getFileIcon(fileUpload.file.type)}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                              {fileUpload.file.name}
+                              {fileUpload.file.type === 'application/pdf' ? '📄 ' : ''}{fileUpload.file.name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-slate-400">
-                              {formatFileSize(fileUpload.file.size)}
+                              {fileUpload.file.type === 'application/pdf' && 'PDF • '}{formatFileSize(fileUpload.file.size)}
                             </p>
                           </div>
                         </div>
@@ -1120,6 +1454,17 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {/* Incoming Call Notification */}
+      {showIncomingCall && incomingCall && (
+        <IncomingCallNotification
+          callerName={incomingCall.callerName}
+          callerAvatar={incomingCall.callerAvatar}
+          isVideoCall={incomingCall.isVideoCall}
+          onAccept={acceptIncomingCall}
+          onDecline={declineIncomingCall}
+        />
+      )}
     </div>
   );
 } 
