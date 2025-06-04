@@ -31,6 +31,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
+      
       const offset = 80; // Account for fixed navbar
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
@@ -240,6 +241,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               <Link
                 href="/tools/doubt-solving"
                 className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setMobileMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
                   <Brain className="w-4 h-4" />

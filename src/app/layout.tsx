@@ -44,7 +44,7 @@ export default function RootLayout({
           colorWarning: '#f59e0b', // amber-500
         },
         layout: {
-          socialButtonsVariant: "iconAndText",
+          socialButtonsVariant: "iconButton",
           socialButtonsPlacement: "bottom",
           showOptionalFields: true,
           logoPlacement: "inside",
