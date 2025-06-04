@@ -1,89 +1,54 @@
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 
-export async function syncUserToDatabase(retries = 3): Promise<{ success: boolean; message: string; userId?: number }> {
+export async function syncUserToDatabase(retries = 3): Promise<{ success: boolean; message: string; userId?: string }> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       // Get the current user from Clerk
-      const user = await currentUser();
+      const { userId } = await auth();
 
-      if (!user) {
+      if (!userId) {
         return { success: false, message: 'No user found to sync' };
       }
 
       // Check if user already exists in database by clerkId
       const existingUserByClerkId = await db.execute(sql`
-        SELECT id FROM users WHERE "clerkId" = ${user.id} LIMIT 1
+        SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
       `);
 
       if (existingUserByClerkId.rows && existingUserByClerkId.rows.length > 0) {
         // User exists with this clerkId, update their info
         const result = await db.execute(sql`
           UPDATE users SET 
-            name = ${user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Anonymous'},
-            email = ${user.emailAddresses[0]?.emailAddress || ''},
-            "firstName" = ${user.firstName || ''},
-            "lastName" = ${user.lastName || ''},
-            "imageUrl" = ${user.imageUrl || ''},
-            "updatedAt" = NOW()
-          WHERE "clerkId" = ${user.id}
-          RETURNING id, "clerkId", name, email
+            "last_active_at" = NOW()
+          WHERE "clerk_id" = ${userId}
+          RETURNING "user_id", "clerk_id", "full_name", email
         `);
+
+        const updatedUser = result.rows[0];
+        console.log('User updated in database:', updatedUser);
 
         return {
           success: true,
-          message: 'User updated in database',
-          userId: existingUserByClerkId.rows[0].id as number
+          message: 'User updated successfully',
+          userId: updatedUser.user_id as string
         };
       }
 
-      // Check if user exists with same email but different clerkId
-      const userEmail = user.emailAddresses[0]?.emailAddress;
-      if (userEmail) {
-        const existingUserByEmail = await db.execute(sql`
-          SELECT id, "clerkId" FROM users WHERE email = ${userEmail} LIMIT 1
-        `);
-
-        if (existingUserByEmail.rows && existingUserByEmail.rows.length > 0) {
-          // Update the existing user with the new clerkId
-          const result = await db.execute(sql`
-            UPDATE users SET 
-              "clerkId" = ${user.id},
-              name = ${user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Anonymous'},
-              "firstName" = ${user.firstName || ''},
-              "lastName" = ${user.lastName || ''},
-              "imageUrl" = ${user.imageUrl || ''},
-              "updatedAt" = NOW()
-            WHERE email = ${userEmail}
-            RETURNING id, "clerkId", name, email
-          `);
-
-          return {
-            success: true,
-            message: 'User updated with new clerkId',
-            userId: existingUserByEmail.rows[0].id as number
-          };
-        }
-      }
-
-      // Create new user in database
+      // User doesn't exist, create new user with minimal required fields
       const result = await db.execute(sql`
-        INSERT INTO users ("clerkId", name, email, "firstName", "lastName", "imageUrl", username, role, "isActive", "createdAt", "updatedAt")
+        INSERT INTO users ("clerk_id", "full_name", email, role, "is_locked", "joined_at", "last_active_at")
         VALUES (
-          ${user.id},
-          ${user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Anonymous'},
-          ${user.emailAddresses[0]?.emailAddress || ''},
-          ${user.firstName || ''},
-          ${user.lastName || ''},
-          ${user.imageUrl || ''},
-          ${user.username || ''},
-          'user',
-          true,
+          ${userId},
+          'User',
+          '',
+          'student',
+          false,
           NOW(),
           NOW()
         )
-        RETURNING id, "clerkId", name, email
+        RETURNING "user_id", "clerk_id", "full_name", email
       `);
 
       const newUser = result.rows[0];
@@ -92,7 +57,7 @@ export async function syncUserToDatabase(retries = 3): Promise<{ success: boolea
       return {
         success: true,
         message: 'User created successfully',
-        userId: newUser.id as number
+        userId: newUser.user_id as string
       };
 
     } catch (error) {
@@ -113,14 +78,14 @@ export async function syncUserToDatabase(retries = 3): Promise<{ success: boolea
   return { success: false, message: 'Unexpected error during user sync' };
 }
 
-export async function ensureUserExists(clerkId: string): Promise<{ exists: boolean; userId?: number }> {
+export async function ensureUserExists(clerkId: string): Promise<{ exists: boolean; userId?: string }> {
   try {
     const existingUser = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${clerkId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${clerkId} LIMIT 1
     `);
 
     if (existingUser.rows && existingUser.rows.length > 0) {
-      return { exists: true, userId: existingUser.rows[0].id as number };
+      return { exists: true, userId: existingUser.rows[0].user_id as string };
     }
 
     return { exists: false };

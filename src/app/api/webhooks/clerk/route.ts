@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       try {
         // Check if user already exists by clerkId
         const existingUserByClerkId = await db.execute(sql`
-          SELECT id FROM users WHERE "clerkId" = ${clerkId} LIMIT 1
+          SELECT "user_id" FROM users WHERE "clerk_id" = ${clerkId} LIMIT 1
         `);
 
         if (existingUserByClerkId.rows && existingUserByClerkId.rows.length > 0) {
@@ -70,21 +70,19 @@ export async function POST(request: NextRequest) {
         const userEmail = email_addresses[0]?.email_address;
         if (userEmail) {
           const existingUserByEmail = await db.execute(sql`
-            SELECT id, "clerkId" FROM users WHERE email = ${userEmail} LIMIT 1
+            SELECT "user_id", "clerk_id" FROM users WHERE email = ${userEmail} LIMIT 1
           `);
 
           if (existingUserByEmail.rows && existingUserByEmail.rows.length > 0) {
             // Update the existing user with the new clerkId
             const result = await db.execute(sql`
               UPDATE users SET 
-                "clerkId" = ${clerkId},
-                name = ${`${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous'},
-                "firstName" = ${first_name || ''},
-                "lastName" = ${last_name || ''},
-                "imageUrl" = ${image_url || ''},
-                "updatedAt" = NOW()
+                "clerk_id" = ${clerkId},
+                "full_name" = ${`${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous'},
+                "avatar_url" = ${image_url || null},
+                "last_active_at" = NOW()
               WHERE email = ${userEmail}
-              RETURNING id, "clerkId", name, email
+              RETURNING "user_id", "clerk_id", "full_name", email
             `);
 
             const updatedUser = result.rows[0];
@@ -99,21 +97,18 @@ export async function POST(request: NextRequest) {
 
         // Create new user in database
         const result = await db.execute(sql`
-          INSERT INTO users ("clerkId", name, email, "firstName", "lastName", "imageUrl", username, role, "isActive", "createdAt", "updatedAt")
+          INSERT INTO users ("clerk_id", "full_name", email, role, "is_locked", "joined_at", "last_active_at", "avatar_url")
           VALUES (
             ${clerkId},
             ${`${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous'},
             ${userEmail || ''},
-            ${first_name || ''},
-            ${last_name || ''},
-            ${image_url || ''},
-            ${username || ''},
-            'user',
-            true,
+            'student',
+            false,
             NOW(),
-            NOW()
+            NOW(),
+            ${image_url || null}
           )
-          RETURNING id, "clerkId", name, email
+          RETURNING "user_id", "clerk_id", "full_name", email
         `);
 
         const newUser = result.rows[0];
@@ -138,13 +133,11 @@ export async function POST(request: NextRequest) {
         await db.execute(sql`
           UPDATE users 
           SET 
-            name = ${`${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous'},
+            "full_name" = ${`${first_name || ''} ${last_name || ''}`.trim() || 'Anonymous'},
             email = ${email_addresses[0]?.email_address || ''},
-            "firstName" = ${first_name || ''},
-            "lastName" = ${last_name || ''},
-            "imageUrl" = ${image_url || ''},
-            "updatedAt" = NOW()
-          WHERE "clerkId" = ${clerkId}
+            "avatar_url" = ${image_url || null},
+            "last_active_at" = NOW()
+          WHERE "clerk_id" = ${clerkId}
         `);
 
         console.log('User updated via webhook:', clerkId);
@@ -162,7 +155,7 @@ export async function POST(request: NextRequest) {
       try {
         // Delete user from database
         await db.execute(sql`
-          DELETE FROM users WHERE "clerkId" = ${clerkId}
+          DELETE FROM users WHERE "clerk_id" = ${clerkId}
         `);
 
         console.log('User deleted via webhook:', clerkId);

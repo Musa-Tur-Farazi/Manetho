@@ -10,7 +10,8 @@ import {
   pgEnum,
   jsonb,
   date,
-  bigint
+  bigint,
+  unique
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -225,6 +226,10 @@ export const threadsTable = pgTable("threads", {
   viewCount: integer("view_count").default(0).notNull(),
   likeCount: integer("like_count").default(0).notNull(),
   commentCount: integer("comment_count").default(0).notNull(),
+  postType: varchar("post_type", { length: 20 }).default('post').notNull(),
+  images: jsonb("images"),
+  pollOptions: jsonb("poll_options"),
+  pollVotes: jsonb("poll_votes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -244,8 +249,66 @@ export const directMessagesTable = pgTable("direct_messages", {
   messageId: uuid("message_id").primaryKey().defaultRandom(),
   senderId: uuid("sender_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
   recipientId: uuid("recipient_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
-  content: text("content").notNull(),
+  content: text("content"),
+  fileUrl: text("file_url"),
+  fileName: varchar("file_name", { length: 255 }),
+  fileType: varchar("file_type", { length: 100 }),
+  fileSize: bigint("file_size", { mode: 'number' }),
   isRead: boolean("is_read").default(false).notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const savedPostsTable = pgTable("saved_posts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  threadId: uuid("thread_id").references(() => threadsTable.threadId, { onDelete: 'cascade' }).notNull(),
+  savedAt: timestamp("saved_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserThread: unique().on(table.userId, table.threadId), // Prevent duplicate saves
+}));
+
+// Social Connection Tables
+export const userFollowsTable = pgTable("user_follows", {
+  followId: uuid("follow_id").primaryKey().defaultRandom(),
+  followerId: uuid("follower_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  followingId: uuid("following_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Study Group Tables
+export const studyGroupsTable = pgTable("study_groups", {
+  groupId: uuid("group_id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
+  createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  meetingType: varchar("meeting_type", { length: 20 }).notNull(), // online, in-person, hybrid
+  location: text("location"),
+  meetingLink: text("meeting_link"),
+  nextMeeting: timestamp("next_meeting"),
+  meetingTime: varchar("meeting_time", { length: 50 }),
+  maxParticipants: integer("max_participants").default(10).notNull(),
+  currentParticipants: integer("current_participants").default(1).notNull(),
+  tags: jsonb("tags"), // Array of tags
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const studyGroupMembersTable = pgTable("study_group_members", {
+  membershipId: uuid("membership_id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  role: varchar("role", { length: 20 }).default('member').notNull(), // member, organizer
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const studyGroupMessagesTable = pgTable("study_group_messages", {
+  messageId: uuid("message_id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+  senderId: uuid("sender_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
@@ -559,6 +622,11 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
   comments: many(commentsTable),
   sentMessages: many(directMessagesTable, { relationName: 'sentMessages' }),
   receivedMessages: many(directMessagesTable, { relationName: 'receivedMessages' }),
+  followers: many(userFollowsTable, { relationName: 'following' }),
+  following: many(userFollowsTable, { relationName: 'follower' }),
+  createdStudyGroups: many(studyGroupsTable),
+  studyGroupMemberships: many(studyGroupMembersTable),
+  studyGroupMessages: many(studyGroupMessagesTable),
   usageMetrics: one(usageMetricsTable),
   learningProgress: many(learningProgressTable),
   studyStreak: one(studyStreaksTable),
@@ -579,6 +647,7 @@ export const subjectsRelations = relations(subjectsTable, ({ many }) => ({
   practiceTests: many(practiceTestsTable),
   threads: many(threadsTable),
   chats: many(chatsTable),
+  studyGroups: many(studyGroupsTable),
   learningProgress: many(learningProgressTable),
   studySessions: many(studySessionsTable),
   doubtSolvingSessions: many(doubtSolvingSessionsTable),
@@ -711,5 +780,55 @@ export const doubtSolvingFilesRelations = relations(doubtSolvingFilesTable, ({ o
   message: one(doubtSolvingMessagesTable, {
     fields: [doubtSolvingFilesTable.messageId],
     references: [doubtSolvingMessagesTable.messageId],
+  }),
+}));
+
+// Social Connection Relations
+export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
+  follower: one(usersTable, {
+    fields: [userFollowsTable.followerId],
+    references: [usersTable.userId],
+    relationName: 'follower',
+  }),
+  following: one(usersTable, {
+    fields: [userFollowsTable.followingId],
+    references: [usersTable.userId],
+    relationName: 'following',
+  }),
+}));
+
+// Study Group Relations
+export const studyGroupsRelations = relations(studyGroupsTable, ({ one, many }) => ({
+  creator: one(usersTable, {
+    fields: [studyGroupsTable.createdBy],
+    references: [usersTable.userId],
+  }),
+  subject: one(subjectsTable, {
+    fields: [studyGroupsTable.subjectId],
+    references: [subjectsTable.subjectId],
+  }),
+  members: many(studyGroupMembersTable),
+  messages: many(studyGroupMessagesTable),
+}));
+
+export const studyGroupMembersRelations = relations(studyGroupMembersTable, ({ one }) => ({
+  group: one(studyGroupsTable, {
+    fields: [studyGroupMembersTable.groupId],
+    references: [studyGroupsTable.groupId],
+  }),
+  user: one(usersTable, {
+    fields: [studyGroupMembersTable.userId],
+    references: [usersTable.userId],
+  }),
+}));
+
+export const studyGroupMessagesRelations = relations(studyGroupMessagesTable, ({ one }) => ({
+  group: one(studyGroupsTable, {
+    fields: [studyGroupMessagesTable.groupId],
+    references: [studyGroupsTable.groupId],
+  }),
+  sender: one(usersTable, {
+    fields: [studyGroupMessagesTable.senderId],
+    references: [usersTable.userId],
   }),
 }));

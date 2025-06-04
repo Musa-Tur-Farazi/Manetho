@@ -26,9 +26,9 @@ export async function GET(
       console.warn('User sync failed:', syncResult.message);
     }
 
-    // Get user's database ID
+    // Get user's database ID using correct column names
     const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -38,7 +38,7 @@ export async function GET(
       );
     }
 
-    const userDbId = userResult.rows[0].id;
+    const userDbId = userResult.rows[0].user_id;
 
     // Fetch session details
     const sessionResult = await db.execute(sql`
@@ -116,9 +116,9 @@ export async function DELETE(
       );
     }
 
-    // Get user's database ID
+    // Get user's database ID using correct column names
     const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -128,7 +128,7 @@ export async function DELETE(
       );
     }
 
-    const userDbId = userResult.rows[0].id;
+    const userDbId = userResult.rows[0].user_id;
 
     // Verify session belongs to user before deletion
     const sessionResult = await db.execute(sql`
@@ -192,9 +192,9 @@ export async function PATCH(
       );
     }
 
-    // Get user's database ID
+    // Get user's database ID using correct column names
     const userResult = await db.execute(sql`
-      SELECT id FROM users WHERE "clerkId" = ${userId} LIMIT 1
+      SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
     if (!userResult.rows || userResult.rows.length === 0) {
@@ -204,7 +204,7 @@ export async function PATCH(
       );
     }
 
-    const userDbId = userResult.rows[0].id;
+    const userDbId = userResult.rows[0].user_id;
 
     // Verify session belongs to user
     const sessionResult = await db.execute(sql`

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Image, Loader2, Plus, Bot, User, Trash2, Copy, Check, ArrowLeft, ExternalLink, Stars, Settings, LogOut, InfoIcon, FileText, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import FileUpload from "@/components/ui/FileUpload";
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 
@@ -16,6 +17,7 @@ interface ChatMessage {
     type: string;
     name: string;
     url: string;
+    size: number;
   };
 }
 
@@ -30,7 +32,15 @@ interface ChatSession {
 export default function DoubtSolvingPage() {
   // Current input state
   const [query, setQuery] = useState("");
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+    downloadUrl: string;
+    previewUrl?: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Chat management
@@ -163,7 +173,8 @@ export default function DoubtSolvingPage() {
           attachment: msg.attachmentUrl ? {
             type: msg.attachmentType,
             name: msg.attachmentName,
-            url: msg.attachmentUrl
+            url: msg.attachmentUrl,
+            size: msg.attachmentSize
           } : undefined
         }));
         setCurrentChat(dbMessages);
@@ -1236,28 +1247,6 @@ export default function DoubtSolvingPage() {
     ensureLatexRendered();
   }, []);
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const result = reader.result as string;
-          // Strip the data:*/*;base64, prefix to reduce payload size.
-          const base64 = result.split(",")[1] ?? "";
-          resolve(base64);
-        } catch (error) {
-          console.error("Error processing file:", error);
-          reject(error);
-        }
-      };
-      reader.onerror = (event) => {
-        console.error("FileReader error:", event);
-        reject(new Error("Failed to read file"));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -1280,12 +1269,12 @@ export default function DoubtSolvingPage() {
 
     // Store the current query and attachment before clearing them
     const currentQuery = query;
-    const currentAttachment = attachment;
+    const currentAttachment = uploadedFile;
     const currentAttachmentPreview = attachmentPreview;
 
     // Clear the input and attachment immediately
     setQuery("");
-    setAttachment(null);
+    setUploadedFile(null);
     setAttachmentPreview(null);
 
     // Add user message to chat
@@ -1297,7 +1286,8 @@ export default function DoubtSolvingPage() {
       attachment: currentAttachment ? {
         type: currentAttachment.type,
         name: currentAttachment.name,
-        url: currentAttachmentPreview === 'pdf' ? '' : (currentAttachmentPreview || '')
+        url: currentAttachmentPreview === 'pdf' ? '' : (currentAttachmentPreview || ''),
+        size: currentAttachment.size
       } : undefined
     };
 
@@ -1328,41 +1318,19 @@ export default function DoubtSolvingPage() {
     setTimeout(() => scrollToBottom(), 100);
 
     try {
-      let filePayload: { name: string; type: string; data: string } | undefined;
+      let filePayload: { name: string; type: string; url: string } | undefined;
 
       if (currentAttachment) {
-        try {
-          const base64 = await fileToBase64(currentAttachment);
-          filePayload = {
-            name: currentAttachment.name,
-            type: currentAttachment.type,
-            data: base64
-          };
-        } catch (fileError) {
-          console.error("File conversion error:", fileError);
-
-          // Add error message to chat
-          const errorMessage: ChatMessage = {
-            role: "system",
-            content: "There was a problem processing your file. Please try a different file or format.",
-            timestamp: new Date(),
-            id: Date.now().toString()
-          };
-
-          // Replace thinking message with error message
-          const errorChat = [...updatedChat, errorMessage];
-          setCurrentChat(errorChat);
-          if (currentSessionId) {
-            updateSessionMessages(currentSessionId, errorChat);
-          }
-
-          setIsSubmitting(false);
-          return;
-        }
+        filePayload = {
+          name: currentAttachment.name,
+          type: currentAttachment.type,
+          url: currentAttachment.url
+        };
       }
 
-      // Check file size before sending to API
-      if (filePayload && filePayload.data.length > 10 * 1024 * 1024) {
+      // Check file size before sending to API (this is now handled by upload component)
+      // But we'll keep this as additional validation
+      if (filePayload && currentAttachment && currentAttachment.size > 10 * 1024 * 1024) {
         const sizeErrorMessage: ChatMessage = {
           role: "system",
           content: "File is too large. Please use a file smaller than 10MB.",
@@ -1452,41 +1420,20 @@ export default function DoubtSolvingPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-
-      // Validate file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File is too large. Please select a file smaller than 10MB.");
-        e.target.value = '';
-        return;
-      }
-
-      setAttachment(file);
-
-      // Create preview for images
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setAttachmentPreview(event.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf') {
-        // For PDFs, we'll show a PDF icon
-        setAttachmentPreview('pdf');
-      }
-    }
+  const handleFileUploaded = (file: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    url: string;
+    downloadUrl: string;
+    previewUrl?: string;
+  }) => {
+    setUploadedFile(file);
   };
 
-  const removeAttachment = () => {
-    setAttachment(null);
-    setAttachmentPreview(null);
-    // Reset file input
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+  const handleFileRemoved = () => {
+    setUploadedFile(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1607,7 +1554,7 @@ export default function DoubtSolvingPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`sidebar-container h-full overflow-y-auto bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col ${!showSidebar ? 'sidebar-hidden' : ''}`}
+          className={`sidebar-container h-full overflow-y-auto scrollbar-enhanced bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col ${!showSidebar ? 'sidebar-hidden' : ''}`}
           style={{ width: showSidebar ? `${sidebarWidth}px` : '260px' }}
         >
           {/* Resize Handle */}
@@ -1630,7 +1577,7 @@ export default function DoubtSolvingPage() {
           </div>
 
           {/* Chat History */}
-          <div className="flex-1 overflow-y-auto px-2 pb-2">
+          <div className="flex-1 overflow-y-auto px-2 pb-2 scrollbar-thin">
             <div className="flex flex-col gap-1 text-sm">
               {isLoadingSessions ? (
                 <div className="flex items-center justify-center py-8">
@@ -1853,79 +1800,108 @@ export default function DoubtSolvingPage() {
                 onSubmit={handleSubmit}
                 className="relative"
               >
-                <div className="relative shadow-lg">
-                  {/* File Preview - Small Thumbnail */}
-                  {attachmentPreview && (
-                    <div className="mb-3 p-2 bg-gray-700 rounded-t-xl">
-                      <div className="flex items-center gap-3 relative">
-                        {attachmentPreview === 'pdf' ? (
-                          <div className="flex items-center gap-2 p-2 bg-red-100 dark:bg-red-900/20 rounded-lg flex-1">
-                            <FileText className="w-5 h-5 text-red-600 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{attachment?.name}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">PDF Document</p>
-                            </div>
+                {/* Show attachment if it exists */}
+                {uploadedFile && (
+                  <div className="attachment-preview p-3 border-b border-gray-600">
+                    <div className="flex items-center justify-between">
+                      {uploadedFile.type === 'application/pdf' ? (
+                        <div className="flex items-center gap-3 flex-1">
+                          <FileText className="w-5 h-5 text-red-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{uploadedFile.name}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">PDF Document</p>
                           </div>
-                        ) : (
-                          <div className="flex items-center gap-3 flex-1">
+                        </div>
+                      ) : uploadedFile.type.startsWith('image/') ? (
+                        <div className="flex items-center gap-3 flex-1">
+                          {uploadedFile.previewUrl && (
                             <img
-                              src={attachmentPreview}
+                              src={uploadedFile.previewUrl}
                               alt="Preview"
                               className="w-12 h-12 object-cover rounded-lg border border-gray-600 flex-shrink-0"
                             />
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-white text-sm truncate">{attachment?.name}</p>
-                              <p className="text-xs text-gray-400">Image</p>
-                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-white text-sm truncate">{uploadedFile.name}</p>
+                            <p className="text-xs text-gray-400">Image</p>
                           </div>
-                        )}
-                        <button
-                          onClick={removeAttachment}
-                          className="p-1 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0"
-                          title="Remove attachment"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 flex-1">
+                          <FileText className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{uploadedFile.name}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Document</p>
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={handleFileRemoved}
+                        className="p-1 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors flex-shrink-0"
+                        title="Remove attachment"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <textarea
-                    ref={textareaRef}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Message AI Doubt Solver..."
-                    className={`resize-none w-full input-textarea focus:ring-0 focus:outline-none border-0 placeholder:text-gray-400 text-white py-3 pl-4 pr-24 ${attachmentPreview ? 'rounded-b-xl' : 'rounded-xl'}`}
-                    rows={attachmentPreview ? 4 : 3}
-                  />
+                <textarea
+                  ref={textareaRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Message AI Doubt Solver..."
+                  className={`resize-none w-full input-textarea focus:ring-0 focus:outline-none border-0 placeholder:text-gray-400 text-white py-3 pl-4 pr-24 ${uploadedFile ? 'rounded-b-xl' : 'rounded-xl'}`}
+                  rows={uploadedFile ? 4 : 3}
+                />
 
-                  <div className="absolute right-3 bottom-2.5 flex items-center space-x-2">
+                <div className="absolute right-3 bottom-2.5 flex items-center space-x-2">
+                  {!uploadedFile && (
                     <label className="p-1 rounded-md cursor-pointer text-gray-400 hover:text-gray-200">
                       <Image className="w-5 h-5" />
                       <input
                         type="file"
                         className="hidden"
-                        accept="image/*,.pdf"
-                        capture="environment"
-                        onChange={handleFileChange}
+                        accept="image/*,.pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Create a simple file upload using our existing API
+                            const formData = new FormData();
+                            formData.append('file', file);
+
+                            fetch('/api/upload', {
+                              method: 'POST',
+                              body: formData,
+                            })
+                              .then(response => response.json())
+                              .then(result => {
+                                if (result.success) {
+                                  handleFileUploaded(result.file);
+                                }
+                              })
+                              .catch(error => {
+                                console.error('Upload error:', error);
+                                alert('Failed to upload file');
+                              });
+                          }
+                        }}
                       />
                     </label>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="send-button"
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="send-button"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-
-
               </form>
             </div>
           </div>

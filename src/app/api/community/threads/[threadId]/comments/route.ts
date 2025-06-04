@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 
 // GET - Fetch comments for a specific thread
 export async function GET(
@@ -20,12 +20,10 @@ export async function GET(
         c.like_count,
         c.parent_comment_id,
         c.sender_id,
-        u.name,
-        u."firstName",
-        u."lastName", 
-        u."imageUrl"
+        u.full_name,
+        u.avatar_url
       FROM comments c
-      LEFT JOIN users u ON c.sender_id = u.id
+      LEFT JOIN users u ON c.sender_id = u.user_id
       WHERE c.thread_id = ${threadId}
       ORDER BY c.timestamp DESC
     `);
@@ -34,14 +32,14 @@ export async function GET(
 
     // Format the response to match frontend expectations
     const formattedComments = comments.map((comment: any) => {
-      const authorName = comment.name || `${comment.firstName || ''} ${comment.lastName || ''}`.trim() || 'Anonymous';
+      const authorName = comment.full_name || 'Anonymous';
 
       return {
         id: comment.comment_id,
         author: authorName,
-        authorImage: comment.imageUrl || 'https://i.pravatar.cc/150?img=12',
+        authorImage: comment.avatar_url || 'https://i.pravatar.cc/150?img=12',
         content: comment.content,
-        timeAgo: getTimeAgo(new Date(comment.timestamp)),
+        timeAgo: getTimeAgo(comment.timestamp),
         likes: comment.like_count || 0,
         parentCommentId: comment.parent_comment_id,
       };
@@ -88,9 +86,9 @@ export async function POST(
 
     // First, check if user exists in database
     let userResult = await db.execute(sql`
-      SELECT id, name, "firstName", "lastName", "imageUrl"
+      SELECT "user_id", "full_name", "avatar_url"
       FROM users 
-      WHERE "clerkId" = ${userId}
+      WHERE "clerk_id" = ${userId}
       LIMIT 1
     `);
 
@@ -99,43 +97,24 @@ export async function POST(
       console.log('User not found, creating user:', userId);
 
       try {
-        const clerkUser = await currentUser();
+        // Use our sync utility instead of manual user creation
+        const { syncUserToDatabase } = await import('@/lib/user-sync');
+        const syncResult = await syncUserToDatabase();
 
-        if (!clerkUser) {
+        if (!syncResult.success) {
           return NextResponse.json(
-            { error: 'User not authenticated properly' },
-            { status: 401 }
-          );
-        }
-
-        // Create user in database
-        const createUserResult = await db.execute(sql`
-          INSERT INTO users ("clerkId", name, email, "firstName", "lastName", "imageUrl", username, role, "isActive", "createdAt", "updatedAt")
-          VALUES (
-            ${userId},
-            ${clerkUser.fullName || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'Anonymous'},
-            ${clerkUser.emailAddresses[0]?.emailAddress || ''},
-            ${clerkUser.firstName || ''},
-            ${clerkUser.lastName || ''},
-            ${clerkUser.imageUrl || ''},
-            ${clerkUser.username || ''},
-            'user',
-            true,
-            NOW(),
-            NOW()
-          )
-          RETURNING id, name, "firstName", "lastName", "imageUrl"
-        `);
-
-        if (createUserResult.rows && createUserResult.rows.length > 0) {
-          userResult = createUserResult;
-          console.log('User created successfully for comment:', createUserResult.rows[0]);
-        } else {
-          return NextResponse.json(
-            { error: 'Failed to create user in database' },
+            { error: 'Failed to sync user to database' },
             { status: 500 }
           );
         }
+
+        // Re-fetch the user after sync
+        userResult = await db.execute(sql`
+          SELECT "user_id", "full_name", "avatar_url"
+          FROM users 
+          WHERE "clerk_id" = ${userId}
+          LIMIT 1
+        `);
       } catch (createError) {
         console.error('Error creating user for comment:', createError);
         return NextResponse.json(
@@ -150,7 +129,7 @@ export async function POST(
     // Create comment
     const commentResult = await db.execute(sql`
       INSERT INTO comments (thread_id, content, sender_id, parent_comment_id)
-      VALUES (${threadId}, ${content}, ${user.id}, ${parentCommentId || null})
+      VALUES (${threadId}, ${content}, ${user.user_id}, ${parentCommentId || null})
       RETURNING comment_id, content, timestamp, parent_comment_id, sender_id
     `);
 
@@ -176,12 +155,12 @@ export async function POST(
     }
 
     // Format the response
-    const authorName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Anonymous';
+    const authorName = user.full_name || 'Anonymous';
 
     const formattedComment = {
       id: commentData.comment_id,
       author: authorName,
-      authorImage: user.imageUrl || 'https://i.pravatar.cc/150?img=12',
+      authorImage: user.avatar_url || 'https://i.pravatar.cc/150?img=12',
       content: commentData.content,
       timeAgo: 'Just now',
       likes: 0,
@@ -202,20 +181,55 @@ export async function POST(
 }
 
 // Helper function to calculate time ago
-function getTimeAgo(date: Date): string {
+function getTimeAgo(date: Date | string): string {
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  // Handle string input from database
+  let targetDate: Date;
+  if (typeof date === 'string') {
+    // If the date string doesn't end with 'Z', treat it as local time
+    if (!date.endsWith('Z') && !date.includes('+')) {
+      targetDate = new Date(date + 'Z'); // Treat as UTC
+    } else {
+      targetDate = new Date(date);
+    }
+  } else {
+    targetDate = date;
+  }
+
+  // Ensure we have valid dates
+  if (!(targetDate instanceof Date) || isNaN(targetDate.getTime())) {
+    return 'Just now';
+  }
+
+  // Simple direct comparison without timezone conversion
+  const diffInMs = now.getTime() - targetDate.getTime();
+  const diffInSeconds = Math.floor(diffInMs / 1000);
+
+  // Handle future dates (in case of timezone issues)
+  if (diffInSeconds < 0) {
+    return 'Just now';
+  }
 
   if (diffInSeconds < 60) {
     return 'Just now';
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return `${minutes}m ago`;
   } else if (diffInSeconds < 86400) {
     const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  } else {
+    return `${hours}h ago`;
+  } else if (diffInSeconds < 604800) { // 7 days
     const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+    return `${days}d ago`;
+  } else if (diffInSeconds < 2592000) { // 30 days
+    const weeks = Math.floor(diffInSeconds / 604800);
+    return `${weeks}w ago`;
+  } else if (diffInSeconds < 31536000) { // 365 days
+    const months = Math.floor(diffInSeconds / 2592000);
+    return `${months}mo ago`;
+  } else {
+    const years = Math.floor(diffInSeconds / 31536000);
+    return `${years}y ago`;
   }
 } 
