@@ -3,8 +3,9 @@
 import { SignUp } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { Suspense } from "react";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") || "/home";
   const { theme } = useTheme();
@@ -43,5 +44,13 @@ export default function SignUpPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpContent />
+    </Suspense>
   );
 } 

@@ -288,7 +288,7 @@ const HomePage = () => {
                   Get instant help with your academic questions using our advanced AI assistant.
                 </p>
                 <Link href="/tools/doubt-solving">
-                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+                  <Button className="mt-6 w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                     Start Solving
                   </Button>
                 </Link>
@@ -335,7 +335,7 @@ const HomePage = () => {
                 </p>
                 <Button
                   variant="outline"
-                  className="w-full border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="mt-6 w-full border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                   disabled
                 >
                   Coming Soon

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Mail, User, Lock, Eye, EyeOff, AlertCircle, Check } from "lucide-react";
 
-export default function CustomSignUp() {
+function SignUpContent() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -336,5 +336,13 @@ export default function CustomSignUp() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CustomSignUp() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpContent />
+    </Suspense>
   );
 } 
