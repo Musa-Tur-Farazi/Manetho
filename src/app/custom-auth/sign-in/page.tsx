@@ -1,12 +1,20 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { useState, Suspense } from "react";
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
+<<<<<<< HEAD
 export default function CustomSignIn() {
+=======
+function SignInContent() {
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   const { isLoaded, signIn, setActive } = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -200,4 +208,15 @@ export default function CustomSignIn() {
       </div>
     </div>
   );
+<<<<<<< HEAD
+=======
+}
+
+export default function CustomSignIn() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
+  );
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
 } 

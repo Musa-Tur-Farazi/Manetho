@@ -1,12 +1,20 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { useState, Suspense } from "react";
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Mail, User, Lock, Eye, EyeOff, AlertCircle, Check } from "lucide-react";
 
+<<<<<<< HEAD
 export default function CustomSignUp() {
+=======
+function SignUpContent() {
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   const { isLoaded, signUp, setActive } = useSignUp();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -337,4 +345,15 @@ export default function CustomSignUp() {
       </div>
     </div>
   );
+<<<<<<< HEAD
+=======
+}
+
+export default function CustomSignUp() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpContent />
+    </Suspense>
+  );
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
 } 

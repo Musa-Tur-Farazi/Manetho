@@ -3,8 +3,15 @@
 import { SignIn } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { Suspense } from "react";
+"use client";
 
-export default function SignInPage() {
+import { SignIn } from "@clerk/nextjs";
+import { useSearchParams } from "next/navigation";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { Suspense } from "react";
+
+function SignInContent() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") || "/home";
   const { theme } = useTheme();
@@ -43,5 +50,13 @@ export default function SignInPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
   );
 } 

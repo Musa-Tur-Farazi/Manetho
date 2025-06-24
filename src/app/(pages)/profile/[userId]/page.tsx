@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import {
-  User, MessageCircle, BookOpen, Calendar, Award, BarChart,
+  User, MessageCircle, BookOpen, BarChart,
   UserPlus, UserMinus, ChevronLeft, Star, GraduationCap, Users,
-  Heart, Share, Bookmark, MoreHorizontal, Clock, Image, BarChart3,
-  Target, TrendingUp, Zap, Flame, CheckCircle, Trophy, Brain,
-  Timer, Book, Lightbulb, Activity, Progress
+  Heart, Share, Bookmark, MoreHorizontal, Clock, BarChart3,
+  Target, TrendingUp, Flame, CheckCircle, Trophy, Brain,
+  Timer, Book, Activity
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -55,7 +55,7 @@ interface UserPost {
   images?: string[];
   postType?: string;
   pollOptions?: string[];
-  pollVotes?: Record<string, any>;
+  pollVotes?: Record<string, number> & { userVote?: number };
 }
 
 export default function UserProfilePage() {
@@ -147,7 +147,7 @@ export default function UserProfilePage() {
 
       if (sharedResponse.ok) {
         const sharedData = await sharedResponse.json();
-        const sharedPosts = sharedData.posts.map((post: any) => ({
+        const sharedPosts = sharedData.posts.map((post: UserPost) => ({
           ...post,
           isShared: true
         }));
@@ -352,7 +352,7 @@ export default function UserProfilePage() {
             <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
               <User className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">User not found</h2>
-              <p className="text-gray-600 dark:text-slate-400 mb-6">The profile you're looking for doesn't exist.</p>
+              <p className="text-gray-600 dark:text-slate-400 mb-6">The profile you&#39;re looking for doesn&#39;t exist.</p>
               <Button onClick={() => router.back()} variant="outline">
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Go Back
@@ -667,7 +667,7 @@ export default function UserProfilePage() {
 
               <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-300/30 dark:border-blue-700/30">
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Keep it up! 🚀</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">You're on track to reach 30 days!</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400">You&#39;re on track to reach 30 days!</p>
               </div>
             </div>
           </div>
@@ -1050,7 +1050,7 @@ const PostCard = ({ post }: { post: UserPost }) => {
                 const optionVotes = votes[index] || 0;
 
                 // Calculate total votes by only counting numeric option votes (0, 1, 2, etc.)
-                const totalVotes = post.pollOptions.reduce((sum, _, optionIndex) => {
+                const totalVotes = (post.pollOptions ?? []).reduce((sum, _, optionIndex) => {
                   return sum + (votes[optionIndex] || 0);
                 }, 0);
 

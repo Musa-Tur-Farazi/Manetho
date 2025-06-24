@@ -44,7 +44,11 @@ export default function RootLayout({
           colorWarning: '#f59e0b', // amber-500
         },
         layout: {
+<<<<<<< HEAD
           socialButtonsVariant: "iconAndText",
+=======
+          socialButtonsVariant: "iconButton",
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
           socialButtonsPlacement: "bottom",
           showOptionalFields: true,
           logoPlacement: "inside",

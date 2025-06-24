@@ -307,7 +307,11 @@ export const studyGroupMembersTable = pgTable("study_group_members", {
 export const studyGroupMessagesTable = pgTable("study_group_messages", {
   messageId: uuid("message_id").primaryKey().defaultRandom(),
   groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+<<<<<<< HEAD
   senderId: uuid("sender_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+=======
+  senderId: uuid("sender_id").references(() => usersTable.id, { onDelete: 'cascade' }).notNull(),
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
@@ -528,7 +532,11 @@ export const routineActivitiesTable = pgTable("routine_activities", {
 
 export const aiLearningDataTable = pgTable("ai_learning_data", {
   dataId: uuid("data_id").primaryKey().defaultRandom(),
+<<<<<<< HEAD
   userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+=======
+  userId: uuid("user_id").references(() => usersTable.id, { onDelete: 'cascade' }).notNull(),
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   contentType: contentTypeEnum("content_type").notNull(),
   contentId: uuid("content_id").notNull(), // ID of the content
   interactionType: varchar("interaction_type", { length: 100 }).notNull(), // view, answer, rate, etc.
@@ -570,7 +578,11 @@ export const aiModelConfigsTable = pgTable("ai_model_configs", {
 // AI Doubt Solving Tables
 export const doubtSolvingSessionsTable = pgTable("doubt_solving_sessions", {
   sessionId: uuid("session_id").primaryKey().defaultRandom(),
+<<<<<<< HEAD
   userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+=======
+  userId: uuid("user_id").references(() => usersTable.id, { onDelete: 'cascade' }).notNull(),
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   title: varchar("title", { length: 255 }).notNull(),
   subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
   topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
@@ -670,7 +682,11 @@ export const topicsRelations = relations(topicsTable, ({ one, many }) => ({
 export const flashcardDecksRelations = relations(flashcardDecksTable, ({ one, many }) => ({
   user: one(usersTable, {
     fields: [flashcardDecksTable.userId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   subject: one(subjectsTable, {
     fields: [flashcardDecksTable.subjectId],
@@ -693,7 +709,11 @@ export const flashcardsRelations = relations(flashcardsTable, ({ one }) => ({
 export const chatsRelations = relations(chatsTable, ({ one, many }) => ({
   user: one(usersTable, {
     fields: [chatsTable.userId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   subject: one(subjectsTable, {
     fields: [chatsTable.subjectId],
@@ -710,14 +730,22 @@ export const messagesRelations = relations(messagesTable, ({ one }) => ({
   }),
   sender: one(usersTable, {
     fields: [messagesTable.senderId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
 }));
 
 export const threadsRelations = relations(threadsTable, ({ one, many }) => ({
   creator: one(usersTable, {
     fields: [threadsTable.createdBy],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   subject: one(subjectsTable, {
     fields: [threadsTable.subjectId],
@@ -737,7 +765,11 @@ export const commentsRelations = relations(commentsTable, ({ one, many }) => ({
   }),
   sender: one(usersTable, {
     fields: [commentsTable.senderId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   parentComment: one(commentsTable, {
     fields: [commentsTable.parentCommentId],
@@ -751,7 +783,11 @@ export const commentsRelations = relations(commentsTable, ({ one, many }) => ({
 export const doubtSolvingSessionsRelations = relations(doubtSolvingSessionsTable, ({ one, many }) => ({
   user: one(usersTable, {
     fields: [doubtSolvingSessionsTable.userId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   subject: one(subjectsTable, {
     fields: [doubtSolvingSessionsTable.subjectId],
@@ -787,12 +823,20 @@ export const doubtSolvingFilesRelations = relations(doubtSolvingFilesTable, ({ o
 export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
   follower: one(usersTable, {
     fields: [userFollowsTable.followerId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
     relationName: 'follower',
   }),
   following: one(usersTable, {
     fields: [userFollowsTable.followingId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
     relationName: 'following',
   }),
 }));
@@ -801,7 +845,11 @@ export const userFollowsRelations = relations(userFollowsTable, ({ one }) => ({
 export const studyGroupsRelations = relations(studyGroupsTable, ({ one, many }) => ({
   creator: one(usersTable, {
     fields: [studyGroupsTable.createdBy],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
   subject: one(subjectsTable, {
     fields: [studyGroupsTable.subjectId],
@@ -818,7 +866,11 @@ export const studyGroupMembersRelations = relations(studyGroupMembersTable, ({ o
   }),
   user: one(usersTable, {
     fields: [studyGroupMembersTable.userId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
 }));
 
@@ -829,6 +881,10 @@ export const studyGroupMessagesRelations = relations(studyGroupMessagesTable, ({
   }),
   sender: one(usersTable, {
     fields: [studyGroupMessagesTable.senderId],
+<<<<<<< HEAD
     references: [usersTable.userId],
+=======
+    references: [usersTable.id],
+>>>>>>> bb7e448 (Initial commit with CI/CD setup)
   }),
 }));
