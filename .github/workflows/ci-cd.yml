@@ -47,5 +47,12 @@ jobs:
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
           EOF
 
-      - name: Build Docker image
-        run: docker build -f Dockerfile.prod -t manethoprod:latest .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v2
+
+      - name: Build production image with Docker Compose
+        working-directory: Manetho
+        run: docker compose build manetho_prod
