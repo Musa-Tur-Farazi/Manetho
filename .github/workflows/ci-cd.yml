@@ -2,39 +2,34 @@ name: CI & CD
 
 on:
   push:
-    branches:
-      - master
-      - '**'
+    branches: [ master ]
   pull_request:
-    branches:
-      - master
+    branches: [ master ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    name: Continuous Integration
     runs-on: ubuntu-latest
-
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/manetho
+    permissions:
+      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 20
+          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run lint || true
 
-      - name: Lint (non-blocking)
-        run: |
-          npm run lint || true
-
-      # Generate .env with build-time secrets (not committed)
-      - name: Generate environment file for build
-        run: |
+      - run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
@@ -49,43 +44,35 @@ jobs:
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
           EOF
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build production image
-        run: docker compose build manetho_prod
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
-    name: Deploy to Azure VM
     runs-on: ubuntu-latest
     needs: build
-
+    timeout-minutes: 30
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/manetho
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Create .env for deployment
-      - name: Generate env local file for deployment
-        run: |
-          cat <<EOF > .env.local
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          CLERK_WEBHOOK_KEY=${{ secrets.CLERK_WEBHOOK_KEY }}
-          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-          NEXT_PUBLIC_APPWRITE_ENDPOINT=${{ secrets.NEXT_PUBLIC_APPWRITE_ENDPOINT }}
-          NEXT_PUBLIC_APPWRITE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_PROJECT_ID }}
-          APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}
-          NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
-          NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
-          AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
-          EOF
-
-      - name: Generate env file for deployment
-        run: |
+      - run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
@@ -98,41 +85,24 @@ jobs:
           NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
           NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
-          EOF    
+          EOF
+          cp .env .env.local
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Set up Docker Compose
-        uses: docker/setup-compose-action@v1
-
-      # SSH key setup
-      - name: Start SSH agent and add key
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
 
-      - name: Add Azure VM to known hosts
-        run: |
+      - run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create Docker context for Azure VM
-        run: |
-          docker context create azure-vm --docker "host=ssh://${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}" || true
-          docker context use azure-vm
-
-      - name: Deploy application with Docker Compose
-        run: |
-          docker compose -f docker-compose.yml down || true
-          docker compose -f docker-compose.yml pull || true
-          docker compose -f docker-compose.yml up --build -d
-
-      - name: Verify deployment
-        run: docker compose -f docker-compose.yml ps
-
-      - name: Reset Docker context
-        if: always()
-        run: |
-          docker context use default
-          docker context rm azure-vm || true 
+      - run: |
+          ssh ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} <<'VM'
+            set -euo pipefail
+            docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
+            cd /srv/manetho
+            docker compose down || true
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker compose ps
+          VM
