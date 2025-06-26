@@ -95,15 +95,12 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      # Ensure deployment directory exists on VM
-      - name: Create remote directory
+      # Ensure deployment directory exists and copy files
+      - name: Copy compose & env to VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "mkdir -p /srv/manetho"
-
-      # Copy docker-compose.yml to VM
-      - name: Copy compose file to VM
-        run: |
-          scp -o StrictHostKeyChecking=no Manetho/docker-compose.yml ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:/srv/manetho/docker-compose.yml
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "mkdir -p ~/manetho"
+          scp -o StrictHostKeyChecking=no Manetho/docker-compose.yml ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/docker-compose.yml
+          scp -o StrictHostKeyChecking=no .env ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/.env
 
       - name: Deploy on VM via SSH
         env:
@@ -113,7 +110,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} <<VM
             set -euo pipefail
             docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
-            cd /srv/manetho
+            cd ~/manetho
             docker compose down || true
             docker compose pull
             docker compose up -d --remove-orphans
