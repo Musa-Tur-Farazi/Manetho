@@ -12,9 +12,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: Manetho
+    # Root of repository already contains the Next.js project, no extra subfolder needed
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
