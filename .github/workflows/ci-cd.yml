@@ -68,7 +68,7 @@ jobs:
         uses: actions/checkout@v4
 
       # Create .env for deployment
-      - name: Generate environment file for deployment
+      - name: Generate env local file for deployment
         run: |
           cat <<EOF > .env.local
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
@@ -84,7 +84,7 @@ jobs:
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
           EOF
 
-            - name: Generate environment file for deployment
+      - name: Generate env file for deployment
         run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
