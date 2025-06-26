@@ -108,12 +108,12 @@ jobs:
 
       - name: Deploy application with Docker Compose
         run: |
-          docker compose -f Manetho/docker-compose.yml down || true
-          docker compose -f Manetho/docker-compose.yml pull || true
-          docker compose -f Manetho/docker-compose.yml up --build -d
+          docker compose -f docker-compose.yml down || true
+          docker compose -f docker-compose.yml pull || true
+          docker compose -f docker-compose.yml up --build -d
 
       - name: Verify deployment
-        run: docker compose -f Manetho/docker-compose.yml ps
+        run: docker compose -f docker-compose.yml ps
 
       - name: Reset Docker context
         if: always()
