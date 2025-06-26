@@ -1,21 +1,39 @@
-name: Deploy to Azure VM
+name: CI & CD
 
 on:
   push:
     branches:
       - master
+      - '**'
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
+    name: Continuous Integration
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Create .env file populated from GitHub secrets (not committed)
-      - name: Generate environment file
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (non-blocking)
+        run: |
+          npm run lint || true
+
+      # Generate .env with build-time secrets (not committed)
+      - name: Generate environment file for build
         run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
@@ -37,7 +55,43 @@ jobs:
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v1
 
-      # Configure SSH so Docker CLI can reach the remote engine
+      - name: Build production image
+        run: docker compose build manetho_prod
+
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Create .env for deployment
+      - name: Generate environment file for deployment
+        run: |
+          cat <<EOF > .env
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          CLERK_WEBHOOK_KEY=${{ secrets.CLERK_WEBHOOK_KEY }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_ENDPOINT=${{ secrets.NEXT_PUBLIC_APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
+          NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
+          AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
+          EOF
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v1
+
+      # SSH key setup
       - name: Start SSH agent and add key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -48,23 +102,20 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      # Create a Docker context pointing at the VM via SSH
       - name: Create Docker context for Azure VM
         run: |
           docker context create azure-vm --docker "host=ssh://${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}" || true
           docker context use azure-vm
 
-      # Build and deploy using the production compose file inside Manetho dir
-      - name: Deploy application
+      - name: Deploy application with Docker Compose
         run: |
           docker compose -f Manetho/docker-compose.yml down || true
-          docker compose -f Manetho/docker-compose.yml pull
+          docker compose -f Manetho/docker-compose.yml pull || true
           docker compose -f Manetho/docker-compose.yml up --build -d
 
       - name: Verify deployment
         run: docker compose -f Manetho/docker-compose.yml ps
 
-      # Always switch back & clean up the context
       - name: Reset Docker context
         if: always()
         run: |
