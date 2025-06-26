@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Client, Storage, ID } from 'node-appwrite';
 
-// Initialize Appwrite client
-const client = new Client()
-  .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
-  .setKey(process.env.APPWRITE_API_KEY!);
+// Lazy-initialise Appwrite client so build won't fail if env vars are missing
+function getStorage() {
+  const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
+  const projectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const apiKey = process.env.APPWRITE_API_KEY;
 
-const storage = new Storage(client);
+  if (!endpoint || !projectId || !apiKey) {
+    throw new Error('Appwrite environment variables are not set');
+  }
+
+  const client = new Client()
+    .setEndpoint(endpoint)
+    .setProject(projectId)
+    .setKey(apiKey);
+
+  return new Storage(client);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +73,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Upload file to Appwrite with public read permissions
+    const storage = getStorage();
     const uploadedFile = await storage.createFile(
       bucketId,
       fileId,
@@ -131,6 +142,7 @@ export async function DELETE(request: NextRequest) {
     const bucketId = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!;
 
     // Delete file from Appwrite
+    const storage = getStorage();
     await storage.deleteFile(bucketId, fileId);
 
     return NextResponse.json({
