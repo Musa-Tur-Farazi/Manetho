@@ -4,14 +4,14 @@ WORKDIR /app
 
 COPY package*.json .
 
-RUN npm ci --only=production
+RUN npm ci
 
 COPY . .
 
 RUN npm run build
 
-RUN cp -r .next/static .next/standalone/.next/
-RUN cp -r public .next/standalone/
+RUN cp -r .next/static .next/standalone/.next/ || true
+RUN cp -r public .next/standalone/ || true
 
 ENV PORT=4000
 ENV HOSTNAME=0.0.0.0
