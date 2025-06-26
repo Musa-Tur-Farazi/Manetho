@@ -95,8 +95,12 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      - run: |
-          ssh ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} <<'VM'
+      - name: Deploy on VM via SSH
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} <<VM
             set -euo pipefail
             docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_TOKEN}"
             cd /srv/manetho
