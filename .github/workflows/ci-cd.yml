@@ -84,6 +84,22 @@ jobs:
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
           EOF
 
+            - name: Generate environment file for deployment
+        run: |
+          cat <<EOF > .env
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          CLERK_WEBHOOK_KEY=${{ secrets.CLERK_WEBHOOK_KEY }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_ENDPOINT=${{ secrets.NEXT_PUBLIC_APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
+          NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
+          AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
+          EOF    
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
