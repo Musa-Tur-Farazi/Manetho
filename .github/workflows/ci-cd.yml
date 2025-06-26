@@ -31,5 +31,21 @@ jobs:
           npm run lint || true
         # Continue even if linting finds issues so CI still passes
 
+      - name: Create .env for build
+        run: |
+          cat <<EOF > .env
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_APPWRITE_ENDPOINT=${{ secrets.NEXT_PUBLIC_APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
+          NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
+          AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          CLERK_WEBHOOK_KEY=${{ secrets.CLERK_WEBHOOK_KEY }}
+          EOF
+
       - name: Build Docker image
         run: docker build -f Dockerfile.prod -t manethoprod:latest .
