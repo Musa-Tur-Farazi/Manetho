@@ -99,7 +99,7 @@ jobs:
       - name: Copy compose & env to VM
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "mkdir -p ~/manetho"
-          scp -o StrictHostKeyChecking=no Manetho/docker-compose.yml ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/docker-compose.yml
+          scp -o StrictHostKeyChecking=no ./Manetho/docker-compose.yml ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/docker-compose.yml
           scp -o StrictHostKeyChecking=no .env ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/.env
 
       - name: Deploy on VM via SSH
