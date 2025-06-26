@@ -26,8 +26,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  // If key isn't available during static generation (e.g., CI build), skip ClerkProvider
+  if (!publishableKey) {
+    return (
+      <html lang="en" className="h-full">
+        <body className="antialiased h-full">
+          {children}
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ClerkProvider
+      publishableKey={publishableKey}
       appearance={{
         variables: {
           colorPrimary: '#0891b2', // cyan-600
