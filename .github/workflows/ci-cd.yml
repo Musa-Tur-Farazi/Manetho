@@ -23,19 +23,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: Manetho/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-        working-directory: Manetho
+      - run: npm ci
+      - run: npm run lint || true
 
-      - name: Run lint (non-blocking)
-        run: npm run lint || true
-        working-directory: Manetho
-
-      - name: Create build environment
-        run: |
-          cat <<EOF > Manetho/.env
+      - run: |
+          cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
           DATABASE_URL=${{ secrets.DATABASE_URL }}
@@ -58,8 +51,8 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          context: ./Manetho
-          file: ./Manetho/Dockerfile.prod
+          context: .
+          file: Dockerfile.prod
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:latest
@@ -78,8 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create runtime environment
-        run: |
+      - run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
@@ -93,36 +85,35 @@ jobs:
           NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
           AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
           EOF
+          cp .env .env.local
 
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
 
-      - name: Setup SSH known hosts
-        run: |
+      - run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create deployment directory and copy files
+      # Ensure deployment directory exists and copy files
+      - name: Copy compose & env to VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "sudo mkdir -p /srv/manetho && sudo chown $USER:$USER /srv/manetho"
-          scp -o StrictHostKeyChecking=no .env ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:/srv/manetho/.env
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "mkdir -p ~/manetho"
+          scp -o StrictHostKeyChecking=no .env ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:~/manetho/.env
 
       - name: Create docker-compose.yml on VM
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} << 'COMPOSE_EOF'
-            cat > /srv/manetho/docker-compose.yml << 'EOF'
-            version: "3.9"
-            services:
-              manetho:
-                image: ${DOCKERHUB_USERNAME}/manetho:latest
-                ports:
-                  - "4000:4000"
-                env_file:
-                  - .env
-                restart: unless-stopped
-            EOF
-          COMPOSE_EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "cat > ~/manetho/docker-compose.yml << 'EOF'
+          version: \"3.9\"
+          services:
+            manetho:
+              image: \${DOCKERHUB_USERNAME}/manetho:latest
+              ports:
+                - \"4000:4000\"
+              env_file:
+                - .env
+              restart: unless-stopped
+          EOF"
 
       - name: Deploy on VM via SSH
         env:
@@ -130,7 +121,7 @@ jobs:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} << 'EOF'
             set -euo pipefail
             
             # Check if Docker is running
@@ -140,19 +131,19 @@ jobs:
             fi
             
             # Login to Docker Hub securely
-            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
-            cd /srv/manetho
+            cd ~/manetho
             
             # Set environment variable for compose
-            export DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME}"
+            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
             
             # Pull latest image with retry
             for i in {1..3}; do
-              if docker pull "${IMAGE_NAME}:latest"; then
+              if docker pull "${{ env.IMAGE_NAME }}:latest"; then
                 break
               fi
-              echo "Pull attempt \$i failed, retrying..."
+              echo "Pull attempt $i failed, retrying..."
               sleep 5
             done
             
@@ -164,5 +155,16 @@ jobs:
             sleep 10
             
             # Verify deployment
-            docker compose ps
+            if docker compose ps | grep -q "Up"; then
+              echo "✅ Deployment successful!"
+              docker compose ps
+            else
+              echo "❌ Deployment failed!"
+              docker compose logs
+              exit 1
+            fi
+            
+            # Cleanup old images to save space
+            docker image prune -f
           EOF
+
