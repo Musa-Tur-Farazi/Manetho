@@ -4,15 +4,20 @@ WORKDIR /app
 
 COPY package*.json .
 
+RUN npm ci --only=production
+
 COPY . .
 
-RUN npm install
-
 RUN npm run build
+
+RUN cp -r .next/static .next/standalone/.next/
+RUN cp -r public .next/standalone/
 
 ENV PORT=4000
 ENV HOSTNAME=0.0.0.0
 
 EXPOSE 4000
 
-CMD ["node", ".next/standalone/server.js"]
+WORKDIR /app/.next/standalone
+
+CMD ["node", "server.js"]
