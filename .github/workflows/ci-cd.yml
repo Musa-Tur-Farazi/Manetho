@@ -32,7 +32,6 @@ jobs:
         # Continue even if linting finds issues so CI still passes
 
       - name: Generate env files for build
-        working-directory: Manetho
         run: |
           cat <<EOF > .env
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
@@ -55,5 +54,4 @@ jobs:
         uses: docker/setup-compose-action@v1
 
       - name: Build production image with Docker Compose
-        working-directory: Manetho
         run: docker compose build manetho_prod
