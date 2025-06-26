@@ -52,7 +52,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Set up Docker Compose
-        uses: docker/compose-action@v2
+        uses: docker/setup-compose-action@v1
 
       - name: Build production image with Docker Compose
         working-directory: Manetho
