@@ -12,9 +12,9 @@ dist
 build
 
 # Environment files (will be passed via docker-compose or deployment)
-.env*
-!.env.example
-!env.template
+#.env*
+#!.env.example
+#!env.template
 
 # IDE and editor files
 .vscode

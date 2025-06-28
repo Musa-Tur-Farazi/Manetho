@@ -26,8 +26,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  // If key isn't available during static generation (e.g., CI build), skip ClerkProvider
+  if (!publishableKey) {
+    return (
+      <html lang="en" className="h-full">
+        <body className="antialiased h-full">
+          {children}
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ClerkProvider
+      publishableKey={publishableKey}
       appearance={{
         variables: {
           colorPrimary: '#0891b2', // cyan-600
@@ -52,7 +66,6 @@ export default function RootLayout({
           helpPageUrl: "",
           privacyPageUrl: "",
           termsPageUrl: "",
-          showDevModeWarning: false
         },
         elements: {
           // Card and containers
@@ -114,19 +127,6 @@ export default function RootLayout({
       signUpUrl="/custom-auth/sign-up"
       afterSignInUrl="/home"
       afterSignUpUrl="/home"
-      // Configure bot protection to use invisible CAPTCHA for all auth flows
-      options={{
-        signUp: {
-          captcha: {
-            mode: "invisible"
-          }
-        },
-        signIn: {
-          captcha: {
-            mode: "invisible"
-          }
-        }
-      }}
     >
       <html lang="en" className="h-full">
         <body
