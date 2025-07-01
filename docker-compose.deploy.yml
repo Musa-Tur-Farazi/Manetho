@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  manetho:
+    image: ${DOCKER_REGISTRY}/manetho:${TAG}
+    container_name: manetho-prod
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    networks:
+      - manetho-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - manetho-logs:/app/.next/cache
+
+  nginx:
+    image: nginx:alpine
+    container_name: manetho-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      manetho:
+        condition: service_healthy
+    networks:
+      - manetho-network
+    restart: unless-stopped
+
+networks:
+  manetho-network:
+    driver: bridge
+
+volumes:
+  manetho-logs:

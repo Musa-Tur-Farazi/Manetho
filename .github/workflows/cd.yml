@@ -1,0 +1,107 @@
+name: CD Pipeline - Deploy to Azure VM
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    branches: [test-passed]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy-to-azure-vm:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    env:
+      AZURE_VM_HOST: 20.2.217.40
+      AZURE_VM_USER: azureuser
+      DOCKER_REGISTRY: ghcr.io/${{ github.repository }}
+      TAG: main
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AZURE_VM_SSH_PRIVATE_KEY }}
+          
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ env.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
+          
+      - name: Create deployment directory on VM
+        run: |
+          ssh ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }} << 'EOF'
+            mkdir -p ~/manetho-deploy
+            mkdir -p ~/manetho-deploy/nginx
+            mkdir -p ~/manetho-deploy/nginx/ssl
+          EOF
+
+      - name: Transfer deployment files to VM
+        run: |
+          scp docker-compose.deploy.yml ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }}:~/manetho-deploy/
+          scp nginx/nginx.conf ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }}:~/manetho-deploy/nginx/
+          
+      - name: Create .env.production file on VM
+        run: |
+          cat > .env.production << 'EOF'
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          CLERK_WEBHOOK_KEY=${{ secrets.CLERK_WEBHOOK_KEY }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_ENDPOINT=${{ secrets.NEXT_PUBLIC_APPWRITE_ENDPOINT }}
+          NEXT_PUBLIC_APPWRITE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY=${{ secrets.APPWRITE_API_KEY }}
+          NEXT_PUBLIC_APPWRITE_BUCKET_ID=${{ secrets.NEXT_PUBLIC_APPWRITE_BUCKET_ID }}
+          NEXT_PUBLIC_AGORA_APP_ID=${{ secrets.NEXT_PUBLIC_AGORA_APP_ID }}
+          AGORA_APP_CERTIFICATE=${{ secrets.AGORA_APP_CERTIFICATE }}
+          EOF
+          
+          scp .env.production ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }}:~/manetho-deploy/
+          
+      - name: Deploy to Azure VM
+        run: |
+          ssh ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }} << EOF
+            cd ~/manetho-deploy
+            
+            # Set deployment variables
+            export DOCKER_REGISTRY=${{ env.DOCKER_REGISTRY }}
+            export TAG=${{ env.TAG }}
+            
+            # Login to GitHub Container Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull the latest images and deploy
+            docker compose -f docker-compose.deploy.yml down || true
+            docker compose -f docker-compose.deploy.yml pull
+            docker compose -f docker-compose.deploy.yml up -d
+            
+            # Clean up old images
+            docker image prune -f
+          EOF
+          
+      - name: Verify deployment
+        run: |
+          # Wait for deployment to settle
+          sleep 30
+          
+          # Check if containers are running
+          ssh ${{ env.AZURE_VM_USER }}@${{ env.AZURE_VM_HOST }} "cd ~/manetho-deploy && docker compose -f docker-compose.deploy.yml ps"
+          
+          # Check application health
+          curl -sSf http://${{ env.AZURE_VM_HOST }}/api/health || echo "Application health check failed but continuing"
+          
+      # - name: Send notification
+      #   if: always()
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      #     SLACK_TITLE: "Azure VM Deployment"
+      #     SLACK_MESSAGE: "Deployment to Azure VM ${{ job.status }}"
+      #     SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
