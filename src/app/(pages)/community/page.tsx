@@ -22,9 +22,7 @@ interface Comment {
 
 interface CommunityPost {
   id: string;
-  title: string;
   content: string;
-  category: string;
   author: string;
   authorId?: string;
   authorImage: string;
@@ -415,7 +413,6 @@ export default function CommunityPage() {
 
       const requestBody: {
         postType: string;
-        title?: string;
         content?: string;
         images?: string[];
         pollOptions?: string[];
@@ -424,13 +421,11 @@ export default function CommunityPage() {
       };
 
       if (postType === 'text') {
-        requestBody.title = newPostContent.slice(0, 100) + (newPostContent.length > 100 ? '...' : '');
         requestBody.content = newPostContent;
         if (finalImageUrls.length > 0) {
           requestBody.images = finalImageUrls;
         }
       } else if (postType === 'poll') {
-        requestBody.title = pollQuestion.slice(0, 100) + (pollQuestion.length > 100 ? '...' : '');
         requestBody.content = pollQuestion;
         requestBody.pollOptions = pollOptions.filter(option => option.trim() !== '');
       }
@@ -1058,9 +1053,6 @@ export default function CommunityPage() {
 
                       {/* Post Content */}
                       <div className="mb-3">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-tight">
-                          {post.title}
-                        </h3>
                         <p className="text-gray-700 dark:text-slate-300 leading-relaxed text-sm">
                           {post.content}
                         </p>
@@ -2205,9 +2197,6 @@ export default function CommunityPage() {
                 <div className="space-y-4">
                   {/* Post Title and Content */}
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-tight">
-                      {selectedPost.title}
-                    </h2>
                     <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
                       {selectedPost.content}
                     </p>

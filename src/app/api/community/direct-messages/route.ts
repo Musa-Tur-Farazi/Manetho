@@ -6,6 +6,8 @@ import {
 } from '@/db/schema';
 import { eq, and, or, desc } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
+import { pusherServer } from '@/lib/pusher-server';
+import { getChatChannel } from '@/lib/chat';
 
 export async function GET(request: NextRequest) {
   try {
@@ -168,6 +170,17 @@ export async function POST(request: NextRequest) {
       createdMessages.push(newMessage[0]);
     } else {
       return NextResponse.json({ error: 'Either content or files must be provided' }, { status: 400 });
+    }
+
+    // Broadcast each new message via Pusher
+    const channelName = getChatChannel(currentUserId, recipientId);
+
+    for (const msg of createdMessages) {
+      await pusherServer.trigger(channelName, 'message:new', {
+        ...msg,
+        senderName: dbUser[0].fullName,
+        senderAvatar: dbUser[0].avatarUrl,
+      });
     }
 
     return NextResponse.json({

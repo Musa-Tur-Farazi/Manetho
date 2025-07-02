@@ -27,6 +27,8 @@ import { downloadFile } from '@/lib/utils';
 import VideoCall from '@/components/chat/VideoCall';
 import AudioCall from '@/components/chat/AudioCall';
 import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
+import { pusherClient } from '@/lib/pusher-client';
+import { getChatChannel } from '@/lib/chat';
 
 interface ChatUser {
   userId: string;
@@ -105,6 +107,28 @@ export default function ChatPage() {
 
   // Agora configuration (you'll need to add these to your environment variables)
   const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+
+  // Pusher subscription for real-time messages
+  useEffect(() => {
+    if (!currentUserInternalId || !selectedChat) return;
+
+    const channelName = getChatChannel(currentUserInternalId, selectedChat);
+    const channel = pusherClient.subscribe(channelName);
+
+    const handleNewMessage = (payload: DirectMessage) => {
+      // Avoid duplicate if we already added our own message optimistically
+      if (payload.senderId === currentUserInternalId) return;
+      setMessages(prev => [...prev, payload]);
+      setShouldAutoScroll(true);
+    };
+
+    channel.bind('message:new', handleNewMessage);
+
+    return () => {
+      channel.unbind('message:new', handleNewMessage);
+      pusherClient.unsubscribe(channelName);
+    };
+  }, [currentUserInternalId, selectedChat]);
 
   // Helper function to generate valid Agora channel names
   const generateChannelName = (userId1: string, userId2: string): string => {

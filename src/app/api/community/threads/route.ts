@@ -264,14 +264,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, content, category, images, postType, pollOptions } = body;
+    const { content, images, postType, pollOptions } = body;
 
-    if (!title || !content) {
+    if (!content || content.trim() === '') {
       return NextResponse.json(
-        { error: 'Title and content are required' },
+        { error: 'Content is required' },
         { status: 400 }
       );
     }
+
+    // Auto-generate a concise title from the first 100 characters of content (for DB/storage only)
+    const generatedTitle = content.slice(0, 100) + (content.length > 100 ? '…' : '');
 
     // Validate images array
     const validImages = Array.isArray(images) ? images.slice(0, 4) : []; // Max 4 images
@@ -349,7 +352,7 @@ export async function POST(request: NextRequest) {
     const newThreadResult = await db.execute(
       sql`
         INSERT INTO threads (title, body, created_by, post_type, images, poll_options, poll_votes)
-        VALUES (${title}, ${content}, ${userIdField}, ${validPostType}, ${imagesJson}, ${pollOptionsJson}, ${pollVotesJson})
+        VALUES (${generatedTitle}, ${content}, ${userIdField}, ${validPostType}, ${imagesJson}, ${pollOptionsJson}, ${pollVotesJson})
         RETURNING *
       `
     );

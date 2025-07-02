@@ -236,6 +236,21 @@ export default function GroupStudyPage() {
         description="Connect with fellow students and study together"
       />
 
+      {/* Hero banner */}
+      <div className="relative mb-12 rounded-3xl overflow-hidden shadow-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-8 md:p-12 flex flex-col md:flex-row md:items-center gap-6">
+        <div className="flex-1 z-10">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-3 drop-shadow-lg">
+            Find or Create a Study Group
+          </h2>
+          <p className="text-white/90 max-w-xl leading-relaxed">
+            Collaborate in real-time, share resources and ace your exams together. Choose a subject below or start your own group in seconds.
+          </p>
+        </div>
+        <div className="hidden md:block absolute -right-12 -bottom-12 opacity-20 rotate-6 pointer-events-none">
+          <Users className="w-[300px] h-[300px] text-white" />
+        </div>
+      </div>
+
       <div className="mb-12">
         {/* Filters and search */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
@@ -471,105 +486,110 @@ export default function GroupStudyPage() {
         {/* Study groups list */}
         <div className="space-y-6">
           {filteredGroups.length > 0 ? (
-            filteredGroups.map((group) => (
-              <div key={group.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <div className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium px-3 py-1 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
-                          {group.subject}
-                        </span>
-                        <span className={`text-xs font-medium px-3 py-1 rounded-full ${getMeetingTypeBadge(group.meetingType)}`}>
-                          {group.meetingType === "online" ? "Online" :
-                            group.meetingType === "in-person" ? "In-Person" : "Hybrid"}
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{group.name}</h3>
-                    </div>
-
-                    <Button
-                      variant={group.joined ? "outline" : "default"}
-                      className={group.joined ? "border-cyan-500 text-cyan-600 dark:border-cyan-700 dark:text-cyan-400" : ""}
-                      onClick={() => handleJoinGroup(group.id)}
-                      disabled={!group.joined && group.currentParticipants >= group.maxParticipants}
-                    >
-                      {group.joined ? "Leave Group" : (group.currentParticipants >= group.maxParticipants ? "Group Full" : "Join Group")}
-                    </Button>
-                  </div>
-
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {group.description}
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      <span>{group.nextMeeting ? new Date(group.nextMeeting).toLocaleDateString() : "TBD"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      <span>{group.time || "TBD"}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      <span>{group.currentParticipants} / {group.maxParticipants} participants</span>
-                    </div>
-                  </div>
-
-                  {(group.meetingType === "in-person" || group.meetingType === "hybrid") && group.location && (
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-4">
-                      <MapPin className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      <span>{group.location}</span>
-                    </div>
-                  )}
-
-                  {group.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {group.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={group.organizer.avatar}
-                        alt={group.organizer.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="relative rounded-3xl overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl bg-white/60 dark:bg-slate-800/50 backdrop-blur border border-white/40 dark:border-slate-700/40"
+                >
+                  <div className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {group.organizer.name}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Organizer
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
+                            {group.subject}
+                          </span>
+                          <span className={`text-xs font-medium px-3 py-1 rounded-full ${getMeetingTypeBadge(group.meetingType)}`}>
+                            {group.meetingType === "online" ? "Online" :
+                              group.meetingType === "in-person" ? "In-Person" : "Hybrid"}
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{group.name}</h3>
+                      </div>
+
+                      <Button
+                        variant={group.joined ? "outline" : "default"}
+                        className={group.joined ? "border-cyan-500 text-cyan-600 dark:border-cyan-700 dark:text-cyan-400" : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"}
+                        onClick={() => handleJoinGroup(group.id)}
+                        disabled={!group.joined && group.currentParticipants >= group.maxParticipants}
+                      >
+                        {group.joined ? "Leave Group" : (group.currentParticipants >= group.maxParticipants ? "Group Full" : "Join Group")}
+                      </Button>
+                    </div>
+
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      {group.description}
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>{group.nextMeeting ? new Date(group.nextMeeting).toLocaleDateString() : "TBD"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>{group.time || "TBD"}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>{group.currentParticipants} / {group.maxParticipants} participants</span>
                       </div>
                     </div>
 
-                    {group.joined && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-cyan-600 dark:text-cyan-400"
-                        onClick={() => router.push(`/group-study/chat/${group.id}`)}
-                      >
-                        <MessageSquare className="w-4 h-4 mr-1" /> Group Chat
-                      </Button>
+                    {(group.meetingType === "in-person" || group.meetingType === "hybrid") && group.location && (
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-4">
+                        <MapPin className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <span>{group.location}</span>
+                      </div>
                     )}
+
+                    {group.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {group.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={group.organizer.avatar}
+                          alt={group.organizer.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {group.organizer.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Organizer
+                          </p>
+                        </div>
+                      </div>
+
+                      {group.joined && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-cyan-600 dark:text-cyan-400"
+                          onClick={() => router.push(`/group-study/chat/${group.id}`)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1" /> Group Chat
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-md">
               <Users className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
