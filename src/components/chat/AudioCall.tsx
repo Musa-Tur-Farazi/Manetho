@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AgoraRTC, {
   IAgoraRTCRemoteUser,
   IMicrophoneAudioTrack
@@ -31,7 +31,9 @@ export default function AudioCall({
   token,
   recipientName
 }: AudioCallProps) {
-  const [client] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'opus' }));
+  // Agora Web SDK accepts codec values 'vp8','vp9','av1','h264','h265'.
+  // Using 'vp8' (default) for pure-audio calls to avoid unsupported 'opus' error.
+  const [client] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }));
   const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
 
@@ -42,8 +44,13 @@ export default function AudioCall({
   const [callDuration, setCallDuration] = useState(0);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
+  const connectLockRef = useRef(false);
+
   useEffect(() => {
     const init = async () => {
+      // guard against duplicate joins (React StrictMode runs effect twice in dev)
+      if (connectLockRef.current || isJoined) return;
+      connectLockRef.current = true;
       setIsConnecting(true);
       setConnectionError(null);
 
@@ -51,6 +58,7 @@ export default function AudioCall({
       if (!appId || appId.length !== 32 || !/^[a-zA-Z0-9]+$/.test(appId)) {
         setConnectionError('Invalid Agora App ID format. App ID should be exactly 32 alphanumeric characters.');
         setIsConnecting(false);
+        connectLockRef.current = false;
         return;
       }
 
@@ -72,8 +80,45 @@ export default function AudioCall({
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         setLocalAudioTrack(audioTrack);
 
+        // Fetch token if not provided (App Certificate enabled)
+        let finalToken = token || null;
+        let finalUid: string | null | undefined = userId;
+
+        if (!finalToken) {
+          try {
+            const tokenResponse = await fetch('/api/agora-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ channelName, role: 'host' })
+            });
+
+            if (!tokenResponse.ok) {
+              const errData = await tokenResponse.json();
+              throw new Error(errData.error || 'Failed to fetch token');
+            }
+
+            const tokenData = await tokenResponse.json();
+            finalToken = tokenData.token;
+            finalUid = tokenData.uid;
+            console.log('Audio token received, expires at:', tokenData.expiresAt);
+          } catch (tokenErr: any) {
+            console.error('Audio token generation failed:', tokenErr);
+            setConnectionError('Failed to obtain Agora token. ' + (tokenErr.message || ''));
+            setIsConnecting(false);
+            connectLockRef.current = false;
+            await cleanup();
+            return;
+          }
+        }
+
+        // Prevent duplicate join attempts if SDK still thinks it is busy
+        if (client.connectionState !== 'DISCONNECTED') {
+          console.warn('Audio client is not in DISCONNECTED state, current:', client.connectionState);
+          return;
+        }
+
         console.log('Joining audio channel:', channelName);
-        await client.join(appId, channelName, token || null, userId);
+        await client.join(appId, channelName, finalToken, finalUid);
         console.log('Successfully joined audio channel');
 
         await client.publish(audioTrack);
@@ -106,6 +151,11 @@ export default function AudioCall({
 
         // Clean up on error
         await cleanup();
+      } finally {
+        // If not connected, release lock so another attempt can happen
+        if (!isJoined) {
+          connectLockRef.current = false;
+        }
       }
     };
 
@@ -168,6 +218,7 @@ export default function AudioCall({
   };
 
   const cleanup = async () => {
+    connectLockRef.current = false; // allow future calls
     try {
       console.log('Cleaning up audio call...');
 
