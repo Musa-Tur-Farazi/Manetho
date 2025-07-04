@@ -14,14 +14,21 @@ jest.mock('next-themes', () => ({
 
 // Mock sonner
 jest.mock('sonner', () => ({
-  Toaster: ({ theme, className, style, ...props }: any) => 
-    React.createElement('div', { 
-      'data-testid': 'sonner-toaster',
-      'data-theme': theme,
-      className,
-      style,
-      ...props 
-    }),
+  Toaster: ({ theme, className, style, children, ...rest }: any) => {
+    // remove known invalid dom props
+    const { richColors, closeButton, expand, maxToasts, ...safe } = rest
+    return React.createElement(
+      'div',
+      {
+        'data-testid': 'sonner-toaster',
+        'data-theme': theme,
+        className,
+        style,
+        ...safe,
+      },
+      children,
+    )
+  },
 }))
 
 describe('Sonner Toaster', () => {

@@ -107,9 +107,10 @@ jest.mock('agora-rtc-sdk-ng', () => ({
     connectionState: 'DISCONNECTED',
     remoteUsers: [],
   })),
+  createCameraVideoTrack: jest.fn(() => Promise.resolve({ play: jest.fn(), stop: jest.fn(), setEnabled: jest.fn(), close: jest.fn() })),
   createMicrophoneAndCameraTracks: jest.fn(() => Promise.resolve([
-    { close: jest.fn() },
-    { close: jest.fn() },
+    { play: jest.fn(), stop: jest.fn(), setEnabled: jest.fn(), close: jest.fn() },
+    { play: jest.fn(), stop: jest.fn(), setEnabled: jest.fn(), close: jest.fn() },
   ])),
   createScreenVideoTrack: jest.fn(() => Promise.resolve({
     close: jest.fn(),
@@ -204,7 +205,8 @@ console.error = (...args: any[]) => {
      args[0].includes('React does not recognize the `whileTap` prop') ||
      args[0].includes('React does not recognize the `animate` prop') ||
      args[0].includes('React does not recognize the `initial` prop') ||
-     args[0].includes('React does not recognize the `exit` prop'))
+     args[0].includes('React does not recognize the `exit` prop') ||
+     args[0].includes('inside a test was not wrapped in act'))
   ) {
     return
   }
