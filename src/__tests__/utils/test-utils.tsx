@@ -1,8 +1,5 @@
 import React, { ReactElement, ReactNode } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
-import { ClerkProvider } from '@clerk/nextjs'
-import { ThemeProvider } from '@/components/theme/ThemeProvider'
-import { Toaster } from '@/components/ui/Sonner'
 
 // Mock data factories
 export const createMockUser = (overrides?: Partial<any>) => ({
@@ -69,22 +66,12 @@ export const createMockDirectMessage = (overrides?: Partial<any>) => ({
   ...overrides,
 })
 
-// Test wrapper component
+// Test wrapper component - simplified without external providers
 const AllTheProviders = ({ children }: { children: ReactNode }) => {
   return (
-    <ClerkProvider 
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
-      appearance={{
-        elements: {
-          footer: "hidden"
-        }
-      }}
-    >
-      <ThemeProvider defaultTheme="light" storageKey="test-theme">
-        {children}
-        <Toaster />
-      </ThemeProvider>
-    </ClerkProvider>
+    <div data-testid="test-wrapper">
+      {children}
+    </div>
   )
 }
 

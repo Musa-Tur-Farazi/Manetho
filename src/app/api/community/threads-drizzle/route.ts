@@ -16,6 +16,16 @@ export async function GET(request: NextRequest) {
     const sortBy = (searchParams.get('sortBy') || 'recent') as 'recent' | 'popular' | 'mostComments';
     const search = searchParams.get('search') || undefined;
 
+    if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid pagination parameters',
+        },
+        { status: 400 }
+      );
+    }
+
     const offset = (page - 1) * limit;
 
     // Fetch threads using Drizzle helper

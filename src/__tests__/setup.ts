@@ -120,36 +120,164 @@ jest.mock('agora-rtc-sdk-ng', () => ({
   })),
 }))
 
-// Mock Clerk
+// Mock crypto for Clerk
+Object.defineProperty(global, 'crypto', {
+  value: {
+    subtle: {
+      digest: jest.fn(() => Promise.resolve(new ArrayBuffer(32))),
+    },
+    getRandomValues: (arr: any) => {
+      return arr.map(() => Math.floor(Math.random() * 256));
+    }
+  }
+});
+
+// A more robust and comprehensive mock for Clerk
+jest.mock('@clerk/nextjs/server', () => ({
+  auth: jest.fn(() => ({
+    userId: 'clerk_user_123',
+    getToken: jest.fn().mockResolvedValue('mock_token'),
+  })),
+  clerkClient: {
+    users: {
+      getUser: jest.fn((userId) =>
+        Promise.resolve({
+          id: userId,
+          firstName: 'Mocked',
+          lastName: 'User',
+          emailAddresses: [{ emailAddress: 'mock@example.com' }],
+          imageUrl: 'https://example.com/avatar.jpg',
+          publicMetadata: {},
+        })
+      ),
+    },
+  },
+  currentUser: jest.fn().mockResolvedValue({
+    id: 'clerk_user_123',
+    firstName: 'Mocked',
+    lastName: 'User',
+    emailAddresses: [{ emailAddress: 'mock@example.com' }],
+    imageUrl: 'https://example.com/avatar.jpg',
+  }),
+}));
+
+// Mock Clerk for API tests
 jest.mock('@clerk/nextjs', () => ({
-  useUser: () => ({
-    isSignedIn: true,
+  auth: jest.fn(() => ({
+    userId: 'clerk_user_123',
     user: {
-      id: 'test-user-id',
-      firstName: 'Test',
-      lastName: 'User',
-      emailAddresses: [{ emailAddress: 'test@example.com' }],
-      imageUrl: 'https://example.com/avatar.jpg',
-    },
-  }),
-  useAuth: () => ({
+      id: 'clerk_user_123',
+      fullName: 'John Doe',
+      emailAddresses: [{ emailAddress: 'john@example.com' }],
+      imageUrl: 'https://example.com/avatar.jpg'
+    }
+  })),
+  currentUser: jest.fn(() => Promise.resolve({
+    id: 'clerk_user_123',
+    fullName: 'John Doe',
+    emailAddresses: [{ emailAddress: 'john@example.com' }],
+    imageUrl: 'https://example.com/avatar.jpg'
+  })),
+  clerkClient: {
+    users: {
+      getUser: jest.fn((userId) => Promise.resolve({
+        id: userId,
+        firstName: 'John',
+        lastName: 'Doe',
+        emailAddresses: [{ emailAddress: 'john@example.com' }],
+        imageUrl: 'https://example.com/avatar.jpg'
+      }))
+    }
+  },
+  useUser: jest.fn(() => ({
     isSignedIn: true,
-    userId: 'test-user-id',
-    getToken: jest.fn(() => Promise.resolve('test-token')),
-  }),
-  SignInButton: ({ children }: any) => children,
-  SignUpButton: ({ children }: any) => children,
-  UserButton: () => React.createElement('div', { 'data-testid': 'user-button' }, 'User'),
-  ClerkProvider: ({ children }: any) => children,
-  auth: () => ({
-    userId: 'test-user-id',
+    isLoaded: true,
     user: {
-      id: 'test-user-id',
-      firstName: 'Test',
-      lastName: 'User',
-    },
-  }),
-}))
+      id: 'clerk_user_123',
+      fullName: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
+      emailAddresses: [{ emailAddress: 'john@example.com' }],
+      imageUrl: 'https://example.com/avatar.jpg'
+    }
+  })),
+  useAuth: jest.fn(() => ({
+    isSignedIn: true,
+    isLoaded: true,
+    userId: 'clerk_user_123',
+    getToken: jest.fn().mockResolvedValue('mock_token'),
+  })),
+  SignIn: function MockSignIn(props) {
+    return React.createElement('div', { 'data-testid': 'sign-in-mock' }, props.children);
+  },
+  SignUp: function MockSignUp(props) {
+    return React.createElement('div', { 'data-testid': 'sign-up-mock' }, props.children);
+  },
+  SignedIn: function MockSignedIn(props) {
+    return React.createElement('div', { 'data-testid': 'signed-in-mock' }, props.children);
+  },
+  SignedOut: function MockSignedOut(props) {
+    return React.createElement('div', { 'data-testid': 'signed-out-mock' }, props.children);
+  },
+  UserButton: function MockUserButton(props) {
+    return React.createElement('div', { 'data-testid': 'user-button-mock' }, 'UserButton');
+  },
+  ClerkLoaded: function MockClerkLoaded(props) {
+    return React.createElement('div', {}, props.children);
+  },
+  ClerkLoading: function MockClerkLoading(props) {
+    return React.createElement('div', {}, props.children);
+  },
+  ClerkProvider: function MockClerkProvider({ children }) {
+    return React.createElement('div', {}, children);
+  },
+}));
+
+
+// Mock Clerk backend
+jest.mock('@clerk/backend', () => ({
+  Clerk: jest.fn(() => ({
+    users: {
+      getUser: jest.fn(() => Promise.resolve({
+        id: 'clerk_user_123',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailAddresses: [{ emailAddress: 'john@example.com' }],
+        imageUrl: 'https://example.com/avatar.jpg'
+      }))
+    }
+  })),
+  clerkClient: {
+    users: {
+      getUser: jest.fn(() => Promise.resolve({
+        id: 'clerk_user_123',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailAddresses: [{ emailAddress: 'john@example.com' }],
+        imageUrl: 'https://example.com/avatar.jpg'
+      }))
+    }
+  },
+  webhooks: {
+    constructEvent: jest.fn(() => ({
+      type: 'user.created',
+      data: {
+        id: 'clerk_user_123',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailAddresses: [{ emailAddress: 'john@example.com' }],
+        imageUrl: 'https://example.com/avatar.jpg'
+      }
+    }))
+  },
+  // Add ESM exports mock
+  __esModule: true,
+  webcrypto: {
+    subtle: {
+      digest: jest.fn(() => Promise.resolve(new ArrayBuffer(32)))
+    }
+  }
+}));
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -206,12 +334,57 @@ console.error = (...args: any[]) => {
      args[0].includes('React does not recognize the `animate` prop') ||
      args[0].includes('React does not recognize the `initial` prop') ||
      args[0].includes('React does not recognize the `exit` prop') ||
-     args[0].includes('inside a test was not wrapped in act'))
+     args[0].includes('inside a test was not wrapped in act') ||
+     // Expected error logs from unit tests simulating failure scenarios
+     args[0].includes('Download failed') ||
+     args[0].includes('Upload error') ||
+     args[0].includes('Delete error') ||
+     args[0].includes('Drizzle API Error') ||
+     args[0].includes('Drizzle Create Thread Error') ||
+     args[0].includes('User sync attempt') ||
+     args[0].includes('Error checking if user exists') ||
+     args[0].includes('Not implemented: window.open') ||
+     args[0].includes('Error fetching') ||
+     args[0].includes('AI request failed') ||
+     args[0].includes('React does not recognize the `whileInView` prop'))
   ) {
     return
   }
   originalConsoleError.call(console, ...args)
 }
 
+// Suppress specific console warnings in tests (e.g., expected network/download fallbacks)
+const originalConsoleWarn = console.warn
+console.warn = (...args: any[]) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Download failed for') ||
+     args[0].includes('Could not revoke object URL'))
+  ) {
+    return
+  }
+  originalConsoleWarn.call(console, ...args)
+}
+
 // Setup fetch mock
 require('jest-fetch-mock').enableMocks() 
+
+// Polyfill missing browser APIs for JSDOM environment used by Jest
+if (typeof window !== 'undefined') {
+  // Stub window.open to prevent JSDOM not-implemented errors (jsdom provides but throws)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  window.open = jest.fn();
+
+  // Ensure URL API functions exist
+  if (!('createObjectURL' in window.URL)) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    window.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/mock');
+  }
+  if (!('revokeObjectURL' in window.URL)) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    window.URL.revokeObjectURL = jest.fn();
+  }
+} 

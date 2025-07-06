@@ -22,7 +22,7 @@ const ContentCard: FC<ContentCardProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow duration-300 ${className}`}>
+    <div className={`${className} overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow duration-300`}>
       {image && (
         <div className="h-48 overflow-hidden">
           <img

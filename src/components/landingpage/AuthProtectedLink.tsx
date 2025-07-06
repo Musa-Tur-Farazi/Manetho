@@ -10,13 +10,15 @@ interface AuthProtectedLinkProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  target?: string;
 }
 
 export default function AuthProtectedLink({
   href,
   children,
   className = "",
-  onClick
+  onClick,
+  target
 }: AuthProtectedLinkProps) {
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
@@ -41,6 +43,7 @@ export default function AuthProtectedLink({
       href={href}
       onClick={handleClick}
       className={className}
+      target={target}
     >
       {children}
     </a>

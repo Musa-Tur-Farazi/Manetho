@@ -13,37 +13,41 @@ jest.mock('@/components/theme/ThemeProvider', () => {
   }
 })
 
-// Dummy appId (32 chars) & token
-const dummyAppId = '12345678901234567890123456789012'
-const dummyToken = 'dummy_token'
-
-const defaultProps = {
-  channelName: 'testChannel',
-  userId: 'user1',
-  onCallEnd: jest.fn(),
-  appId: dummyAppId,
-  token: dummyToken,
-  recipientName: 'Tester',
-}
+// Mock fetch used inside AudioCall to obtain Agora token
+beforeEach(() => {
+  jest.clearAllMocks()
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ token: 'token123', uid: '1', expiresAt: Date.now() + 3600 })
+    })
+  ) as jest.Mock
+})
 
 describe('AudioCall component', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
+  const validAppId = '12345678901234567890123456789012'
+  const defaultProps = {
+    channelName: 'audioTest',
+    userId: 'caller123',
+    onCallEnd: jest.fn(),
+    appId: validAppId,
+  }
 
-  it('renders connecting UI initially', () => {
+  it('renders and allows ending the call', async () => {
     render(<AudioCall {...defaultProps} />)
 
-    expect(screen.getByText(/calling tester/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    const endBtn = await screen.findByTitle(/end call/i, {}, { timeout: 3000 })
+    expect(endBtn).toBeInTheDocument()
+
+    fireEvent.click(endBtn)
+    await waitFor(() => expect(defaultProps.onCallEnd).toHaveBeenCalled())
   })
 
-  it('fires onCallEnd when cancel clicked during connecting', () => {
-    render(<AudioCall {...defaultProps} />)
+  it('shows validation error for invalid App ID', async () => {
+    const badId = 'short-id'
+    render(<AudioCall {...defaultProps} appId={badId} />)
 
-    const cancelBtn = screen.getByRole('button', { name: /cancel/i })
-    fireEvent.click(cancelBtn)
-
-    expect(defaultProps.onCallEnd).toHaveBeenCalled()
+    const errText = await screen.findByText(/Invalid Agora App ID format/i, {}, { timeout: 2000 })
+    expect(errText).toBeInTheDocument()
   })
 }) 

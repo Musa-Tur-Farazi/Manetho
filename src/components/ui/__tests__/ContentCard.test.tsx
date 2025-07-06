@@ -59,9 +59,13 @@ describe('ContentCard', () => {
   })
 
   it('applies custom className', () => {
-    const { container } = customRender(<ContentCard {...defaultProps} className="custom-class" />)
-    const card = container.firstChild as HTMLElement
-    expect(card).toHaveClass('custom-class')
+    // Use standard render instead of customRender
+    const { container } = render(<ContentCard {...defaultProps} className="custom-class" />)
+    
+    // Get the div with the ContentCard component
+    const cardDiv = container.querySelector('div')
+    expect(cardDiv).not.toBeNull()
+    expect(cardDiv?.className).toContain('custom-class')
   })
 
   it('renders without image when not provided', () => {
@@ -110,7 +114,8 @@ describe('ContentCard', () => {
   it('renders with all optional props', () => {
     const TestIcon = () => <div data-testid="test-icon">🎯</div>
     
-    const { container } = customRender(
+    // Use standard render instead of customRender
+    const { container } = render(
       <ContentCard 
         title="Complete Card"
         description="Full featured card"
@@ -128,7 +133,9 @@ describe('ContentCard', () => {
     expect(screen.getByTestId('test-icon')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get Started' })).toBeInTheDocument()
     
-    const card = container.firstChild as HTMLElement
-    expect(card).toHaveClass('complete-card')
+    // Get the div with the ContentCard component
+    const cardDiv = container.querySelector('div')
+    expect(cardDiv).not.toBeNull()
+    expect(cardDiv?.className).toContain('complete-card')
   })
 }) 

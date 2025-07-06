@@ -47,4 +47,21 @@ describe('Navbar (landing)', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/custom-auth/sign-in?redirect_url=%2Fhome')
   })
+
+  /* dashboard path covered in integration tests; skipping JSDOM mock complexity */
+
+  it('opens mobile menu and shows navigation links', () => {
+    render(<Navbar />)
+
+    const menuBtn = screen.getByLabelText(/open menu/i)
+    fireEvent.click(menuBtn)
+
+    // Home link should now be visible inside the mobile overlay
+    expect(screen.getByText(/^home$/i)).toBeInTheDocument()
+
+    // Close menu again
+    fireEvent.click(menuBtn)
+
+    expect(screen.queryByText(/^home$/i)).not.toBeInTheDocument()
+  })
 }) 

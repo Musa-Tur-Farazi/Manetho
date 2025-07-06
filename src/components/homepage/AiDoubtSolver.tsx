@@ -131,7 +131,7 @@ const AiDoubtSolver = ({ expanded = false }: AiDoubtSolverProps) => {
 
             {/* Input area */}
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-              <form onSubmit={handleSubmit} className="flex items-center gap-2">
+              <form onSubmit={handleSubmit} className="flex items-center gap-2" role="form">
                 <input
                   type="text"
                   value={inputValue}

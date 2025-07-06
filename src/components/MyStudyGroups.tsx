@@ -81,7 +81,7 @@ export default function MyStudyGroups() {
   if (loading) {
     return (
       <div className="text-center py-6">
-        <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto"></div>
+        <div data-testid="loading-spinner" className="animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mx-auto"></div>
       </div>
     );
   }

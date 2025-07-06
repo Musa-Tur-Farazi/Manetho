@@ -34,7 +34,11 @@ export async function downloadFile(url: string, filename: string, fallbackUrl?: 
 
     // Clean up
     document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
+    try {
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.warn('Could not revoke object URL:', error);
+    }
 
     console.log(`✅ Download initiated: ${filename}`);
   } catch (error) {
@@ -46,7 +50,24 @@ export async function downloadFile(url: string, filename: string, fallbackUrl?: 
 
     // Fallback to opening in new tab
     if (fallbackUrl) {
-      window.open(fallbackUrl, '_blank');
+      try {
+        const fallbackResponse = await fetch(fallbackUrl);
+        if (fallbackResponse.ok) {
+          const fallbackBlob = await fallbackResponse.blob();
+          const fallbackDownloadUrl = window.URL.createObjectURL(fallbackBlob);
+          const fallbackLink = document.createElement('a');
+          fallbackLink.href = fallbackDownloadUrl;
+          fallbackLink.download = filename;
+          document.body.appendChild(fallbackLink);
+          fallbackLink.click();
+          document.body.removeChild(fallbackLink);
+          window.URL.revokeObjectURL(fallbackDownloadUrl);
+        } else {
+          window.open(fallbackUrl, '_blank');
+        }
+      } catch (fallbackError) {
+        window.open(fallbackUrl, '_blank');
+      }
     } else {
       window.open(url, '_blank');
     }

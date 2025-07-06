@@ -173,14 +173,17 @@ export async function deleteThread(threadId: string) {
 }
 
 export async function updateThreadLikes(threadId: string, increment = true) {
-  await db
+  const result = await db
     .update(threadsTable)
     .set({
       likeCount: increment
         ? sql`${threadsTable.likeCount} + 1`
         : sql`${threadsTable.likeCount} - 1`
     })
-    .where(eq(threadsTable.threadId, threadId));
+    .where(eq(threadsTable.threadId, threadId))
+    .returning({ likeCount: threadsTable.likeCount });
+
+  return result[0]?.likeCount;
 }
 
 // Comment Operations
@@ -286,16 +289,21 @@ export async function createSessionMessage(messageData: {
 // Utility function to check if tables exist
 export async function checkTablesExist() {
   try {
-    const tableChecks = await Promise.all([
-      db.select({ count: count() }).from(usersTable).limit(1),
-      db.select({ count: count() }).from(threadsTable).limit(1),
-      db.select({ count: count() }).from(doubtSolvingSessionsTable).limit(1),
-    ]);
-
+    // Execute a query to check if tables exist in the database
+    const result = await db.execute(sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'threads', 'doubt_solving_sessions')
+    `);
+    
+    // Create a set of existing table names for easy lookup
+    const existingTables = new Set(result.rows.map(row => row.table_name));
+    
     return {
-      users: true,
-      threads: true,
-      sessions: true,
+      users: existingTables.has('users'),
+      threads: existingTables.has('threads'),
+      sessions: existingTables.has('doubt_solving_sessions'),
     };
   } catch (error) {
     console.error('Table check failed:', error);
