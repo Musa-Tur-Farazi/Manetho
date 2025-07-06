@@ -1,0 +1,43 @@
+# ───────────────────────────────
+# Build & dependency artifacts
+# ───────────────────────────────
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.vscode-test/
+
+# ───────────────────────────────
+# Logs & OS noise
+# ───────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# ───────────────────────────────
+# Docker scratch layers
+# ───────────────────────────────
+*.tar
+*.gz
+*.layer
+
+# ───────────────────────────────
+# Project-specific ignore
+# (add or remove as needed)
+# ───────────────────────────────
+**/tmp/
+**/.cache/
+*.swp
+*.swo
+
+# ───────────────────────────────
+# KEEP all env files
+# (negated patterns override any
+#  earlier catch-alls)
+# ───────────────────────────────
+!.env
+!.env.*

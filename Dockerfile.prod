@@ -1,0 +1,23 @@
+FROM node:20.17.0
+
+WORKDIR /app
+
+COPY package*.json .
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+RUN cp -r .next/static .next/standalone/.next/ || true
+RUN cp -r public .next/standalone/ || true
+
+ENV PORT=4000
+ENV HOSTNAME=0.0.0.0
+
+EXPOSE 4000
+
+WORKDIR /app/.next/standalone
+
+CMD ["node", "server.js"]

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Monitor, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
+const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+
 export default function TestScreenSharePage() {
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
   const [isSecure, setIsSecure] = useState<boolean | null>(null);
@@ -155,12 +157,14 @@ export default function TestScreenSharePage() {
               <h3 className="font-medium text-gray-900 dark:text-white mb-3">
                 Current Environment
               </h3>
-              <div className="text-sm text-gray-600 dark:text-slate-400 space-y-1">
-                <p>Browser: {navigator.userAgent}</p>
-                <p>Protocol: {window.location.protocol}</p>
-                <p>Host: {window.location.host}</p>
-                <p>Secure Context: {window.isSecureContext ? 'Yes' : 'No'}</p>
-              </div>
+              {isBrowser && (
+                <div className="text-sm text-gray-600 dark:text-slate-400 space-y-1">
+                  <p>Browser: {navigator.userAgent}</p>
+                  <p>Protocol: {window.location.protocol}</p>
+                  <p>Host: {window.location.host}</p>
+                  <p>Secure Context: {window.isSecureContext ? 'Yes' : 'No'}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
