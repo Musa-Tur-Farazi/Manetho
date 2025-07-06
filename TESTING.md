@@ -202,3 +202,97 @@ Reference of the helpers you will see over and over:
 | `expect()` | Jest global assertion. Chain matchers like `toBeInTheDocument`, `toHaveTextContent`, etc. | `expect(btn).toBeDisabled()` |
 
 Armed with these five, you can understand 95 % of the assertions in `src/**/__tests__`. 
+
+---
+
+## 11 · Committing & pushing your test changes
+
+After adding/adjusting tests you will typically want to push the branch so CI picks up the new coverage numbers.
+
+```bash
+# 1. Stage everything (tests + docs + config)
+git add .
+
+# 2. Commit with a clear message
+git commit -m "test: increase coverage (Navbar, Testimonials, ThemeProvider) and doc updates"
+
+# 3. Push to your remote feature branch
+#    If the branch already exists on GitHub:
+git push origin unit-testing
+
+#  ── Handling conflicts / history rewrites ──
+# If remote history diverged and you *intentionally* want your local version
+# to overwrite it completely (e.g. after a force-rebase):
+# ⚠️ Use with care – this rewrites the remote branch history.
+git push --force-with-lease origin unit-testing
+```
+
+CI will automatically run `npm test -- --coverage` on the pushed branch, enforcing the thresholds configured in `jest.config.js`. 
+
+---
+
+## 12 · Walk-through: line-by-line anatomy of a real test
+
+Below is a condensed excerpt of `src/components/ui/__tests__/Button.test.tsx` annotated so a teammate new to Jest + Testing-Library can see **exactly** what every line does.
+
+```tsx
+import React from 'react'
+import { render, screen, fireEvent } from '@/__tests__/utils/test-utils'
+import { Button } from '../Button'
+
+// 1️⃣  Arrange – render the component we want to test
+//     `render()` mounts it into an off-screen DOM managed by JSDOM.
+render(<Button onClick={() => console.log('clicked')}>Save</Button>)
+
+// 2️⃣  Act – simulate a user interaction
+//     `getByRole('button', { name: /save/i })` searches the virtual DOM
+//     for the <button> element whose accessible name matches "save".
+const saveBtn = screen.getByRole('button', { name: /save/i })
+
+// 3️⃣  fireEvent.click(...) tells Testing-Library to dispatch an actual
+//     DOM click event, just like the browser would when a user clicks.
+fireEvent.click(saveBtn)
+
+// 4️⃣  Assert – verify the component reacted correctly.
+//     In the real suite we spy on the onClick handler and expect it to have
+//     been called *once*. Here we’ll do the simplified version:
+expect(saveBtn).toBeEnabled()
+```
+
+Break-down:
+
+1. **Imports** – `render`, `screen`, `fireEvent` come from Testing-Library helpers (see section 10).  The component under test is imported from its source file.
+2. **render(...)** – returns utilities (`container`, `rerender`, …) but 90 % of the time we rely on the global `screen` object instead.
+3. **Query** – `getByRole` is preferred over `getByTestId` because it reflects how assistive technologies identify elements (accessibility wins!).
+4. **Interaction** – `fireEvent` (or the higher-level `userEvent`) creates genuine DOM events so React state updates exactly as it would in production.
+5. **Assertion** – Jest’s `expect()` plus matcher (`toBeEnabled`) forms the verification step.  Any matcher from `@testing-library/jest-dom` works here.
+
+> ⚡ Tip: Swap `fireEvent` for `userEvent` when you need more realistic keyboard & pointer interactions (it adds async delays, focus management, etc.).
+
+With this single pattern—Arrange → Act → Assert—you can understand or write virtually every unit test in the repository.
+
+### Deeper dive into the utilities you’ll encounter
+
+| Helper / API | Origin | Typical usage in this codebase | What it actually does |
+|--------------|--------|--------------------------------|-----------------------|
+| `jest.mock()` | Jest core | Mocking third-party modules such as `next/navigation`, `@clerk/nextjs`, `agora-rtc-sdk-ng`.  | Replaces the real implementation with a stub **at import time**.  Useful when the real module hits the network or the browser. |
+| `jest.fn()`   | Jest core | Creating spy functions we can later assert (`expect(myFn).toHaveBeenCalled()`). | Returns a function whose calls & args are recorded. |
+| `jest.spyOn()`| Jest core | `jest.spyOn(window, 'scrollTo')…` in the Navbar tests. | Wraps an existing method in a spy without fully replacing the object. |
+| `beforeEach / afterEach` | Jest core | Reset mocks, clear `localStorage`, restore DOM classes between tests. | Lifecycle hooks run before/after every `it()` block. |
+| `jest.useFakeTimers()` | Jest core | Time-sensitive suites (`Testimonials` autoplay) use fake timers so we can `advanceTimersByTime(6000)`. | Swaps the real timer API with a controllable fake implementation. |
+| `act()` | React DOM test-utils | Ensures all pending React state updates/side-effects are flushed before assertions. Testing-Library re-exports it. |
+| `waitFor()` | Testing-Library | Wait until a callback stops throwing ‑ e.g. waiting for async UI changes after fetch mocks resolve. |
+| `fireEvent()` | Testing-Library | Low-level DOM event dispatcher (`click`, `change`, etc.). |
+| `userEvent`  | Testing-Library user-event | High-level wrapper around `fireEvent` that simulates realistic typing and pointer behaviour. |
+| `screen` | Testing-Library | Global façade to query the rendered DOM (`getByRole`, `queryByText`, …). |
+| `expect()` + matchers | Jest + `@testing-library/jest-dom` | `toBeInTheDocument`, `toHaveTextContent`, `toHaveBeenCalledWith`, etc. | Assertion library. Additional DOM-specific matchers come from the jest-dom package. |
+
+### Node / environment specifics
+
+1. **JSDOM** – Jest uses JSDOM to provide a browser-like DOM inside Node.  Components render as if they were in Chrome, but no real network or layouting happens.
+2. **`global.fetch` stubs** – In several API route tests we assign `global.fetch = jest.fn()` to intercept HTTP calls that would otherwise fail under Node.
+3. **`matchMedia` / `window.isSecureContext`** – When components read browser-only APIs we polyfill them in the test file (`Object.defineProperty(window, 'matchMedia', …)`).
+4. **Fake timers vs real timers** – Fake timers run synchronously, speeding up animations/autoplay; but they can break libraries that rely on real `Date.now()`.  We enable them *per test file* not globally.
+5. **ESM vs CJS** – The codebase is TypeScript compiled to ESM.  Jest runs under ts-jest which handles the transform so you can import `.tsx` files directly in tests.
+
+> Need a refresher on any API?  Jest docs: https://jestjs.io/docs/api – Testing-Library: https://testing-library.com/docs/ . 
