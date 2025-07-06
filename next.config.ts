@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
     // there are TypeScript errors.
     ignoreBuildErrors: true,
   },
+  output: 'standalone',
   /* other config options */
 };
 
