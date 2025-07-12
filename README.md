@@ -53,18 +53,6 @@ npm test -- <path-to-test>
 npm test -- src/components/chat/__tests__/AudioCall.test.tsx
 ```
 
-### Current coverage
-
-| Area | Status |
-|------|--------|
-| UI components (Badge, Button, Card, FileUpload, ContentCard, PageHeader, GetStartedButton, LoginButton, Sonner, ThemeToggle) | ✅ |
-| Authentication components (AuthCheck, AuthModal) | ✅ |
-| Chat components (AudioCall, VideoCall, IncomingCallNotification) | ✅ |
-| ThemeProvider | ⏳ pending |
-| Navbars, landing page sections | ⏳ pending |
-| Hooks & utilities | ⏳ pending |
-| API integration tests | ⏳ pending |
-
 ### Adding new tests
 
 1. Add test files under the relevant `__tests__` directory.
