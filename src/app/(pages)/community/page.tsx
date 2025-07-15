@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Smile, Bookmark, Send, Bell, Users, BarChart3, Moon, Sun, Move, RotateCw, ExternalLink, ChevronDown, UserPlus, Settings, Archive, Lock, Pin, Search } from "lucide-react";
+import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Smile, Bookmark, Send, Bell, Users, BarChart3, Moon, Sun, Move, ExternalLink, ChevronDown, UserPlus, Search } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import ChatSidebar from "@/components/ChatSidebar";
-import MyStudyGroups from "@/components/MyStudyGroups";
 import { useRouter } from "next/navigation";
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useTheme } from '@/components/theme/ThemeProvider';

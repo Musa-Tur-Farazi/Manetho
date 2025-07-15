@@ -1,20 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Send,
   Search,
-  ArrowLeft,
   Phone,
   Video,
   MoreVertical,
   ChevronLeft,
-  User,
   MessageCircle,
-  Users,
-  Clock,
   Check,
   CheckCheck,
   Paperclip,
@@ -320,7 +316,7 @@ export default function ChatPage() {
     } else {
       setSearchResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCurrentUserInternalId = async () => {
     try {
@@ -403,7 +399,7 @@ export default function ChatPage() {
     }
   };
 
-  const searchUsers = async () => {
+  const searchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/community/users?type=following');
       if (response.ok) {
@@ -416,7 +412,7 @@ export default function ChatPage() {
     } catch (error) {
       console.error('Error searching users:', error);
     }
-  };
+  }, [searchQuery]);
 
   const sendMessage = async () => {
     if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedChat || sendingMessage) return;
@@ -427,7 +423,11 @@ export default function ChatPage() {
       const uploadedFiles = await uploadFiles();
 
       // Send message with files
-      const messageData: any = {
+      const messageData: {
+        recipientId: string;
+        content: string;
+        files?: any[];
+      } = {
         recipientId: selectedChat,
         content: newMessage || '',
       };
@@ -450,7 +450,7 @@ export default function ChatPage() {
 
         // Add all created messages to the UI
         if (data.messages && data.messages.length > 0) {
-          const newMessages = data.messages.map((msg: any) => ({
+          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; files?: any[] }) => ({
             ...msg,
             senderName: data.sender.fullName,
             senderAvatar: data.sender.avatarUrl,

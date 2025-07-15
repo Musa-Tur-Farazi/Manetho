@@ -2,7 +2,6 @@
 
 import { Button } from "./Button";
 import { UserButton, useAuth } from "@clerk/nextjs";
-import { LogIn } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type LoginButtonProps = {

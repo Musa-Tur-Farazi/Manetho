@@ -304,7 +304,7 @@ const Testimonials = () => {
 
           <div className="relative">
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Don't just take our word for it. Hear from our students who have transformed their learning experience with Manetho.
+              Don&apos;t just take our word for it. Hear from our students who have transformed their learning experience with Manetho.
             </p>
 
             {/* Decorative underline */}

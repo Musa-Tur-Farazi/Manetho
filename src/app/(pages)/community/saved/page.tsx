@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, User, Share, Clock, Bookmark, ChevronLeft, Image as ImageIcon, BarChart3, ExternalLink, ChevronDown, UserPlus, Filter, Search, Calendar, TrendingUp, Users, Star } from "lucide-react";
+import { Heart, MessageCircle, Clock, Bookmark, ChevronLeft, Image as ImageIcon, BarChart3, ExternalLink, Filter, Search, TrendingUp, Users } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@/components/theme/ThemeProvider';

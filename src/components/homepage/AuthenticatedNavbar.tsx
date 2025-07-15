@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun, User, LogOut, ChevronDown, LayoutDashboard, Menu, X, BookOpen, BookMarked, Network, FileText, Brain } from "lucide-react";
+import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, BookOpen, BookMarked, Network, Brain } from "lucide-react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Button } from "../ui/Button";
 
@@ -51,50 +51,23 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         }`}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/home" className="flex items-center">
-          <span
-            className={`text-2xl font-bold ${isScrolled
-              ? "text-gray-900 dark:text-white"
-              : "text-gray-900 dark:text-white"
-              }`}
-          >
-            Manetho
-          </span>
-        </Link>
+        {/* Left section: Logo + Doubt-solving button */}
+                  <div className="flex items-center gap-16">
+          <Link href="/home" className="flex items-center">
+            <span
+              className={`text-2xl font-bold ${isScrolled
+                ? "text-gray-900 dark:text-white"
+                : "text-gray-900 dark:text-white"
+                }`}
+            >
+              Manetho
+            </span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-1">
-          <button
-            onClick={() => scrollToSection('learning-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
-              } transition-colors duration-200`}
-          >
-            My Learning
-          </button>
-          <button
-            onClick={() => scrollToSection('resources-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
-              } transition-colors duration-200`}
-          >
-            Resources
-          </button>
-          <button
-            onClick={() => scrollToSection('tools-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
-              } transition-colors duration-200`}
-          >
-            Tools
-          </button>
+          {/* Doubt-solving button - desktop only */}
           <Link
             href="/tools/doubt-solving"
-            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${isScrolled
+            className={`hidden md:flex px-4 py-2 rounded-lg font-medium text-sm items-center ${isScrolled
               ? "text-cyan-600 hover:bg-gray-100 dark:text-cyan-400 dark:hover:bg-gray-800"
               : "text-cyan-600 hover:bg-white/20 dark:text-cyan-400 dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -219,24 +192,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             className="md:hidden bg-white dark:bg-gray-900 mt-2 rounded-lg shadow-lg overflow-hidden"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <button
-                onClick={() => scrollToSection('learning-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                My Learning
-              </button>
-              <button
-                onClick={() => scrollToSection('resources-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Resources
-              </button>
-              <button
-                onClick={() => scrollToSection('tools-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Tools
-              </button>
+
               <Link
                 href="/tools/doubt-solving"
                 className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"

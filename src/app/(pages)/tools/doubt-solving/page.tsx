@@ -1663,7 +1663,7 @@ export default function DoubtSolvingPage() {
                       onClick={() => setQuery("Explain the concept of quantum entanglement")}
                       className="text-xs text-gray-400 px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors"
                     >
-                      "Explain quantum entanglement"
+                      &quot;Explain quantum entanglement&quot;
                     </button>
                   </div>
                   <div className="p-4 rounded-lg text-center group">
@@ -1676,7 +1676,7 @@ export default function DoubtSolvingPage() {
                       onClick={() => setQuery("Solve the equation: 3x² + 6x - 9 = 0")}
                       className="text-xs text-gray-400 px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors"
                     >
-                      "Solve the equation: 3x² + 6x - 9 = 0"
+                      &quot;Solve the equation: 3x² + 6x - 9 = 0&quot;
                     </button>
                   </div>
                 </div>

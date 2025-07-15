@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Search, BookOpen, Clock, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
-import ContentCard from "@/components/ui/ContentCard";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -183,7 +182,7 @@ export default function BlogPage() {
                 No articles found
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Try adjusting your search or filter to find what you're looking for
+                Try adjusting your search or filter to find what you&apos;re looking for
               </p>
             </div>
           )}

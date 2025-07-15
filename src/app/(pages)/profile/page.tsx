@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   User, Edit, BookOpen, Calendar, Award, BarChart, Clock,
-  Save, X, ChevronRight, Book, Pencil, MailOpen, Link as LinkIcon,
-  Star, GraduationCap
+  Save, X, ChevronRight, Pencil, MailOpen, Link as LinkIcon,
+  GraduationCap
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 

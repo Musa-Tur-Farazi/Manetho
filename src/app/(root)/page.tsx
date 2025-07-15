@@ -11,8 +11,6 @@ import Testimonials from "@/components/landingpage/section/Testimonials";
 import StatisticsSection from "@/components/landingpage/section/StatisticsSection";
 import CTASection from "@/components/landingpage/section/CTASection";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import ThemeToggle from "@/components/theme/ThemeToggle";
-import AuthProtectedLink from "@/components/landingpage/AuthProtectedLink";
 
 function Landingpage() {
   const { isSignedIn } = useAuth();

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
-import { Check, ChevronRight, Edit, Trash, Plus, BookOpen, Brain, ClipboardList, GraduationCap, Clock, Flag, Calendar } from "lucide-react";
+import { Check, Edit, Trash, Plus, BookOpen, Brain, ClipboardList, GraduationCap, Clock, Flag, Calendar } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 
 // Define the types for our mind map
@@ -11,7 +11,7 @@ interface MindMapNode {
   id: string;
   title: string;
   description?: string;
-  icon?: JSX.Element;
+  icon?: React.ReactElement;
   status: "not-started" | "in-progress" | "completed";
   children: MindMapNode[];
 }

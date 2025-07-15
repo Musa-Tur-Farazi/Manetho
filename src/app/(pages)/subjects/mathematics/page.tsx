@@ -201,7 +201,7 @@ export default function MathematicsPage() {
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             Our mathematics curriculum combines rigorous theory with practical applications,
             designed to develop strong problem-solving skills and conceptual understanding.
-            Whether you're preparing for exams, pursuing a degree, or simply curious about
+                            Whether you&apos;re preparing for exams, pursuing a degree, or simply curious about
             mathematics, our resources are tailored to help you succeed.
           </p>
           <ul className="space-y-3">

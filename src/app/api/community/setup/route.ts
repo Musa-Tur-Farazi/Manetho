@@ -18,7 +18,7 @@ export async function POST() {
     await db.execute(sql`DROP TABLE IF EXISTS threads CASCADE`);
 
     // Create threads table - use INTEGER for created_by to match users.id
-    let createThreadsQuery = `
+    const createThreadsQuery = `
       CREATE TABLE threads (
         thread_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         title VARCHAR(255) NOT NULL,
