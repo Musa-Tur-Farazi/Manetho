@@ -89,43 +89,11 @@ export const topicsTable = pgTable("topics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const flashcardDecksTable = pgTable("flashcard_decks", {
-  deckId: uuid("deck_id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
-  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
-  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  isPublic: boolean("is_public").default(false).notNull(),
-  totalCards: integer("total_cards").default(0).notNull(),
-  contentSource: contentSourceEnum("content_source").default('user_created').notNull(),
-  aiPrompt: text("ai_prompt"), // Original prompt used for AI generation
-  autoUpdateEnabled: boolean("auto_update_enabled").default(false).notNull(),
-  updateFrequency: updateFrequencyEnum("update_frequency").default('never').notNull(),
-  lastAutoUpdate: timestamp("last_auto_update"),
-  nextScheduledUpdate: timestamp("next_scheduled_update"),
-  aiModelVersion: varchar("ai_model_version", { length: 50 }),
-  generationMetadata: jsonb("generation_metadata"), // Store AI generation parameters
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 export const flashcardsTable = pgTable("flashcards", {
   cardId: uuid("card_id").primaryKey().defaultRandom(),
-  deckId: uuid("deck_id").references(() => flashcardDecksTable.deckId, { onDelete: 'cascade' }).notNull(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
-  hint: text("hint"),
-  explanation: text("explanation"), // Detailed explanation for learning
-  difficulty: difficultyEnum("difficulty").default('beginner').notNull(),
-  orderIndex: integer("order_index").default(0).notNull(),
-  contentSource: contentSourceEnum("content_source").default('user_created').notNull(),
-  aiConfidenceScore: decimal("ai_confidence_score", { precision: 3, scale: 2 }), // AI's confidence in this card (0-1)
-  userRating: integer("user_rating"), // User feedback on card quality (1-5)
-  timesReviewed: integer("times_reviewed").default(0).notNull(),
-  correctAnswers: integer("correct_answers").default(0).notNull(),
-  lastReviewed: timestamp("last_reviewed"),
-  needsReview: boolean("needs_review").default(false).notNull(), // Flag for AI to review/update
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -618,7 +586,7 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
   profile: one(userProfilesTable),
   authTokens: many(authTokensTable),
   chats: many(chatsTable),
-  flashcardDecks: many(flashcardDecksTable),
+  flashcards: many(flashcardsTable),
   mindMaps: many(mindMapsTable),
   practiceTests: many(practiceTestsTable),
   testSubmissions: many(practiceTestSubmissionsTable),
@@ -646,7 +614,6 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
 
 export const subjectsRelations = relations(subjectsTable, ({ many }) => ({
   topics: many(topicsTable),
-  flashcardDecks: many(flashcardDecksTable),
   mindMaps: many(mindMapsTable),
   practiceTests: many(practiceTestsTable),
   threads: many(threadsTable),
@@ -662,7 +629,6 @@ export const topicsRelations = relations(topicsTable, ({ one, many }) => ({
     fields: [topicsTable.subjectId],
     references: [subjectsTable.subjectId],
   }),
-  flashcardDecks: many(flashcardDecksTable),
   mindMaps: many(mindMapsTable),
   practiceTests: many(practiceTestsTable),
   threads: many(threadsTable),
@@ -671,26 +637,10 @@ export const topicsRelations = relations(topicsTable, ({ one, many }) => ({
   doubtSolvingSessions: many(doubtSolvingSessionsTable),
 }));
 
-export const flashcardDecksRelations = relations(flashcardDecksTable, ({ one, many }) => ({
-  user: one(usersTable, {
-    fields: [flashcardDecksTable.userId],
-    references: [usersTable.userId],
-  }),
-  subject: one(subjectsTable, {
-    fields: [flashcardDecksTable.subjectId],
-    references: [subjectsTable.subjectId],
-  }),
-  topic: one(topicsTable, {
-    fields: [flashcardDecksTable.topicId],
-    references: [topicsTable.topicId],
-  }),
-  cards: many(flashcardsTable),
-}));
-
 export const flashcardsRelations = relations(flashcardsTable, ({ one }) => ({
-  deck: one(flashcardDecksTable, {
-    fields: [flashcardsTable.deckId],
-    references: [flashcardDecksTable.deckId],
+  user: one(usersTable, {
+    fields: [flashcardsTable.userId],
+    references: [usersTable.userId],
   }),
 }));
 

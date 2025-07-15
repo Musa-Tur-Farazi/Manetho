@@ -18,11 +18,7 @@ import {
   BookMarked,
   FileText,
   BarChart3,
-  Network,
   Trophy,
-  Calculator,
-  DollarSign,
-  PenTool,
   MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import AuthenticatedNavbar from "@/components/homepage/AuthenticatedNavbar";
 import Footer from "@/components/landingpage/section/Footer";
-import AiDoubtSolver from "@/components/homepage/AiDoubtSolver";
+
 
 const HomePage = () => {
   const { user, isLoaded } = useUser();
@@ -96,8 +92,7 @@ const HomePage = () => {
         onDashboardClick={() => { }}
       />
 
-      {/* AI Doubt Solver */}
-      <AiDoubtSolver expanded={false} />
+
 
       {/* Sidebar toggle button for mobile */}
       <button
@@ -159,38 +154,11 @@ const HomePage = () => {
                     <BookMarked className="w-5 h-5 mr-3 text-emerald-600 dark:text-emerald-400" />
                     Flashcards
                   </Link>
-                  <Link
-                    href="/mind-map"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Network className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                    Mind Maps
-                  </Link>
-                  <Link
-                    href="/group-study"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Users className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-                    Group Study
-                  </Link>
+
                 </nav>
               </div>
 
-              {/* Subjects Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Subjects
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/subjects/mathematics"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Calculator className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-                    Mathematics
-                  </Link>
-                </nav>
-              </div>
+
 
               {/* Other Pages Section */}
               <div className="mb-8">
@@ -212,20 +180,8 @@ const HomePage = () => {
                     <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                     Messages
                   </Link>
-                  <Link
-                    href="/pricing"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <DollarSign className="w-5 h-5 mr-3 text-green-600 dark:text-green-400" />
-                    Pricing
-                  </Link>
-                  <Link
-                    href="/blog"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <PenTool className="w-5 h-5 mr-3 text-orange-600 dark:text-orange-400" />
-                    Blog
-                  </Link>
+
+
                 </nav>
               </div>
 
@@ -270,7 +226,7 @@ const HomePage = () => {
             </div>
 
             {/* Main Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
               {/* AI Doubt Solver Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -317,30 +273,7 @@ const HomePage = () => {
                 </Link>
               </motion.div>
 
-              {/* Study Resources Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                  Study Resources
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Access curated study materials, notes, and resources for your subjects.
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  disabled
-                >
-                  Coming Soon
-                </Button>
-              </motion.div>
+
             </div>
           </section>
 

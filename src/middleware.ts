@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 const redirectPaths: Record<string, string> = {
   '/ai-solver': '/tools/doubt-solving',
   '/flashcards': '/tools/flashcards',
-  '/mind-maps': '/tools/mind-maps',
   '/progress': '/tools/progress-tracking'
 };
 

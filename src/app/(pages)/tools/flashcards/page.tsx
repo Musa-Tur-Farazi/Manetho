@@ -1,51 +1,55 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
-import { Plus, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import PageHeader from "@/components/ui/PageHeader";
+import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+import PageHeader from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/card';
 
 interface Flashcard {
   cardId: string;
   question: string;
   answer: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function FlashcardsPage() {
-  const { user } = useUser();
-  const [showCreateCard, setShowCreateCard] = useState(false);
+  const { user, isLoaded } = useUser();
   const [cards, setCards] = useState<Flashcard[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
-
   const [cardForm, setCardForm] = useState({
     question: '',
     answer: ''
   });
 
   useEffect(() => {
-    if (user) {
+    if (isLoaded && user) {
       fetchCards();
     }
-  }, [user]);
+  }, [isLoaded, user]);
 
   const fetchCards = async () => {
     try {
       const response = await fetch('/api/flashcards/cards');
       if (response.ok) {
         const data = await response.json();
-        setCards(data.cards || []);
+        setCards(data);
       }
     } catch (error) {
       console.error('Error fetching cards:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCreateCard = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!cardForm.question.trim() || !cardForm.answer.trim()) return;
 
+    setCreating(true);
     try {
       const response = await fetch('/api/flashcards/cards', {
         method: 'POST',
@@ -56,121 +60,118 @@ export default function FlashcardsPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setCards([...cards, data.card]);
+        const newCard = await response.json();
+        setCards([...cards, newCard]);
         setCardForm({ question: '', answer: '' });
-        setShowCreateCard(false);
       }
     } catch (error) {
       console.error('Error creating card:', error);
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
   const toggleCard = (cardId: string) => {
-    const newFlipped = new Set(flippedCards);
-    if (newFlipped.has(cardId)) {
-      newFlipped.delete(cardId);
-    } else {
-      newFlipped.add(cardId);
-    }
-    setFlippedCards(newFlipped);
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg text-gray-600 dark:text-gray-400">Please sign in to access flashcards.</p>
-      </div>
-    );
-  }
+  if (!isLoaded) return <div>Loading...</div>;
+  if (!user) return <div>Please sign in to access flashcards.</div>;
 
   return (
-    <>
-      <PageHeader title="Flashcards" description="Create and study flashcards" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
 
       <div className="max-w-4xl mx-auto p-6">
-        <div className="mb-6">
-          <Button onClick={() => setShowCreateCard(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Card
-          </Button>
-        </div>
-
-        {showCreateCard && (
-          <div className="mb-6 p-4 border rounded-lg bg-white dark:bg-gray-800">
-            <form onSubmit={handleCreateCard} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Question</label>
-                <textarea
-                  value={cardForm.question}
-                  onChange={(e) => setCardForm({ ...cardForm, question: e.target.value })}
-                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  rows={2}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Answer</label>
-                <textarea
-                  value={cardForm.answer}
-                  onChange={(e) => setCardForm({ ...cardForm, answer: e.target.value })}
-                  className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  rows={2}
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Adding...' : 'Add Card'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowCreateCard(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cards.map((card) => (
-            <div
-              key={card.cardId}
-              className="border rounded-lg p-4 bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => toggleCard(card.cardId)}
-            >
-              <div className="flex justify-end items-start mb-2">
-                <button className="text-gray-500 hover:text-gray-700">
-                  {flippedCards.has(card.cardId) ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-
-              <div className="min-h-[100px]">
-                {!flippedCards.has(card.cardId) ? (
-                  <div>
-                    <p className="font-medium text-sm mb-2">Question:</p>
-                    <p className="text-sm">{card.question}</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="font-medium text-sm mb-2">Answer:</p>
-                    <p className="text-sm">{card.answer}</p>
-                  </div>
-                )}
-              </div>
+        {/* Create Card Form */}
+        <Card className="mb-8 p-6">
+          <h2 className="text-xl font-semibold mb-4">Create New Flashcard</h2>
+          <form onSubmit={handleCreateCard} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Question</label>
+              <textarea
+                value={cardForm.question}
+                onChange={(e) => setCardForm({ ...cardForm, question: e.target.value })}
+                placeholder="Enter your question..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={3}
+                required
+              />
             </div>
-          ))}
-        </div>
 
-        {cards.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">
-              No flashcards yet. Click "Add Card" to create your first one!
-            </p>
-          </div>
-        )}
+            <div>
+              <label className="block text-sm font-medium mb-2">Answer</label>
+              <textarea
+                value={cardForm.answer}
+                onChange={(e) => setCardForm({ ...cardForm, answer: e.target.value })}
+                placeholder="Enter the answer..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={3}
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={creating || !cardForm.question.trim() || !cardForm.answer.trim()}
+              className="w-full"
+            >
+              {creating ? 'Creating...' : 'Create Flashcard'}
+            </Button>
+          </form>
+        </Card>
+
+        {/* Cards Display */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Your Flashcards ({cards.length})</h2>
+
+          {loading ? (
+            <div className="text-center py-8">Loading flashcards...</div>
+          ) : cards.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No flashcards yet. Create your first one above!
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {cards.map((card) => (
+                <Card
+                  key={card.cardId}
+                  className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => toggleCard(card.cardId)}
+                >
+                  <div className="min-h-[120px] flex flex-col">
+                    <div className="flex-1">
+                      {flippedCards.has(card.cardId) ? (
+                        <div>
+                          <div className="text-sm text-gray-500 mb-2">Answer:</div>
+                          <div className="text-gray-800 dark:text-gray-200">{card.answer}</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="text-sm text-gray-500 mb-2">Question:</div>
+                          <div className="text-gray-800 dark:text-gray-200">{card.question}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <Button variant="outline" size="sm">
+                        {flippedCards.has(card.cardId) ? 'Show Question' : 'Show Answer'}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
-} 
+}

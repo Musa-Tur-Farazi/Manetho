@@ -74,15 +74,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           >
             My Learning
           </button>
-          <button
-            onClick={() => scrollToSection('resources-section')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
-              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
-              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
-              } transition-colors duration-200`}
-          >
-            Resources
-          </button>
+
           <button
             onClick={() => scrollToSection('tools-section')}
             className={`px-4 py-2 rounded-lg font-medium text-sm ${isScrolled
@@ -225,12 +217,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               >
                 My Learning
               </button>
-              <button
-                onClick={() => scrollToSection('resources-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Resources
-              </button>
+
               <button
                 onClick={() => scrollToSection('tools-section')}
                 className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
