@@ -36,7 +36,7 @@ interface GroupMember {
 
 interface GroupInfo {
   groupId: string;
-  name: string;
+    name: string;
   description: string;
   meetingType: string;
   location: string | null;
@@ -279,7 +279,7 @@ export default function GroupChatPage() {
           <Button onClick={() => router.push('/group-study')}>
             Back to Groups
           </Button>
-        </div>
+      </div>
       </>
     );
   }
@@ -353,8 +353,8 @@ export default function GroupChatPage() {
                 Members ({members.length})
               </Button>
             </div>
-          </div>
-        </div>
+                </div>
+              </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Messages Section */}
@@ -372,7 +372,7 @@ export default function GroupChatPage() {
                   messages.map((message) => {
                     const isCurrentUser = message.senderId === user?.publicMetadata?.userId;
 
-                    return (
+                  return (
                       <div key={message.messageId} className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'}`}>
                         <img
                           src={message.senderAvatar || 'https://i.pravatar.cc/150?img=1'}
@@ -401,7 +401,7 @@ export default function GroupChatPage() {
                             )}
 
                             {message.fileUrl && (
-                              <div className="mt-2">
+                            <div className="mt-2">
                                 <a
                                   href={message.fileUrl}
                                   target="_blank"
@@ -414,12 +414,12 @@ export default function GroupChatPage() {
                                   <Paperclip className="w-4 h-4" />
                                   <span className="text-sm">{message.fileName || 'File'}</span>
                                 </a>
-                              </div>
-                            )}
+                            </div>
+                          )}
                           </div>
-                        </div>
                       </div>
-                    );
+                    </div>
+                  );
                   })
                 )}
                 <div ref={messagesEndRef} />
@@ -481,7 +481,7 @@ export default function GroupChatPage() {
                 Members ({members.length})
               </h3>
 
-              <div className="space-y-3">
+                <div className="space-y-3">
                 {members.map((member) => (
                   <div key={member.userId} className="flex items-center gap-3">
                     <div className="relative">
@@ -509,9 +509,9 @@ export default function GroupChatPage() {
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {member.isOnline ? 'Online' : 'Offline'}
                       </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>

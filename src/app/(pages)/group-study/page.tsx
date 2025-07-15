@@ -173,19 +173,19 @@ export default function GroupStudyPage() {
   // Filter groups based on search and filters
   const getFilteredGroups = (groups: (StudyGroup | ActiveGroup)[]) => {
     return groups.filter((group) => {
-      const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         group.description.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesSubject = activeSubject === "All" ||
         (group.subjectName && group.subjectName === activeSubject);
 
-      const matchesMeetingType = meetingTypeFilter === "All" ||
-        (meetingTypeFilter === "Online" && group.meetingType === "online") ||
-        (meetingTypeFilter === "In-Person" && group.meetingType === "in-person") ||
-        (meetingTypeFilter === "Hybrid" && group.meetingType === "hybrid");
+    const matchesMeetingType = meetingTypeFilter === "All" ||
+      (meetingTypeFilter === "Online" && group.meetingType === "online") ||
+      (meetingTypeFilter === "In-Person" && group.meetingType === "in-person") ||
+      (meetingTypeFilter === "Hybrid" && group.meetingType === "hybrid");
 
-      return matchesSearch && matchesSubject && matchesMeetingType;
-    });
+    return matchesSearch && matchesSubject && matchesMeetingType;
+  });
   };
 
   // Handle creating a new group
@@ -203,7 +203,7 @@ export default function GroupStudyPage() {
           name: groupName.trim(),
           description: groupDescription.trim(),
           subjectName: groupSubject.trim(),
-          meetingType: groupMeetingType,
+      meetingType: groupMeetingType,
           maxParticipants: 10, // Default max participants
         }),
       });
@@ -213,7 +213,7 @@ export default function GroupStudyPage() {
         console.log('Group created successfully:', result);
 
         // Reset form and close modal
-        resetForm();
+    resetForm();
 
         // Refresh the groups list to show the new group
         await fetchStudyGroups();
@@ -301,7 +301,7 @@ export default function GroupStudyPage() {
 
       {/* My Study Groups Section */}
       {myGroups.length > 0 && (
-        <div className="mb-12">
+      <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Study Groups</h2>
             <span className="px-3 py-1 text-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full">
@@ -390,19 +390,19 @@ export default function GroupStudyPage() {
 
         {/* Subject Filter */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {subjects.map((subject) => (
-            <button
-              key={subject}
-              onClick={() => setActiveSubject(subject)}
+              {subjects.map((subject) => (
+                <button
+                  key={subject}
+                  onClick={() => setActiveSubject(subject)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeSubject === subject
                 ? "bg-emerald-500 text-white"
                 : "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-slate-600"
-                }`}
-            >
-              {subject}
-            </button>
-          ))}
-        </div>
+                    }`}
+                >
+                  {subject}
+                </button>
+              ))}
+            </div>
 
         {/* Meeting Type Filter */}
         <div className="flex gap-2">
@@ -419,7 +419,7 @@ export default function GroupStudyPage() {
             </button>
           ))}
         </div>
-      </div>
+          </div>
 
       {/* Available Groups Section */}
       <div className="mb-8">
@@ -446,7 +446,7 @@ export default function GroupStudyPage() {
                       {group.meetingType === "online" ? "Online" :
                         group.meetingType === "in-person" ? "In-Person" : "Hybrid"}
                     </span>
-                  </div>
+              </div>
 
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{group.name}</h3>
                   <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">{group.description}</p>
@@ -454,7 +454,7 @@ export default function GroupStudyPage() {
                   <div className="flex items-center gap-1 mb-4 text-sm text-gray-600 dark:text-gray-300">
                     <Users className="w-4 h-4" />
                     <span>{group.currentParticipants}/{group.maxParticipants} members</span>
-                  </div>
+            </div>
 
                   <Button
                     onClick={() => handleJoinGroup(group.groupId)}
@@ -475,10 +475,10 @@ export default function GroupStudyPage() {
                       : isFull ? "Group Full"
                         : "Join Group"}
                   </Button>
-                </div>
+              </div>
               );
             })}
-          </div>
+            </div>
         ) : (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -488,7 +488,7 @@ export default function GroupStudyPage() {
             </p>
           </div>
         )}
-      </div>
+        </div>
 
       {/* Create Group Form */}
       {showCreateForm && (
@@ -497,14 +497,14 @@ export default function GroupStudyPage() {
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Study Group</h3>
 
             <div className="space-y-4">
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Group Name *
-                </label>
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
+                  </label>
+                  <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white"
                   placeholder="Enter group name..."
                 />
@@ -520,8 +520,8 @@ export default function GroupStudyPage() {
                   rows={3}
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 dark:text-white resize-none"
                   placeholder="Describe your study group..."
-                />
-              </div>
+                  />
+                </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -538,7 +538,7 @@ export default function GroupStudyPage() {
                       <option key={subject} value={subject}>{subject}</option>
                     ))}
                   </select>
-                </div>
+              </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -574,8 +574,8 @@ export default function GroupStudyPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+            </div>
+          )}
     </>
   );
 } 
