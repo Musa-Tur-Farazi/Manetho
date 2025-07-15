@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { groupId, action } = await request.json();
+    const body = await request.json();
+    const { groupId, action, name, description, subjectName, meetingType, maxParticipants } = body;
 
     // Get current user
     const dbUser = await db
@@ -124,7 +125,73 @@ export async function POST(request: NextRequest) {
 
     const currentUserId = dbUser[0].userId;
 
+    // Handle group creation
+    if (action === 'create') {
+      if (!name || !description || !meetingType) {
+        return NextResponse.json({ error: 'Name, description, and meeting type are required' }, { status: 400 });
+      }
+
+      // Find or create subject
+      let subjectId = null;
+      if (subjectName) {
+        const existingSubject = await db
+          .select()
+          .from(subjectsTable)
+          .where(eq(subjectsTable.name, subjectName))
+          .limit(1);
+
+        if (existingSubject.length > 0) {
+          subjectId = existingSubject[0].subjectId;
+        } else {
+          // Create new subject
+          const newSubject = await db
+            .insert(subjectsTable)
+            .values({
+              name: subjectName,
+              description: `Subject for ${subjectName}`,
+              color: '#64748b', // Default color
+            })
+            .returning();
+          subjectId = newSubject[0].subjectId;
+        }
+      }
+
+      // Create the study group
+      const newGroup = await db
+        .insert(studyGroupsTable)
+        .values({
+          name,
+          description,
+          subjectId,
+          createdBy: currentUserId,
+          meetingType,
+          maxParticipants: maxParticipants || 10,
+          currentParticipants: 1,
+        })
+        .returning();
+
+      const createdGroup = newGroup[0];
+
+      // Add the creator as the first member with organizer role
+      await db.insert(studyGroupMembersTable).values({
+        groupId: createdGroup.groupId,
+        userId: currentUserId,
+        role: 'organizer',
+      });
+
+      return NextResponse.json({
+        success: true,
+        group: createdGroup,
+        message: 'Study group created successfully',
+      });
+    }
+
+    // Handle joining a group
     if (action === 'join') {
+      if (!groupId) {
+        return NextResponse.json({ error: 'Group ID is required' }, { status: 400 });
+      }
+
       // Check if group exists and has space
       const group = await db
         .select()
@@ -176,7 +243,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Successfully joined study group' });
     }
 
+    // Handle leaving a group
     if (action === 'leave') {
+      if (!groupId) {
+        return NextResponse.json({ error: 'Group ID is required' }, { status: 400 });
+      }
+
       // Remove user from group
       await db
         .update(studyGroupMembersTable)
@@ -203,9 +275,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
   } catch (error) {
-    console.error('Error managing study group membership:', error);
+    console.error('Error managing study group:', error);
     return NextResponse.json(
-      { error: 'Failed to update study group membership' },
+      { error: 'Failed to process request' },
       { status: 500 }
     );
   }

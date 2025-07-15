@@ -308,7 +308,11 @@ export const studyGroupMessagesTable = pgTable("study_group_messages", {
   messageId: uuid("message_id").primaryKey().defaultRandom(),
   groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
   senderId: uuid("sender_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
-  content: text("content").notNull(),
+  content: text("content"), // Made optional to allow file-only messages
+  fileUrl: text("file_url"),
+  fileName: varchar("file_name", { length: 255 }),
+  fileType: varchar("file_type", { length: 100 }),
+  fileSize: bigint("file_size", { mode: 'number' }),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
