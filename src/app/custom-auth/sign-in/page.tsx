@@ -187,7 +187,7 @@ export default function CustomSignIn() {
 
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link
                 href="/custom-auth/sign-up"
                 className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-medium"

@@ -15,11 +15,11 @@ import {
   Users,
   Brain,
   MessageSquare,
-  BookMarked,
   FileText,
   BarChart3,
   Trophy,
   MessageCircle,
+<<<<<<< HEAD
   Crown,
   Medal,
   Award,
@@ -27,6 +27,10 @@ import {
   TrendingUp,
   Target,
   Flame,
+=======
+  CreditCard,
+  Network,
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -168,13 +172,14 @@ const HomePage = () => {
                     href="/tools/flashcards"
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                   >
-                    <BookMarked className="w-5 h-5 mr-3 text-emerald-600 dark:text-emerald-400" />
+                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                     Flashcards
                   </Link>
                   <Link
                     href="/tools/mind-maps"
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                   >
+<<<<<<< HEAD
                     <Brain className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
                     Mind Maps
                   </Link>
@@ -183,6 +188,13 @@ const HomePage = () => {
               </div>
 
 
+=======
+                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Mind Maps
+                  </Link>
+                </nav>
+              </div>
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
 
               {/* Other Pages Section */}
               <div className="mb-8">
@@ -205,7 +217,10 @@ const HomePage = () => {
                     Messages
                   </Link>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
                 </nav>
               </div>
 
@@ -250,7 +265,11 @@ const HomePage = () => {
             </div>
 
             {/* Main Action Cards */}
+<<<<<<< HEAD
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+=======
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-3xl mx-auto">
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
               {/* AI Doubt Solver Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -343,6 +362,7 @@ const HomePage = () => {
                 </Link>
               </motion.div>
 
+<<<<<<< HEAD
             </div>
           </section>
 
@@ -505,6 +525,13 @@ const HomePage = () => {
               </motion.div>
             </div>
           </section>
+=======
+
+            </div>
+          </section>
+
+
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
         </div>
       </main>
 

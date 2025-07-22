@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun, User, LogOut, ChevronDown, LayoutDashboard, Menu, X, BookOpen, BookMarked, Network, FileText, Brain } from "lucide-react";
+import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, BookOpen, BookMarked, Network, Brain } from "lucide-react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Button } from "../ui/Button";
 
@@ -51,18 +51,20 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         }`}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/home" className="flex items-center">
-          <span
-            className={`text-2xl font-bold ${isScrolled
-              ? "text-gray-900 dark:text-white"
-              : "text-gray-900 dark:text-white"
-              }`}
-          >
-            Manetho
-          </span>
-        </Link>
+        {/* Left section: Logo + Doubt-solving button */}
+                  <div className="flex items-center gap-16">
+          <Link href="/home" className="flex items-center">
+            <span
+              className={`text-2xl font-bold ${isScrolled
+                ? "text-gray-900 dark:text-white"
+                : "text-gray-900 dark:text-white"
+                }`}
+            >
+              Manetho
+            </span>
+          </Link>
 
+<<<<<<< HEAD
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-1">
           <button
@@ -84,9 +86,12 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           >
             Tools
           </button>
+=======
+          {/* Doubt-solving button - desktop only */}
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
           <Link
             href="/tools/doubt-solving"
-            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center ${isScrolled
+            className={`hidden md:flex px-4 py-2 rounded-lg font-medium text-sm items-center ${isScrolled
               ? "text-cyan-600 hover:bg-gray-100 dark:text-cyan-400 dark:hover:bg-gray-800"
               : "text-cyan-600 hover:bg-white/20 dark:text-cyan-400 dark:hover:bg-gray-800/20"
               } transition-colors duration-200`}
@@ -211,6 +216,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             className="md:hidden bg-white dark:bg-gray-900 mt-2 rounded-lg shadow-lg overflow-hidden"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
+<<<<<<< HEAD
               <button
                 onClick={() => scrollToSection('learning-section')}
                 className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -224,6 +230,9 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               >
                 Tools
               </button>
+=======
+
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
               <Link
                 href="/tools/doubt-solving"
                 className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"

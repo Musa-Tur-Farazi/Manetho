@@ -352,7 +352,7 @@ export default function UserProfilePage() {
             <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
               <User className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">User not found</h2>
-              <p className="text-gray-600 dark:text-slate-400 mb-6">The profile you're looking for doesn't exist.</p>
+              <p className="text-gray-600 dark:text-slate-400 mb-6">The profile you&apos;re looking for doesn&apos;t exist.</p>
               <Button onClick={() => router.back()} variant="outline">
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Go Back

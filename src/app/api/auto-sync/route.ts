@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { usersTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const { userId } = await auth();
 

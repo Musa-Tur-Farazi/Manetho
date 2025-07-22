@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   User, Edit, BookOpen, Calendar, Award, BarChart, Clock,
+<<<<<<< HEAD
   Save, X, ChevronRight, Book, Pencil, MailOpen, Link as LinkIcon,
   Star, GraduationCap, Trophy, Target, Zap, TrendingUp,
   Crown, Medal, CheckCircle, Flame, BarChart3, Share2,
   MessageSquare, Heart, Eye, Users, BrainCircuit, FileText,
   BookMarked, TestTube, Bookmark, MessageCircle, ThumbsUp
+=======
+  Save, X, ChevronRight, Pencil, MailOpen, Link as LinkIcon,
+  GraduationCap
+>>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import AchievementBadge, { Achievement } from "@/components/AchievementBadge";
