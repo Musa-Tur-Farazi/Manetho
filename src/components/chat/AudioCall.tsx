@@ -306,77 +306,140 @@ export default function AudioCall({
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-900 to-purple-900 z-50 flex flex-col">
-      {/* Call Info */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center text-white">
-          {/* User Avatar/Icon */}
-          <div className="w-40 h-40 bg-white/20 rounded-full mx-auto mb-8 flex items-center justify-center">
-            <User className="w-20 h-20" />
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 z-50 flex flex-col overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.4),transparent_70%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.3),transparent_70%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.3),transparent_70%)]"></div>
+      </div>
+
+      {/* Header */}
+      <div className="relative z-10 p-6 bg-white/5 backdrop-blur-xl border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="text-white">
+              <h2 className="text-lg font-semibold">Audio Call</h2>
+              <p className="text-sm text-white/70">
+                {remoteUsers.length > 0 ? 'Connected' : 'Connecting...'}
+              </p>
+            </div>
           </div>
-
-          {/* User Name */}
-          <h2 className="text-2xl font-semibold mb-2">
-            {recipientName || `User ${remoteUsers[0]?.uid || 'Unknown'}`}
-          </h2>
-
-          {/* Call Status */}
-          <p className="text-blue-200 mb-2">
-            {remoteUsers.length > 0 ? 'Connected' : 'Connecting...'}
-          </p>
-
-          {/* Call Duration */}
-          {isJoined && (
-            <p className="text-lg font-mono text-blue-100">
-              {formatDuration(callDuration)}
-            </p>
-          )}
-
-          {/* Audio Status */}
-          <div className="flex justify-center items-center gap-4 mt-6">
-            {remoteUsers.map((user) => (
-              <div key={user.uid} className="text-sm text-blue-200">
-                {user.hasAudio ? '🎤 Speaking' : '🔇 Muted'}
-              </div>
-            ))}
+          <div className="flex items-center space-x-3">
+            <div className="text-white/70 text-sm">
+              <span className="font-mono">
+                {isJoined ? formatDuration(callDuration) : '00:00'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Call Info */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center text-white max-w-md">
+          {/* User Avatar/Icon */}
+          <div className="relative mb-8">
+            <div className="w-48 h-48 bg-white/10 backdrop-blur-sm rounded-full mx-auto flex items-center justify-center border border-white/20 shadow-2xl">
+              <User className="w-24 h-24 text-white/80" />
+            </div>
+            {/* Audio animation rings */}
+            {remoteUsers.length > 0 && (
+              <>
+                <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-ping opacity-50"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-purple-400/30 animate-ping opacity-30" style={{ animationDelay: '0.5s' }}></div>
+                <div className="absolute inset-0 rounded-full border-4 border-blue-400/20 animate-ping opacity-20" style={{ animationDelay: '1s' }}></div>
+              </>
+            )}
+          </div>
+
+          {/* User Name */}
+          <h2 className="text-3xl font-bold mb-3">
+            {recipientName || `User ${remoteUsers[0]?.uid || 'Unknown'}`}
+          </h2>
+
+          {/* Call Status */}
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <div className={`w-3 h-3 rounded-full ${remoteUsers.length > 0 ? 'bg-green-500 animate-pulse' : 'bg-orange-500 animate-pulse'}`}></div>
+            <p className="text-xl text-white/90 font-medium">
+              {remoteUsers.length > 0 ? 'Connected' : 'Connecting...'}
+            </p>
+          </div>
+
+          {/* Call Duration */}
+          {isJoined && (
+            <div className="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 shadow-lg mb-6">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-3"></div>
+              <p className="text-2xl font-mono text-white font-bold">
+                {formatDuration(callDuration)}
+              </p>
+            </div>
+          )}
+
+          {/* Audio Status */}
+          {remoteUsers.length > 0 && (
+            <div className="flex justify-center items-center gap-6 mt-8">
+              {remoteUsers.map((user) => (
+                <div key={user.uid} className="flex items-center space-x-3 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                  <div className={`w-3 h-3 rounded-full ${user.hasAudio ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                  <span className="text-sm font-medium text-white/90">
+                    {user.hasAudio ? 'Speaking' : 'Muted'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Controls */}
-      <div className="p-8 flex justify-center items-center gap-6">
-        {/* Speaker Toggle */}
-        <button
-          onClick={toggleSpeaker}
-          className={`p-4 rounded-full transition-colors ${isSpeakerEnabled
-            ? 'bg-white/20 hover:bg-white/30 text-white'
-            : 'bg-gray-600 hover:bg-gray-700 text-white'
-            }`}
-          title={isSpeakerEnabled ? 'Switch to earpiece' : 'Switch to speaker'}
-        >
-          {isSpeakerEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-        </button>
+      <div className="relative z-10 p-8 bg-white/5 backdrop-blur-xl border-t border-white/10">
+        <div className="flex justify-center items-center space-x-8">
+          {/* Speaker Toggle */}
+          <button
+            onClick={toggleSpeaker}
+            className={`relative group p-4 rounded-full transition-all duration-300 transform hover:scale-105 ${isSpeakerEnabled
+                ? 'bg-white/20 hover:bg-white/30 text-white shadow-lg'
+                : 'bg-gray-600/80 hover:bg-gray-700 text-white shadow-lg'
+              }`}
+            title={isSpeakerEnabled ? 'Switch to earpiece' : 'Switch to speaker'}
+          >
+            <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {isSpeakerEnabled ? (
+              <Volume2 className="w-6 h-6 relative z-10" />
+            ) : (
+              <VolumeX className="w-6 h-6 relative z-10" />
+            )}
+          </button>
 
-        {/* Mute Toggle */}
-        <button
-          onClick={toggleAudio}
-          className={`p-6 rounded-full transition-colors ${isAudioEnabled
-            ? 'bg-white/20 hover:bg-white/30 text-white'
-            : 'bg-red-600 hover:bg-red-700 text-white'
-            }`}
-          title={isAudioEnabled ? 'Mute' : 'Unmute'}
-        >
-          {isAudioEnabled ? <Mic className="w-8 h-8" /> : <MicOff className="w-8 h-8" />}
-        </button>
+          {/* Mute Toggle */}
+          <button
+            onClick={toggleAudio}
+            className={`relative group p-6 rounded-full transition-all duration-300 transform hover:scale-105 ${isAudioEnabled
+                ? 'bg-white/20 hover:bg-white/30 text-white shadow-lg'
+                : 'bg-red-500/90 hover:bg-red-600 text-white shadow-lg shadow-red-500/25'
+              }`}
+            title={isAudioEnabled ? 'Mute' : 'Unmute'}
+          >
+            <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {isAudioEnabled ? (
+              <Mic className="w-8 h-8 relative z-10" />
+            ) : (
+              <MicOff className="w-8 h-8 relative z-10" />
+            )}
+          </button>
 
-        {/* End Call */}
-        <button
-          onClick={endCall}
-          className="p-6 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-          title="End call"
-        >
-          <PhoneOff className="w-8 h-8" />
-        </button>
+          {/* End Call */}
+          <button
+            onClick={endCall}
+            className="relative group p-6 rounded-full bg-red-500/90 hover:bg-red-600 text-white shadow-lg shadow-red-500/25 transition-all duration-300 transform hover:scale-105"
+            title="End call"
+          >
+            <div className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <PhoneOff className="w-8 h-8 relative z-10" />
+          </button>
+        </div>
       </div>
     </div>
   );

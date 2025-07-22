@@ -6,7 +6,7 @@ import {
   usersTable,
   subjectsTable
 } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 
 export async function GET(
@@ -34,7 +34,37 @@ export async function GET(
 
     const currentUserId = dbUser[0].userId;
 
-    // Verify user is a member of the study group
+    // Get group with creator info
+    const group = await db
+      .select({
+        groupId: studyGroupsTable.groupId,
+        name: studyGroupsTable.name,
+        description: studyGroupsTable.description,
+        meetingType: studyGroupsTable.meetingType,
+        meetingLink: studyGroupsTable.meetingLink,
+        nextMeeting: studyGroupsTable.nextMeeting,
+        meetingTime: studyGroupsTable.meetingTime,
+        currentParticipants: studyGroupsTable.currentParticipants,
+        maxParticipants: studyGroupsTable.maxParticipants,
+        subjectName: subjectsTable.name,
+        subjectColor: subjectsTable.color,
+        creatorName: usersTable.fullName,
+        creatorAvatar: usersTable.avatarUrl,
+        createdAt: studyGroupsTable.createdAt,
+        createdBy: studyGroupsTable.createdBy,
+        isActive: studyGroupsTable.isActive,
+      })
+      .from(studyGroupsTable)
+      .leftJoin(usersTable, eq(studyGroupsTable.createdBy, usersTable.userId))
+      .leftJoin(subjectsTable, eq(studyGroupsTable.subjectId, subjectsTable.subjectId))
+      .where(eq(studyGroupsTable.groupId, groupId))
+      .limit(1);
+
+    if (!group.length || !group[0].isActive) {
+      return NextResponse.json({ error: 'Study group not found' }, { status: 404 });
+    }
+
+    // Check if user is a member
     const membership = await db
       .select()
       .from(studyGroupMembersTable)
@@ -48,78 +78,86 @@ export async function GET(
       .limit(1);
 
     if (!membership.length) {
-      return NextResponse.json({ error: 'You are not a member of this study group' }, { status: 403 });
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Get group information with creator and subject details
-    const groupInfo = await db
-      .select({
-        groupId: studyGroupsTable.groupId,
-        name: studyGroupsTable.name,
-        description: studyGroupsTable.description,
-        meetingType: studyGroupsTable.meetingType,
-        location: studyGroupsTable.location,
-        meetingLink: studyGroupsTable.meetingLink,
-        nextMeeting: studyGroupsTable.nextMeeting,
-        meetingTime: studyGroupsTable.meetingTime,
-        maxParticipants: studyGroupsTable.maxParticipants,
-        currentParticipants: studyGroupsTable.currentParticipants,
-        tags: studyGroupsTable.tags,
-        isActive: studyGroupsTable.isActive,
-        createdAt: studyGroupsTable.createdAt,
-        createdBy: studyGroupsTable.createdBy,
-        creatorName: usersTable.fullName,
-        creatorAvatar: usersTable.avatarUrl,
-        subjectName: subjectsTable.name,
-        subjectColor: subjectsTable.color,
-      })
-      .from(studyGroupsTable)
-      .leftJoin(usersTable, eq(studyGroupsTable.createdBy, usersTable.userId))
-      .leftJoin(subjectsTable, eq(studyGroupsTable.subjectId, subjectsTable.subjectId))
-      .where(eq(studyGroupsTable.groupId, groupId))
+    const groupData = {
+      ...group[0],
+      userRole: membership[0].role,
+      isCreator: group[0].createdBy === currentUserId,
+      onlineMembersCount: 0, // You can implement this based on your online tracking
+    };
+
+    return NextResponse.json({ group: groupData });
+
+  } catch (error) {
+    console.error('Error fetching group:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch group' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ groupId: string }> }
+) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { groupId } = await params;
+    const { meetingLink } = await request.json();
+
+    // Get current user
+    const dbUser = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, userId))
       .limit(1);
 
-    if (!groupInfo.length) {
-      return NextResponse.json({ error: 'Study group not found' }, { status: 404 });
+    if (!dbUser.length) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const group = groupInfo[0];
+    const currentUserId = dbUser[0].userId;
 
-    // Get online members count (active within last 5 minutes)
-    const onlineMembersResult = await db
-      .select({ count: sql<number>`count(*)` })
+    // Check if user is organizer of the group
+    const membership = await db
+      .select()
       .from(studyGroupMembersTable)
-      .innerJoin(usersTable, eq(studyGroupMembersTable.userId, usersTable.userId))
       .where(
         and(
           eq(studyGroupMembersTable.groupId, groupId),
-          eq(studyGroupMembersTable.isActive, true),
-          sql`${usersTable.lastActiveAt} > ${new Date(Date.now() - 5 * 60 * 1000)}`
+          eq(studyGroupMembersTable.userId, currentUserId),
+          eq(studyGroupMembersTable.role, 'organizer'),
+          eq(studyGroupMembersTable.isActive, true)
         )
-      );
+      )
+      .limit(1);
 
-    const onlineMembersCount = onlineMembersResult[0]?.count || 0;
+    if (!membership.length) {
+      return NextResponse.json({ error: 'Only organizers can update meeting links' }, { status: 403 });
+    }
 
-    // Get current user's role in the group
-    const userRole = membership[0]?.role || 'member';
+    // Update the group's meeting link
+    await db
+      .update(studyGroupsTable)
+      .set({
+        meetingLink,
+        updatedAt: new Date(),
+      })
+      .where(eq(studyGroupsTable.groupId, groupId));
 
-    // Format the response
-    const response = {
-      ...group,
-      onlineMembersCount,
-      userRole,
-      isCreator: group.createdBy === currentUserId,
-      tags: group.tags || [],
-    };
-
-    return NextResponse.json({
-      group: response,
-    });
+    return NextResponse.json({ success: true, message: 'Meeting link updated successfully' });
 
   } catch (error) {
-    console.error('Error fetching group info:', error);
+    console.error('Error updating group:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch group info' },
+      { error: 'Failed to update group' },
       { status: 500 }
     );
   }

@@ -4,8 +4,7 @@ import {
   studyGroupsTable,
   studyGroupMembersTable,
   usersTable,
-  subjectsTable,
-  studyGroupJoinRequestsTable
+  subjectsTable
 } from '@/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
@@ -278,6 +277,73 @@ export async function POST(request: NextRequest) {
     console.error('Error managing study group:', error);
     return NextResponse.json(
       { error: 'Failed to process request' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { groupId } = await request.json();
+
+    if (!groupId) {
+      return NextResponse.json({ error: 'Group ID is required' }, { status: 400 });
+    }
+
+    // Get current user
+    const dbUser = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, userId))
+      .limit(1);
+
+    if (!dbUser.length) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const currentUserId = dbUser[0].userId;
+
+    // Check if the group exists and if the user is the creator
+    const group = await db
+      .select()
+      .from(studyGroupsTable)
+      .where(eq(studyGroupsTable.groupId, groupId))
+      .limit(1);
+
+    if (!group.length) {
+      return NextResponse.json({ error: 'Study group not found' }, { status: 404 });
+    }
+
+    if (group[0].createdBy !== currentUserId) {
+      return NextResponse.json({ error: 'Only the group creator can delete the group' }, { status: 403 });
+    }
+
+    // Delete all group members first
+    await db
+      .update(studyGroupMembersTable)
+      .set({ isActive: false })
+      .where(eq(studyGroupMembersTable.groupId, groupId));
+
+    // Delete the group
+    await db
+      .update(studyGroupsTable)
+      .set({
+        isActive: false,
+        updatedAt: new Date()
+      })
+      .where(eq(studyGroupsTable.groupId, groupId));
+
+    return NextResponse.json({ success: true, message: 'Study group deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting study group:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete study group' },
       { status: 500 }
     );
   }

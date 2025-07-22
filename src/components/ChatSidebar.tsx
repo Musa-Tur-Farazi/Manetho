@@ -214,7 +214,7 @@ export default function ChatSidebar() {
                   ? 'bg-blue-500 text-white'
                   : 'bg-slate-800/40 text-slate-100'
                   }`}>
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm break-words overflow-hidden">{message.content}</p>
                   <p className="text-xs opacity-75 mt-1">{formatTime(message.timestamp)}</p>
                 </div>
               </div>

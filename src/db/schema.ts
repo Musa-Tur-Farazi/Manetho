@@ -89,11 +89,36 @@ export const topicsTable = pgTable("topics", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const flashcardDecksTable = pgTable("flashcard_decks", {
+  deckId: uuid("deck_id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }).default('#3B82F6'), // hex color
+  isPublic: boolean("is_public").default(false).notNull(),
+  cardCount: integer("card_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const flashcardsTable = pgTable("flashcards", {
   cardId: uuid("card_id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  deckId: uuid("deck_id").references(() => flashcardDecksTable.deckId, { onDelete: 'cascade' }),
   question: text("question").notNull(),
   answer: text("answer").notNull(),
+  hint: text("hint"),
+  explanation: text("explanation"),
+  difficulty: difficultyEnum("difficulty").default('beginner').notNull(),
+  orderIndex: integer("order_index").default(0).notNull(),
+  contentSource: contentSourceEnum("content_source").default('user_created').notNull(),
+  aiGenerated: boolean("ai_generated").default(false).notNull(),
+  aiConfidenceScore: decimal("ai_confidence_score", { precision: 3, scale: 2 }),
+  userRating: integer("user_rating"),
+  timesReviewed: integer("times_reviewed").default(0).notNull(),
+  correctAnswers: integer("correct_answers").default(0).notNull(),
+  lastReviewed: timestamp("last_reviewed"),
+  needsReview: boolean("needs_review").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -105,9 +130,73 @@ export const mindMapsTable = pgTable("mind_maps", {
   topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  fileUrl: text("file_url").notNull(),
-  thumbnailUrl: text("thumbnail_url"),
+  prompt: text("prompt"), // Original user prompt used for AI generation
+  layout: varchar("layout", { length: 50 }).default('tree').notNull(), // tree, radial, org, fishbone, etc.
+  theme: varchar("theme", { length: 50 }).default('default').notNull(),
+  backgroundColor: varchar("background_color", { length: 7 }).default('#ffffff'), // hex color
   isPublic: boolean("is_public").default(false).notNull(),
+  contentSource: contentSourceEnum("content_source").default('user_created').notNull(),
+  aiConfidenceScore: decimal("ai_confidence_score", { precision: 3, scale: 2 }),
+  nodeCount: integer("node_count").default(0).notNull(),
+  connectionCount: integer("connection_count").default(0).notNull(),
+  lastEditedAt: timestamp("last_edited_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mindMapNodesTable = pgTable("mind_map_nodes", {
+  nodeId: uuid("node_id").primaryKey().defaultRandom(),
+  mindmapId: uuid("mindmap_id").references(() => mindMapsTable.mindmapId, { onDelete: 'cascade' }).notNull(),
+  parentNodeId: uuid("parent_node_id").references(() => mindMapNodesTable.nodeId, { onDelete: 'set null' }),
+  text: text("text").notNull(),
+  level: integer("level").default(0).notNull(), // 0 for root, 1 for main branches, etc.
+  positionX: decimal("position_x", { precision: 10, scale: 2 }).default('0'),
+  positionY: decimal("position_y", { precision: 10, scale: 2 }).default('0'),
+  width: decimal("width", { precision: 10, scale: 2 }).default('100'),
+  height: decimal("height", { precision: 10, scale: 2 }).default('50'),
+  color: varchar("color", { length: 7 }).default('#3B82F6'), // hex color
+  backgroundColor: varchar("background_color", { length: 7 }).default('#ffffff'),
+  fontSize: integer("font_size").default(14).notNull(),
+  fontWeight: varchar("font_weight", { length: 20 }).default('normal'),
+  borderRadius: integer("border_radius").default(8).notNull(),
+  borderWidth: integer("border_width").default(1).notNull(),
+  borderColor: varchar("border_color", { length: 7 }).default('#e5e7eb'),
+  icon: varchar("icon", { length: 100 }), // icon name or emoji
+  imageUrl: text("image_url"),
+  notes: text("notes"),
+  isCollapsed: boolean("is_collapsed").default(false).notNull(),
+  isRoot: boolean("is_root").default(false).notNull(),
+  orderIndex: integer("order_index").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mindMapConnectionsTable = pgTable("mind_map_connections", {
+  connectionId: uuid("connection_id").primaryKey().defaultRandom(),
+  mindmapId: uuid("mindmap_id").references(() => mindMapsTable.mindmapId, { onDelete: 'cascade' }).notNull(),
+  fromNodeId: uuid("from_node_id").references(() => mindMapNodesTable.nodeId, { onDelete: 'cascade' }).notNull(),
+  toNodeId: uuid("to_node_id").references(() => mindMapNodesTable.nodeId, { onDelete: 'cascade' }).notNull(),
+  label: varchar("label", { length: 255 }),
+  connectionType: varchar("connection_type", { length: 50 }).default('straight').notNull(), // straight, curved, bezier
+  color: varchar("color", { length: 7 }).default('#6b7280'),
+  thickness: integer("thickness").default(2).notNull(),
+  style: varchar("style", { length: 20 }).default('solid').notNull(), // solid, dashed, dotted
+  arrowType: varchar("arrow_type", { length: 20 }).default('none').notNull(), // none, arrow, double-arrow
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const mindMapTemplatesTable = pgTable("mind_map_templates", {
+  templateId: uuid("template_id").primaryKey().defaultRandom(),
+  createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).notNull(), // business, education, personal, etc.
+  thumbnailUrl: text("thumbnail_url"),
+  templateData: jsonb("template_data").notNull(), // JSON structure of the template
+  isPublic: boolean("is_public").default(false).notNull(),
+  usageCount: integer("usage_count").default(0).notNull(),
+  rating: decimal("rating", { precision: 2, scale: 1 }).default('0.0'),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -116,14 +205,18 @@ export const mindMapsTable = pgTable("mind_maps", {
 export const practiceTestsTable = pgTable("practice_tests", {
   testId: uuid("test_id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
-  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
-  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  timeLimit: integer("time_limit"), // minutes
-  totalQuestions: integer("total_questions").default(0).notNull(),
+  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
+  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
   difficulty: difficultyEnum("difficulty").default('beginner').notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
+  timeLimit: integer("time_limit"), // in minutes
+  totalQuestions: integer("total_questions").default(0).notNull(),
+  totalPoints: integer("total_points").default(0).notNull(),
+  tags: jsonb("tags"),
+  aiGenerated: boolean("ai_generated").default(false).notNull(),
+  generationPrompt: text("generation_prompt"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -132,11 +225,12 @@ export const testQuestionsTable = pgTable("test_questions", {
   questionId: uuid("question_id").primaryKey().defaultRandom(),
   testId: uuid("test_id").references(() => practiceTestsTable.testId, { onDelete: 'cascade' }).notNull(),
   question: text("question").notNull(),
-  options: jsonb("options"), // array of options for MCQ
+  options: jsonb("options"), // for multiple choice questions
   correctAnswer: text("correct_answer").notNull(),
   explanation: text("explanation"),
   points: integer("points").default(1).notNull(),
   orderIndex: integer("order_index").default(0).notNull(),
+  aiGenerated: boolean("ai_generated").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -269,6 +363,29 @@ export const studyGroupMembersTable = pgTable("study_group_members", {
   userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
   role: varchar("role", { length: 20 }).default('member').notNull(), // member, organizer
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const meetingLinksTable = pgTable("meeting_links", {
+  linkId: uuid("link_id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // 'google', 'zoom', 'custom'
+  url: text("url").notNull(),
+  createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const sharedResourcesTable = pgTable("shared_resources", {
+  resourceId: uuid("resource_id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileType: varchar("file_type", { length: 100 }).notNull(),
+  fileSize: bigint("file_size", { mode: 'number' }).notNull(),
+  description: text("description"),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
   isActive: boolean("is_active").default(true).notNull(),
 });
 
@@ -581,12 +698,93 @@ export const doubtSolvingFilesTable = pgTable("doubt_solving_files", {
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
 
+// Quiz System Tables
+export const quizCategoriesTable = pgTable("quiz_categories", {
+  categoryId: uuid("category_id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  iconUrl: text("icon_url"),
+  color: varchar("color", { length: 7 }).default('#3B82F6'), // hex color
+  difficulty: difficultyEnum("difficulty").default('beginner').notNull(),
+  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
+  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
+  totalQuestions: integer("total_questions").default(0).notNull(),
+  averageRating: decimal("average_rating", { precision: 2, scale: 1 }).default('0.0'),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Simplified quiz tracking - focus on personal progress, not competition
+export const userQuizHistoryTable = pgTable("user_quiz_history", {
+  historyId: uuid("history_id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  testId: uuid("test_id").references(() => practiceTestsTable.testId, { onDelete: 'cascade' }).notNull(),
+  score: integer("score").default(0).notNull(),
+  accuracyRate: decimal("accuracy_rate", { precision: 5, scale: 2 }).default('0.00'),
+  timeSpent: integer("time_spent").default(0).notNull(), // in seconds
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+  submissionData: jsonb("submission_data"), // stores answers and results
+});
+
+
+
+// Remove XP-based tables - commenting out instead of deleting for migration safety
+/*
+export const globalLeaderboardTable = pgTable("global_leaderboard", {
+  leaderboardId: uuid("leaderboard_id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
+  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
+  totalPoints: integer("total_points").default(0).notNull(),
+  totalQuizzes: integer("total_quizzes").default(0).notNull(),
+  averageScore: decimal("average_score", { precision: 5, scale: 2 }).default('0.00'),
+  currentLevel: integer("current_level").default(1).notNull(),
+  currentXp: integer("current_xp").default(0).notNull(),
+  rank: integer("rank").default(0).notNull(),
+  lastUpdateDate: timestamp("last_update_date").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userSubjectUnique: unique().on(table.userId, table.subjectId, table.topicId),
+}));
+
+export const userQuizStatsTable = pgTable("user_quiz_stats", {
+  statId: uuid("stat_id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  subjectId: uuid("subject_id").references(() => subjectsTable.subjectId, { onDelete: 'set null' }),
+  topicId: uuid("topic_id").references(() => topicsTable.topicId, { onDelete: 'set null' }),
+  totalQuizzesAttempted: integer("total_quizzes_attempted").default(0).notNull(),
+  totalQuizzesCompleted: integer("total_quizzes_completed").default(0).notNull(),
+  totalPoints: integer("total_points").default(0).notNull(),
+  averageScore: decimal("average_score", { precision: 5, scale: 2 }).default('0.00'),
+  bestScore: integer("best_score").default(0).notNull(),
+  totalTimeSpent: integer("total_time_spent").default(0).notNull(), // in seconds
+  currentLevel: integer("current_level").default(1).notNull(),
+  currentXp: integer("current_xp").default(0).notNull(),
+  xpToNextLevel: integer("xp_to_next_level").default(100).notNull(),
+  correctAnswers: integer("correct_answers").default(0).notNull(),
+  totalAnswers: integer("total_answers").default(0).notNull(),
+  accuracyRate: decimal("accuracy_rate", { precision: 5, scale: 2 }).default('0.00'),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  lastQuizDate: timestamp("last_quiz_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userSubjectUnique: unique().on(table.userId, table.subjectId, table.topicId),
+}));
+*/
+
+
+
 // Relations
 export const usersRelations = relations(usersTable, ({ one, many }) => ({
   profile: one(userProfilesTable),
   authTokens: many(authTokensTable),
   chats: many(chatsTable),
   flashcards: many(flashcardsTable),
+  flashcardDecks: many(flashcardDecksTable),
   mindMaps: many(mindMapsTable),
   practiceTests: many(practiceTestsTable),
   testSubmissions: many(practiceTestSubmissionsTable),
@@ -610,6 +808,7 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
   notifications: many(notificationsTable),
   fileUploads: many(fileUploadsTable),
   doubtSolvingSessions: many(doubtSolvingSessionsTable),
+  quizHistory: many(userQuizHistoryTable),
 }));
 
 export const subjectsRelations = relations(subjectsTable, ({ many }) => ({
@@ -637,10 +836,22 @@ export const topicsRelations = relations(topicsTable, ({ one, many }) => ({
   doubtSolvingSessions: many(doubtSolvingSessionsTable),
 }));
 
+export const flashcardDecksRelations = relations(flashcardDecksTable, ({ one, many }) => ({
+  user: one(usersTable, {
+    fields: [flashcardDecksTable.userId],
+    references: [usersTable.userId],
+  }),
+  cards: many(flashcardsTable),
+}));
+
 export const flashcardsRelations = relations(flashcardsTable, ({ one }) => ({
   user: one(usersTable, {
     fields: [flashcardsTable.userId],
     references: [usersTable.userId],
+  }),
+  deck: one(flashcardDecksTable, {
+    fields: [flashcardsTable.deckId],
+    references: [flashcardDecksTable.deckId],
   }),
 }));
 
@@ -763,6 +974,8 @@ export const studyGroupsRelations = relations(studyGroupsTable, ({ one, many }) 
   }),
   members: many(studyGroupMembersTable),
   messages: many(studyGroupMessagesTable),
+  meetingLinks: many(meetingLinksTable),
+  sharedResources: many(sharedResourcesTable),
 }));
 
 export const studyGroupMembersRelations = relations(studyGroupMembersTable, ({ one }) => ({
@@ -784,5 +997,50 @@ export const studyGroupMessagesRelations = relations(studyGroupMessagesTable, ({
   sender: one(usersTable, {
     fields: [studyGroupMessagesTable.senderId],
     references: [usersTable.userId],
+  }),
+}));
+
+export const meetingLinksRelations = relations(meetingLinksTable, ({ one }) => ({
+  group: one(studyGroupsTable, {
+    fields: [meetingLinksTable.groupId],
+    references: [studyGroupsTable.groupId],
+  }),
+  creator: one(usersTable, {
+    fields: [meetingLinksTable.createdBy],
+    references: [usersTable.userId],
+  }),
+}));
+
+export const sharedResourcesRelations = relations(sharedResourcesTable, ({ one }) => ({
+  group: one(studyGroupsTable, {
+    fields: [sharedResourcesTable.groupId],
+    references: [studyGroupsTable.groupId],
+  }),
+  uploader: one(usersTable, {
+    fields: [sharedResourcesTable.uploadedBy],
+    references: [usersTable.userId],
+  }),
+}));
+
+// Quiz System Relations
+export const quizCategoriesRelations = relations(quizCategoriesTable, ({ one }) => ({
+  subject: one(subjectsTable, {
+    fields: [quizCategoriesTable.subjectId],
+    references: [subjectsTable.subjectId],
+  }),
+  topic: one(topicsTable, {
+    fields: [quizCategoriesTable.topicId],
+    references: [topicsTable.topicId],
+  }),
+}));
+
+export const userQuizHistoryRelations = relations(userQuizHistoryTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [userQuizHistoryTable.userId],
+    references: [usersTable.userId],
+  }),
+  test: one(practiceTestsTable, {
+    fields: [userQuizHistoryTable.testId],
+    references: [practiceTestsTable.testId],
   }),
 }));

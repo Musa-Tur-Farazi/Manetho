@@ -281,9 +281,12 @@ export default function DoubtSolvingPage() {
         color: white;
         border-radius: 12px;
         padding: 10px 14px;
-        max-width: 90%;
+        max-width: 80%;
         margin-left: auto;
         margin-right: 16px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
       }
       
       /* AI bubble styling */
@@ -292,8 +295,11 @@ export default function DoubtSolvingPage() {
         color: #d1d5db;
         border-radius: 0;
         padding: 0;
-        max-width: 100%;
+        max-width: 85%;
         margin-left: 16px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
       }
       
       /* ChatGPT-specific message styling */
@@ -414,6 +420,7 @@ export default function DoubtSolvingPage() {
         padding: 1.5rem;
         border-bottom: 1px solid rgba(255,255,255,0.1);
         width: 100%;
+        overflow-x: hidden;
       }
       
       .chat-row.user {
@@ -428,6 +435,7 @@ export default function DoubtSolvingPage() {
         width: 100%;
         max-width: 90%;
         margin: 0 auto;
+        overflow-x: hidden;
       }
       
       .chat-avatar {
@@ -670,6 +678,9 @@ export default function DoubtSolvingPage() {
         max-width: 90%;
         width: 100%;
         padding: 0 1rem;
+        overflow-x: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
       }
       
       /* Empty screen styling */
@@ -696,6 +707,7 @@ export default function DoubtSolvingPage() {
         width: 100%;
         display: flex;
         justify-content: center;
+        overflow-x: hidden;
       }
     `;
     document.head.appendChild(style);
@@ -1737,7 +1749,7 @@ export default function DoubtSolvingPage() {
                                 ) : null}
                               </div>
                             )}
-                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                            <p className="whitespace-pre-wrap break-words overflow-hidden">{message.content}</p>
                           </div>
                         )}
                       </div>

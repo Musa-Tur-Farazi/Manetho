@@ -463,14 +463,33 @@ which requires token authentication but you were trying to join without a token.
 
   if (isConnecting) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
-          <p className="text-lg">Connecting to call...</p>
-          <p className="text-sm text-gray-300 mt-2">Channel: {channelName}</p>
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-50 flex items-center justify-center overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.3),transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(139,92,246,0.3),transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.3),transparent_70%)]"></div>
+        </div>
+
+        <div className="relative z-10 text-center text-white max-w-md mx-auto p-8 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
+          <div className="relative mb-8">
+            <div className="w-24 h-24 mx-auto mb-6 relative">
+              <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-spin"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" style={{ animationDuration: '0.8s' }}></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin" style={{ animationDuration: '1.2s', animationDirection: 'reverse' }}></div>
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold mb-3">Connecting to call...</h2>
+          <p className="text-white/70 mb-2">Please wait while we establish the connection</p>
+          <div className="inline-flex items-center px-4 py-2 bg-blue-500/20 rounded-full mb-6">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+            <span className="text-sm font-medium text-blue-400">Channel: {channelName}</span>
+          </div>
+
           <button
             onClick={onCallEnd}
-            className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            className="w-full px-6 py-3 bg-red-500/90 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg shadow-red-500/25"
           >
             Cancel
           </button>
@@ -481,49 +500,90 @@ which requires token authentication but you were trying to join without a token.
 
   if (connectionError) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center text-white max-w-lg mx-4">
-          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <PhoneOff className="w-8 h-8" />
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 z-50 flex items-center justify-center overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(239,68,68,0.3),transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(220,38,38,0.3),transparent_70%)]"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(185,28,28,0.3),transparent_70%)]"></div>
+        </div>
+
+        <div className="relative z-10 text-center text-white max-w-lg mx-4 p-8 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <PhoneOff className="w-10 h-10 text-red-400" />
           </div>
-          <h2 className="text-xl font-semibold mb-4">Connection Failed</h2>
-          <div className="bg-gray-900/80 rounded-lg p-4 mb-6 text-left">
-            <pre className="text-gray-300 text-sm whitespace-pre-wrap font-mono leading-relaxed">
+
+          <h2 className="text-2xl font-bold mb-4">Connection Failed</h2>
+          <p className="text-white/70 mb-6">We couldn't establish a connection to the call</p>
+
+          <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-8 text-left">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-red-400">Error Details</span>
+            </div>
+            <pre className="text-red-300 text-sm whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
               {connectionError}
             </pre>
           </div>
-          <div className="space-y-2">
-            <button
-              onClick={onCallEnd}
-              className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
-            <p className="text-gray-400 text-xs mt-4">
-              Check browser console (F12) for detailed technical logs
-            </p>
-          </div>
+
+          <button
+            onClick={onCallEnd}
+            className="w-full px-6 py-3 bg-red-500/90 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg shadow-red-500/25"
+          >
+            Close
+          </button>
+
+          <p className="text-white/50 text-xs mt-4">
+            Check browser console (F12) for detailed technical logs
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Video Grid */}
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 z-50 flex flex-col">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.3),transparent_70%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(139,92,246,0.3),transparent_70%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.3),transparent_70%)]"></div>
+      </div>
+
+      {/* Compact Header */}
+      <div className="relative z-10 px-6 py-3 bg-black/30 backdrop-blur-sm border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="text-white">
+              <h2 className="text-sm font-semibold">Video Call</h2>
+              <p className="text-xs text-white/70">
+                {remoteUsers.length > 0 ? 'Connected' : 'Connecting...'}
+              </p>
+            </div>
+          </div>
+          <div className="text-white/70 text-sm font-mono">
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+      </div>
+
+      {/* Video Grid - Full Screen */}
       <div className="flex-1 relative">
-        {/* Remote Users */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 h-full p-4">
-          {remoteUsers.map((user) => (
-            <RemoteVideoPlayer key={user.uid} user={user} />
+        <div className="absolute inset-0 grid grid-cols-2 gap-1">
+          {/* Remote Users */}
+          {remoteUsers.map((user, index) => (
+            <div key={user.uid} className="relative">
+              <RemoteVideoPlayer user={user} />
+            </div>
           ))}
 
           {/* Local Video */}
-          <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+          <div className="relative bg-black/20 overflow-hidden">
             {isScreenSharing && (
-              <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2">
+              <div className="absolute top-3 left-3 z-10 bg-blue-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg">
                 <Monitor className="w-3 h-3" />
-                Sharing Screen
+                Screen
               </div>
             )}
             <div
@@ -532,62 +592,100 @@ which requires token authentication but you were trying to join without a token.
                   localVideoTrack.play(ref);
                 }
               }}
-              className="w-full h-full"
+              className="w-full h-full object-cover"
             />
             {!isVideoEnabled && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                <VideoOff className="w-12 h-12 text-white" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="text-center text-white">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <VideoOff className="w-8 h-8" />
+                  </div>
+                  <p className="text-sm font-medium">Camera is off</p>
+                </div>
               </div>
             )}
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-              You {isScreenSharing && '(Screen)'}
+
+            {/* User Label */}
+            <div className="absolute bottom-3 left-3 right-3">
+              <div className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium flex items-center justify-between">
+                <span>You {isScreenSharing && '(Screen)'}</span>
+                <div className="flex items-center space-x-1">
+                  <div className={`w-2 h-2 rounded-full ${isAudioEnabled ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Fill remaining slots if needed */}
+          {remoteUsers.length === 0 && (
+            <div className="relative bg-black/20 overflow-hidden flex items-center justify-center">
+              <div className="text-center text-white/50">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Video className="w-8 h-8" />
+                </div>
+                <p className="text-sm">Waiting for participant...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="p-6 bg-gray-900 flex justify-center items-center gap-4">
-        <button
-          onClick={toggleAudio}
-          className={`p-4 rounded-full transition-colors ${isAudioEnabled
-            ? 'bg-gray-700 hover:bg-gray-600 text-white'
-            : 'bg-red-600 hover:bg-red-700 text-white'
-            }`}
-          title={isAudioEnabled ? 'Mute' : 'Unmute'}
-        >
-          {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
-        </button>
+      {/* Compact Controls */}
+      <div className="relative z-10 px-6 py-4 bg-black/30 backdrop-blur-sm border-t border-white/10">
+        <div className="flex justify-center items-center space-x-4">
+          {/* Audio Toggle */}
+          <button
+            onClick={toggleAudio}
+            className={`relative group p-3 rounded-full transition-all duration-200 ${isAudioEnabled
+              ? 'bg-white/20 hover:bg-white/30 text-white'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+              }`}
+            title={isAudioEnabled ? 'Mute' : 'Unmute'}
+          >
+            {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+          </button>
 
-        <button
-          onClick={toggleVideo}
-          className={`p-4 rounded-full transition-colors ${isVideoEnabled
-            ? 'bg-gray-700 hover:bg-gray-600 text-white'
-            : 'bg-red-600 hover:bg-red-700 text-white'
-            }`}
-          title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
-        >
-          {isVideoEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
-        </button>
+          {/* Video Toggle */}
+          <button
+            onClick={toggleVideo}
+            className={`relative group p-3 rounded-full transition-all duration-200 ${isVideoEnabled
+              ? 'bg-white/20 hover:bg-white/30 text-white'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+              }`}
+            title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
+          >
+            {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+          </button>
 
-        <button
-          onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-          className={`p-4 rounded-full transition-all duration-200 ${isScreenSharing
-            ? 'bg-blue-600 hover:bg-blue-700 text-white ring-2 ring-blue-300 animate-pulse'
-            : 'bg-gray-700 hover:bg-gray-600 text-white'
-            }`}
-          title={isScreenSharing ? 'Stop sharing screen' : 'Share your screen'}
-        >
-          <Monitor className={`w-6 h-6 ${isScreenSharing ? 'animate-bounce' : ''}`} />
-        </button>
+          {/* Screen Share Toggle */}
+          <button
+            onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+            className={`relative group p-3 rounded-full transition-all duration-200 ${isScreenSharing
+              ? 'bg-blue-500 hover:bg-blue-600 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+            title={isScreenSharing ? 'Stop sharing screen' : 'Share your screen'}
+          >
+            <Monitor className="w-5 h-5" />
+          </button>
 
-        <button
-          onClick={endCall}
-          className="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-          title="End call"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </button>
+          {/* Settings */}
+          <button
+            className="relative group p-3 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+
+          {/* End Call */}
+          <button
+            onClick={endCall}
+            className="relative group p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200"
+            title="End call"
+          >
+            <PhoneOff className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -605,25 +703,34 @@ function RemoteVideoPlayer({ user }: { user: IAgoraRTCRemoteUser }) {
   }, [user.videoTrack]);
 
   return (
-    <div className="relative bg-gray-800 rounded-lg overflow-hidden">
+    <div className="relative bg-black/20 overflow-hidden h-full">
       <div
         ref={(ref) => {
           if (ref && user.videoTrack && isVideoEnabled) {
             user.videoTrack.play(ref);
           }
         }}
-        className="w-full h-full"
+        className="w-full h-full object-cover"
       />
       {!isVideoEnabled && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="text-center text-white">
-            <VideoOff className="w-12 h-12 mx-auto mb-2" />
-            <p className="text-sm">Camera off</p>
+            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <VideoOff className="w-8 h-8" />
+            </div>
+            <p className="text-sm font-medium">Camera is off</p>
           </div>
         </div>
       )}
-      <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded text-sm">
-        User {user.uid}
+
+      {/* User Label */}
+      <div className="absolute bottom-3 left-3 right-3">
+        <div className="bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium flex items-center justify-between">
+          <span>User {user.uid}</span>
+          <div className="flex items-center space-x-1">
+            <div className={`w-2 h-2 rounded-full ${user.hasAudio ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+          </div>
+        </div>
       </div>
     </div>
   );

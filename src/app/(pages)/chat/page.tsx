@@ -863,7 +863,7 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-gray-200/30 dark:border-slate-700/30 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -910,7 +910,7 @@ export default function ChatPage() {
       <div className="pt-16 h-screen flex">
         {/* Sidebar - Chat List */}
         <div
-          className="bg-white/80 dark:bg-slate-900/80 backdrop-blur border-r border-gray-200/30 dark:border-slate-700/30 flex flex-col h-full relative"
+          className="bg-white/95 dark:bg-slate-900/95 border-r border-gray-200/30 dark:border-slate-700/30 flex flex-col h-full relative"
           style={{ width: `${sidebarWidth}px`, minWidth: '280px', maxWidth: '600px' }}
         >
           {/* Search */}
@@ -1161,7 +1161,7 @@ export default function ChatPage() {
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-gray-200/30 dark:border-slate-700/30 flex items-center justify-between">
+              <div className="p-4 bg-white/95 dark:bg-slate-900/95 border-b border-gray-200/30 dark:border-slate-700/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <button
@@ -1213,7 +1213,7 @@ export default function ChatPage() {
               </div>
 
               {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50/50 to-white/50 dark:from-slate-950/50 dark:to-slate-900/50 scrollbar-enhanced">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-white/30 dark:bg-slate-950/30 scrollbar-enhanced">
                 {messages.map((message, index) => {
                   const isOwn = message.senderId === currentUserInternalId;
                   const showDate = index === 0 || formatMessageDate(messages[index - 1]?.timestamp) !== formatMessageDate(message.timestamp);
@@ -1271,7 +1271,7 @@ export default function ChatPage() {
                                     </div>
                                   ) : message.fileType === 'application/pdf' ? (
                                     <div className={`p-3 rounded-lg border-2 border-dashed ${isOwn
-                                      ? 'bg-red-500/10 border-red-300 dark:border-red-400'
+                                      ? 'bg-blue-400/20 border-blue-200'
                                       : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
                                       }`}>
                                       <div className="flex items-center gap-3">
@@ -1283,7 +1283,7 @@ export default function ChatPage() {
                                             }`}>
                                             📄 {message.fileName}
                                           </p>
-                                          <p className={`text-xs ${isOwn ? 'text-red-100' : 'text-red-600 dark:text-red-400'
+                                          <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-red-600 dark:text-red-400'
                                             }`}>
                                             PDF Document • {message.fileSize && formatFileSize(message.fileSize)}
                                           </p>
@@ -1314,7 +1314,7 @@ export default function ChatPage() {
                                     </div>
                                   ) : (
                                     <div className={`flex items-center gap-3 p-3 rounded-lg border ${isOwn
-                                      ? 'bg-blue-400/20 border-blue-300'
+                                      ? 'bg-blue-400/20 border-blue-200'
                                       : 'bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
                                       }`}>
                                       <div className="flex-shrink-0">
@@ -1349,7 +1349,7 @@ export default function ChatPage() {
 
                               {/* Message Text */}
                               {message.content && (
-                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                               )}
 
                               <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
@@ -1377,7 +1377,7 @@ export default function ChatPage() {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-t border-gray-200/30 dark:border-slate-700/30">
+              <div className="p-4 bg-white/95 dark:bg-slate-900/95 border-t border-gray-200/30 dark:border-slate-700/30">
                 {/* File Previews */}
                 {selectedFiles.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
@@ -1440,7 +1440,7 @@ export default function ChatPage() {
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder={`Message ${selectedUser.fullName}...`}
-                      className="w-full px-4 py-3 bg-gray-100 dark:bg-slate-800/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 resize-none max-h-32"
+                      className="w-full px-4 py-3 bg-gray-100 dark:bg-slate-800/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 resize-none max-h-32"
                       rows={1}
                       style={{ height: 'auto', minHeight: '2.75rem' }}
                       onInput={(e) => {

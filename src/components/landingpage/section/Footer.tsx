@@ -51,7 +51,7 @@ const Footer = () => {
       className="py-16 px-6 md:px-10 relative overflow-hidden"
     >
       {/* Background elements */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-50/80 to-gray-100/80 dark:from-transparent dark:via-gray-900/50 dark:to-gray-900/80 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-50/80 to-gray-100/80 dark:from-transparent dark:via-gray-900/50 dark:to-gray-900/80"></div>
 
       <div className="max-w-7xl mx-auto relative">
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 mb-12">

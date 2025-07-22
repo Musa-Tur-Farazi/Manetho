@@ -20,6 +20,13 @@ import {
   BarChart3,
   Trophy,
   MessageCircle,
+  Crown,
+  Medal,
+  Award,
+  Star,
+  TrendingUp,
+  Target,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,6 +42,7 @@ const HomePage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const firstName = user?.firstName || user?.username?.split(' ')[0] || "there";
   const [syncChecked, setSyncChecked] = useState(false);
+
 
   // Hide sidebar on mobile by default
   useEffect(() => {
@@ -82,6 +90,8 @@ const HomePage = () => {
 
     ensureUserSynced();
   }, [isLoaded, user, syncChecked]);
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-indigo-950 transition-colors duration-300">
@@ -132,6 +142,13 @@ const HomePage = () => {
                     Community
                   </Link>
                   <Link
+                    href="/group-study"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
+                    Group Study
+                  </Link>
+                  <Link
                     href="/tools/doubt-solving"
                     className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                   >
@@ -153,6 +170,13 @@ const HomePage = () => {
                   >
                     <BookMarked className="w-5 h-5 mr-3 text-emerald-600 dark:text-emerald-400" />
                     Flashcards
+                  </Link>
+                  <Link
+                    href="/tools/mind-maps"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <Brain className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
+                    Mind Maps
                   </Link>
 
                 </nav>
@@ -226,7 +250,7 @@ const HomePage = () => {
             </div>
 
             {/* Main Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* AI Doubt Solver Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -250,11 +274,57 @@ const HomePage = () => {
                 </Link>
               </motion.div>
 
-              {/* Community Card */}
+              {/* Flashcards Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <BookMarked className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Smart Flashcards
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Create flashcards manually or generate them with AI for efficient study sessions.
+                </p>
+                <Link href="/tools/flashcards">
+                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white">
+                    Study Now
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Mind Maps Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Brain className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Mind Maps
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Visualize your thoughts and ideas with AI-powered mind mapping tools.
+                </p>
+                <Link href="/tools/mind-maps">
+                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white">
+                    Create Mind Map
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Community Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -273,7 +343,6 @@ const HomePage = () => {
                 </Link>
               </motion.div>
 
-
             </div>
           </section>
 
@@ -283,7 +352,7 @@ const HomePage = () => {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
                 Your Learning Journey
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Brain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -291,6 +360,15 @@ const HomePage = () => {
                   <h3 className="font-semibold text-gray-900 dark:text-white">AI-Powered Learning</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                     Get personalized help with our advanced AI assistant
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <BookMarked className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Smart Flashcards</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    Create and study with AI-generated flashcards
                   </p>
                 </div>
                 <div className="text-center">
@@ -304,14 +382,127 @@ const HomePage = () => {
                 </div>
                 <div className="text-center">
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Quality Resources</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Mind Mapping</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Access curated study materials and resources
+                    Visualize ideas with AI-powered mind mapping tools
                   </p>
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Quiz Arena & Leaderboard */}
+          <section className="mb-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Quiz Arena Card */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 text-center group"
+              >
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Trophy className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Quiz Arena
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Challenge yourself with interactive quizzes across various subjects. Compete with others and climb the leaderboard!
+                </p>
+                <div className="flex justify-center space-x-4 mb-6">
+                  <div className="text-center">
+                    <Target className="w-6 h-6 text-blue-500 mx-auto mb-1" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Multiple Subjects</p>
+                  </div>
+                  <div className="text-center">
+                    <TrendingUp className="w-6 h-6 text-green-500 mx-auto mb-1" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Global Rankings</p>
+                  </div>
+                  <div className="text-center">
+                    <Flame className="w-6 h-6 text-red-500 mx-auto mb-1" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Study Streaks</p>
+                  </div>
+                </div>
+                <Link href="/quiz">
+                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white">
+                    Start Quiz Challenge
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* AI Quiz Generator Promotion */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                    <Brain className="w-5 h-5 mr-2 text-purple-500" />
+                    AI Quiz Generator
+                  </h3>
+                  <Link href="/quiz" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                    Try Now
+                  </Link>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-lg">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          Create Custom Quizzes
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Generate quizzes on any topic using AI
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Trophy className="w-4 h-4 text-green-500" />
+                        <span className="text-gray-700 dark:text-gray-300">Multiple choice</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <BookMarked className="w-4 h-4 text-blue-500" />
+                        <span className="text-gray-700 dark:text-gray-300">Save as flashcards</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Target className="w-4 h-4 text-orange-500" />
+                        <span className="text-gray-700 dark:text-gray-300">Custom difficulty</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Brain className="w-4 h-4 text-purple-500" />
+                        <span className="text-gray-700 dark:text-gray-300">AI-powered</span>
+                      </div>
+                    </div>
+
+                    <Link href="/quiz">
+                      <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white">
+                        <Brain className="w-4 h-4 mr-2" />
+                        Generate Quiz
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                      Create personalized quizzes on any topic you want to learn
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Convert quiz questions into flashcards for better studying
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </section>
         </div>

@@ -27,12 +27,23 @@ export async function GET() {
         cardId: flashcardsTable.cardId,
         question: flashcardsTable.question,
         answer: flashcardsTable.answer,
+        hint: flashcardsTable.hint,
+        explanation: flashcardsTable.explanation,
+        difficulty: flashcardsTable.difficulty,
+        orderIndex: flashcardsTable.orderIndex,
+        contentSource: flashcardsTable.contentSource,
+        aiConfidenceScore: flashcardsTable.aiConfidenceScore,
+        userRating: flashcardsTable.userRating,
+        timesReviewed: flashcardsTable.timesReviewed,
+        correctAnswers: flashcardsTable.correctAnswers,
+        lastReviewed: flashcardsTable.lastReviewed,
+        needsReview: flashcardsTable.needsReview,
         createdAt: flashcardsTable.createdAt,
         updatedAt: flashcardsTable.updatedAt
       })
       .from(flashcardsTable)
       .where(eq(flashcardsTable.userId, user.userId))
-      .orderBy(flashcardsTable.createdAt);
+      .orderBy(flashcardsTable.orderIndex, flashcardsTable.createdAt);
 
     return NextResponse.json(cards);
   } catch (error) {
@@ -59,7 +70,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { question, answer } = await request.json();
+    const { 
+      question, 
+      answer, 
+      hint, 
+      explanation, 
+      difficulty = 'beginner', 
+      orderIndex = 0,
+      contentSource = 'user_created' 
+    } = await request.json();
 
     if (!question?.trim() || !answer?.trim()) {
       return NextResponse.json({ error: 'Question and answer are required' }, { status: 400 });
@@ -70,12 +89,25 @@ export async function POST(request: NextRequest) {
       .values({
         userId: user.userId,
         question: question.trim(),
-        answer: answer.trim()
+        answer: answer.trim(),
+        hint: hint?.trim() || null,
+        explanation: explanation?.trim() || null,
+        difficulty,
+        orderIndex,
+        contentSource,
+        timesReviewed: 0,
+        correctAnswers: 0,
+        needsReview: false
       })
       .returning({
         cardId: flashcardsTable.cardId,
         question: flashcardsTable.question,
         answer: flashcardsTable.answer,
+        hint: flashcardsTable.hint,
+        explanation: flashcardsTable.explanation,
+        difficulty: flashcardsTable.difficulty,
+        orderIndex: flashcardsTable.orderIndex,
+        contentSource: flashcardsTable.contentSource,
         createdAt: flashcardsTable.createdAt,
         updatedAt: flashcardsTable.updatedAt
       });
