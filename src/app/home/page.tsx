@@ -19,18 +19,12 @@ import {
   BarChart3,
   Trophy,
   MessageCircle,
-<<<<<<< HEAD
-  Crown,
-  Medal,
-  Award,
-  Star,
+  CreditCard,
+  Network,
   TrendingUp,
   Target,
   Flame,
-=======
-  CreditCard,
-  Network,
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
+  BookMarked,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -162,40 +156,6 @@ const HomePage = () => {
                 </nav>
               </div>
 
-              {/* Study Tools Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Study Tools
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/tools/flashcards"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Flashcards
-                  </Link>
-                  <Link
-                    href="/tools/mind-maps"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-<<<<<<< HEAD
-                    <Brain className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                    Mind Maps
-                  </Link>
-
-                </nav>
-              </div>
-
-
-=======
-                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Mind Maps
-                  </Link>
-                </nav>
-              </div>
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
-
               {/* Other Pages Section */}
               <div className="mb-8">
                 <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
@@ -216,11 +176,6 @@ const HomePage = () => {
                     <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
                     Messages
                   </Link>
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
                 </nav>
               </div>
 
@@ -246,6 +201,31 @@ const HomePage = () => {
                   </Link>
                 </nav>
               </div>
+
+              {/* Study Tools Section */}
+              <div className="mb-8">
+                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                  Study Tools
+                </h3>
+                <nav className="space-y-1.5">
+                  <Link
+                    href="/tools/flashcards"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Flashcards
+                  </Link>
+                  <Link
+                    href="/tools/mind-maps"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Mind Maps
+                  </Link>
+                </nav>
+              </div>
+
+
             </div>
           </motion.aside>
         )}
@@ -265,11 +245,7 @@ const HomePage = () => {
             </div>
 
             {/* Main Action Cards */}
-<<<<<<< HEAD
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-=======
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-3xl mx-auto">
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
               {/* AI Doubt Solver Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -362,7 +338,6 @@ const HomePage = () => {
                 </Link>
               </motion.div>
 
-<<<<<<< HEAD
             </div>
           </section>
 
@@ -525,13 +500,6 @@ const HomePage = () => {
               </motion.div>
             </div>
           </section>
-=======
-
-            </div>
-          </section>
-
-
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
         </div>
       </main>
 
@@ -543,3 +511,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
