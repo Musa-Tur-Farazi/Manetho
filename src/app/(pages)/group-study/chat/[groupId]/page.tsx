@@ -3,10 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/badge';
-import { PageHeader } from '@/components/ui/PageHeader';
 import {
   Users,
   Send,
@@ -14,12 +11,7 @@ import {
   FileText,
   Image,
   Download,
-  Settings,
   Video,
-  MapPin,
-  Calendar,
-  X,
-  Clock,
   Plus,
   Copy,
   ExternalLink,
@@ -164,13 +156,8 @@ export default function GroupStudyChatPage() {
   const [sharedResources, setSharedResources] = useState<SharedResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageInput, setMessageInput] = useState('');
-  const [showMembers, setShowMembers] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [showMeetingOptions, setShowMeetingOptions] = useState(false);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
-  const [meetingLink, setMeetingLink] = useState('');
-  const [isUpdatingLink, setIsUpdatingLink] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [resourceDescription, setResourceDescription] = useState('');
 
@@ -190,7 +177,6 @@ export default function GroupStudyChatPage() {
     return () => {
       // Clean up Pusher subscription
       if (groupId) {
-        const channel = pusherClient.subscribe(getGroupChatChannel(groupId));
         pusherClient.unsubscribe(getGroupChatChannel(groupId));
       }
     };
@@ -207,7 +193,7 @@ export default function GroupStudyChatPage() {
       setMessages(prev => [...prev, data]);
     });
 
-    channel.bind('user:typing', (data: { userId: string; isTyping: boolean }) => {
+    channel.bind('user:typing', () => {
       // Handle typing indicators if needed
     });
 
@@ -300,7 +286,7 @@ export default function GroupStudyChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleProfileClick = (userId: string, userName: string) => {
+  const handleProfileClick = (userId: string) => {
     router.push(`/profile/${userId}`);
   };
 
@@ -463,21 +449,13 @@ export default function GroupStudyChatPage() {
     }
   };
 
-  const formatLinkDate = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+
 
   const getFileIcon = (fileType: string | null) => {
     if (!fileType) return <FileText className="w-4 h-4" />;
 
     if (fileType.startsWith('image/')) {
-      return <Image className="w-4 h-4" />;
+      return <Image className="w-4 h-4" alt="Image file" />;
     }
 
     return <FileText className="w-4 h-4" />;
@@ -505,18 +483,7 @@ export default function GroupStudyChatPage() {
     }
   };
 
-  const getMeetingTypeIcon = (type: string) => {
-    switch (type) {
-      case 'online':
-        return <Video className="w-4 h-4" />;
-      case 'in-person':
-        return <MapPin className="w-4 h-4" />;
-      case 'hybrid':
-        return <Calendar className="w-4 h-4" />;
-      default:
-        return <Video className="w-4 h-4" />;
-    }
-  };
+
 
   // Get current user's internal ID from the members list
   const getCurrentUserInternalId = () => {

@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/Button";
 import {
   User, MessageCircle, BookOpen, Calendar, Award, BarChart,
   UserPlus, UserMinus, ChevronLeft, Star, GraduationCap, Users,
-  Heart, Share, Bookmark, MoreHorizontal, Clock, Image, BarChart3,
-  Target, TrendingUp, Zap, Flame, CheckCircle, Trophy, Brain,
-  Timer, Book, Lightbulb, Activity, Progress
+  Heart, Share, Bookmark, MoreHorizontal, Clock, Image, BarChart3
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -79,6 +77,7 @@ export default function UserProfilePage() {
     if (userId) {
       fetchUserProfile();
       fetchUserPosts();
+      fetchUserStats();
     }
     if (currentUser) {
       fetchCurrentUserInternalId();
@@ -127,6 +126,16 @@ export default function UserProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const res = await fetch(`/api/profile/summary?userId=${userId}`);
+      if (res.ok) {
+        const stats = await res.json();
+        setUserStats(stats);
+      }
+    } catch (e) { console.error(e); }
   };
 
   const fetchUserPosts = async () => {
@@ -574,197 +583,11 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          {/* Enhanced Progress Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Learning Progress */}
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
-                Learning Progress
-              </h3>
 
-              <div className="space-y-4">
-                {/* Study Hours Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Timer className="w-4 h-4 text-purple-400" />
-                      Study Hours Goal
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.totalStudyHours || 0}/100h</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.totalStudyHours || 0) / 100 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
 
-                {/* Problems Solved Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-green-400" />
-                      Problems Solved
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.problemsSolved || 0}/200</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.problemsSolved || 0) / 200 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
 
-                {/* Flashcards Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Book className="w-4 h-4 text-orange-400" />
-                      Flashcard Decks
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.flashcardDecks || 0}/50</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.flashcardDecks || 0) / 50 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Learning Streak & Activity */}
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <Flame className="w-5 h-5 text-red-400" />
-                Learning Streak
-              </h3>
 
-              <div className="text-center mb-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-full mb-3">
-                  <Flame className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-slate-100">15</p>
-                <p className="text-sm text-gray-600 dark:text-slate-400">Days Streak</p>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="text-center">
-                    <p className="text-xs text-gray-600 dark:text-slate-400 mb-1">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'][i]}
-                    </p>
-                    <div className={`w-8 h-8 rounded-lg ${i < 5 ? 'bg-gradient-to-r from-green-400 to-blue-400' : 'bg-gray-200 dark:bg-slate-700/50'} flex items-center justify-center`}>
-                      {i < 5 && <CheckCircle className="w-4 h-4 text-white" />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-300/30 dark:border-blue-700/30">
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Keep it up! 🚀</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">You're on track to reach 30 days!</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Achievement Badges */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              Achievement Badges
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {/* Achievement Badge 1 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Star className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">First Problem</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">Solved!</p>
-              </div>
-
-              {/* Achievement Badge 2 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Study Master</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">50 Hours</p>
-              </div>
-
-              {/* Achievement Badge 3 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Flame className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Streak Legend</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">7 Days</p>
-              </div>
-
-              {/* Achievement Badge 4 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Users className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Social Butterfly</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">10 Friends</p>
-              </div>
-
-              {/* Achievement Badge 5 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Brain className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Problem Solver</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">100 Problems</p>
-              </div>
-
-              {/* Achievement Badge 6 - Locked */}
-              <div className="text-center group opacity-50">
-                <div className="w-16 h-16 bg-gray-300 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Target className="w-8 h-8 text-gray-500 dark:text-slate-400" />
-                </div>
-                <p className="text-xs font-medium text-gray-500 dark:text-slate-400">Goal Crusher</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500">Locked</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Weekly Activity Chart */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-400" />
-              Weekly Activity
-            </h3>
-
-            <div className="grid grid-cols-7 gap-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                const heights = [60, 80, 45, 90, 70, 30, 85]; // Sample data
-                return (
-                  <div key={day} className="text-center">
-                    <div className="h-20 flex items-end justify-center mb-2">
-                      <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg transition-all duration-300 hover:from-blue-400 hover:to-purple-400"
-                        style={{ height: `${heights[index]}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-slate-400">{day}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-slate-400">This week: 24h 30m</span>
-              <span className="text-green-500 font-medium">+15% from last week</span>
-            </div>
-          </div>
 
           {/* Tab Navigation */}
           <div className="mb-6">
@@ -1050,7 +873,7 @@ const PostCard = ({ post }: { post: UserPost }) => {
                 const optionVotes = votes[index] || 0;
 
                 // Calculate total votes by only counting numeric option votes (0, 1, 2, etc.)
-                const totalVotes = post.pollOptions.reduce((sum, _, optionIndex) => {
+                const totalVotes = post.pollOptions!.reduce((sum, _, optionIndex) => {
                   return sum + (votes[optionIndex] || 0);
                 }, 0);
 

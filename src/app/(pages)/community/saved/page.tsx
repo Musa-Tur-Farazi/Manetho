@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Clock, Bookmark, ChevronLeft, Image as ImageIcon, BarChart3, ExternalLink, Filter, Search, TrendingUp, Users } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useTheme } from '@/components/theme/ThemeProvider';
 
@@ -28,7 +27,6 @@ interface SavedPost {
 }
 
 export default function SavedPostsPage() {
-  const { user } = useUser();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
@@ -107,7 +105,6 @@ export default function SavedPostsPage() {
   };
 
   const formatSavedTime = (timestamp: string) => {
-    const date = new Date(timestamp);
     return `Saved ${formatTime(timestamp)}`;
   };
 

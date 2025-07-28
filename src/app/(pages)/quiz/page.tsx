@@ -8,35 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import {
   BookOpen,
   Clock,
-  Users,
   Trophy,
   Target,
   Zap,
-  Filter,
-  Search,
-  ChevronRight,
-  Star,
   Play,
-  BarChart3,
   Calendar,
-  Award,
-  TrendingUp,
-  User,
   CheckCircle,
   XCircle,
-  Medal,
-  Flame,
-  Crown,
-  GraduationCap,
   Brain,
   Plus,
   Sparkles,
   BookMarked,
-  Settings,
   RefreshCw,
-  Lightbulb,
   FileText,
-  Send,
   Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -203,7 +187,7 @@ export default function QuizArenaPage() {
     <div className="container mx-auto px-4 py-8">
       <PageHeader
         title="AI Quiz Generator"
-        description="Create personalized quizzes using AI and convert them to flashcards for study"
+        subtitle="Create personalized quizzes using AI and convert them to flashcards for study"
       />
 
       <div className="max-w-6xl mx-auto">
@@ -295,7 +279,7 @@ export default function QuizArenaPage() {
                             name="difficulty"
                             value={level}
                             checked={quizForm.difficulty === level}
-                            onChange={(e) => setQuizForm(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                            onChange={(e) => setQuizForm(prev => ({ ...prev, difficulty: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
                             className="text-blue-600 focus:ring-blue-500"
                           />
                           <div className="flex items-center space-x-2">
@@ -338,7 +322,7 @@ export default function QuizArenaPage() {
                           name="questionType"
                           value={option.value}
                           checked={quizForm.questionType === option.value}
-                          onChange={(e) => setQuizForm(prev => ({ ...prev, questionType: e.target.value as any }))}
+                          onChange={(e) => setQuizForm(prev => ({ ...prev, questionType: e.target.value as 'multiple_choice' | 'true_false' | 'short_answer' }))}
                           className="text-blue-600 focus:ring-blue-500"
                         />
                         <div className="flex items-center space-x-2">

@@ -94,6 +94,7 @@ export default function QuizGameplayPage() {
   // Game state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set());
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [totalTimeSpent, setTotalTimeSpent] = useState(0);
@@ -201,6 +202,22 @@ export default function QuizGameplayPage() {
     setCurrentQuestionIndex(index);
   };
 
+  const skipQuestion = () => {
+    if (currentQuestion) {
+      setSkippedQuestions(prev => new Set([...prev, currentQuestion.questionId]));
+      // Remove the answer if it exists
+      setAnswers(prev => {
+        const newAnswers = { ...prev };
+        delete newAnswers[currentQuestion.questionId];
+        return newAnswers;
+      });
+      // Move to next question if not the last one
+      if (currentQuestionIndex < (quizData?.questions.length || 0) - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      }
+    }
+  };
+
   const handleSubmitQuiz = async () => {
     if (!quizData || submitting) return;
 
@@ -212,7 +229,8 @@ export default function QuizGameplayPage() {
       // Convert answers to array format expected by API
       const answersArray = quizData.questions.map(q => ({
         questionId: q.questionId,
-        answer: answers[q.questionId] || ''
+        answer: answers[q.questionId] || '',
+        skipped: skippedQuestions.has(q.questionId)
       }));
 
       const response = await fetch('/api/quiz/submit', {
@@ -222,6 +240,7 @@ export default function QuizGameplayPage() {
           testId: testId,
           answers: answersArray,
           timeSpent: totalTimeSpent,
+          skippedCount: skippedQuestions.size,
         }),
       });
 
@@ -250,7 +269,8 @@ export default function QuizGameplayPage() {
   const getProgressPercentage = () => {
     if (!quizData) return 0;
     const answered = Object.keys(answers).length;
-    return (answered / quizData.questions.length) * 100;
+    const skipped = skippedQuestions.size;
+    return ((answered + skipped) / quizData.questions.length) * 100;
   };
 
   const getScoreColor = (score: number) => {
@@ -433,7 +453,7 @@ export default function QuizGameplayPage() {
                 Question {currentQuestionIndex + 1} of {quizData.questions.length}
               </span>
               <span className="text-sm text-gray-600">
-                {Object.keys(answers).length} answered
+                {Object.keys(answers).length} answered, {skippedQuestions.size} skipped
               </span>
             </div>
 
@@ -447,6 +467,14 @@ export default function QuizGameplayPage() {
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
                 >
+                  {skippedQuestions.has(currentQuestion.questionId) && (
+                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-orange-700 text-sm font-medium">
+                        ⚠️ This question was skipped. You can still answer it.
+                      </p>
+                    </div>
+                  )}
+                  
                   <h3 className="text-lg font-semibold mb-4">{currentQuestion.question}</h3>
 
                   {currentQuestion.options ? (
@@ -455,8 +483,8 @@ export default function QuizGameplayPage() {
                         <label
                           key={index}
                           className={`block p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${currentAnswer === option
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200'
+                            ? 'border-blue-500 bg-blue-50 text-gray-900 dark:text-gray-100'
+                            : 'border-gray-200 text-gray-700 dark:text-gray-200'
                             }`}
                         >
                           <input
@@ -467,7 +495,7 @@ export default function QuizGameplayPage() {
                             onChange={(e) => handleAnswerChange(currentQuestion.questionId, e.target.value)}
                             className="sr-only"
                           />
-                          <span className="text-sm font-medium">{option}</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{option}</span>
                         </label>
                       ))}
                     </div>
@@ -496,21 +524,34 @@ export default function QuizGameplayPage() {
                 <span>Previous</span>
               </Button>
 
-              <div className="flex items-center space-x-2">
-                {quizData.questions.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToQuestion(index)}
-                    className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentQuestionIndex
-                      ? 'bg-blue-500 text-white'
-                      : answers[quizData.questions[index].questionId]
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={skipQuestion}
+                  disabled={skippedQuestions.has(currentQuestion?.questionId || '')}
+                  className="flex items-center space-x-2 text-orange-600 border-orange-300 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{skippedQuestions.has(currentQuestion?.questionId || '') ? 'Skipped' : 'Skip'}</span>
+                </Button>
+
+                <div className="flex items-center space-x-2">
+                  {quizData.questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentQuestionIndex
+                        ? 'bg-blue-500 text-white'
+                        : answers[quizData.questions[index].questionId]
+                          ? 'bg-green-500 text-white'
+                          : skippedQuestions.has(quizData.questions[index].questionId)
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                          }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {isLastQuestion ? (

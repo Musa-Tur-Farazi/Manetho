@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import { Check, Edit, Trash, Plus, BookOpen, Brain, ClipboardList, GraduationCap, Clock, Flag, Calendar } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+
 
 // Define the types for our mind map
 interface MindMapNode {
@@ -17,7 +17,6 @@ interface MindMapNode {
 }
 
 export default function MindMapPage() {
-  const { user } = useUser();
   const [activeStudySituation, setActiveStudySituation] = useState<string>("exams");
   const [showNodeForm, setShowNodeForm] = useState<boolean>(false);
   const [editingNode, setEditingNode] = useState<string | null>(null);

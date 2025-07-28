@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import {
   BookOpen,
@@ -64,6 +65,7 @@ const FlashcardPage = () => {
   const { user } = useUser();
   const { theme } = useTheme();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // State management
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
@@ -87,7 +89,7 @@ const FlashcardPage = () => {
     topic: '',
     subject: '',
     difficulty: 'beginner' as const,
-    count: 5,
+    count: 1,
     additionalContext: ''
   });
   const [isGenerating, setIsGenerating] = useState(false);
@@ -123,8 +125,17 @@ const FlashcardPage = () => {
   // Handle URL parameters
   useEffect(() => {
     const createParam = searchParams.get('create');
+    const generateParam = searchParams.get('generate');
+    const studyParam = searchParams.get('study');
+
     if (createParam === 'true') {
       setView('create');
+    } else if (generateParam === 'true') {
+      setView('generate');
+    } else if (studyParam === 'true') {
+      setView('study');
+    } else {
+      setView('library');
     }
   }, [searchParams]);
 
@@ -174,7 +185,7 @@ const FlashcardPage = () => {
       if (response.ok) {
         const result = await response.json();
         setFlashcards(prev => [...result.flashcards, ...prev]);
-        setAiForm({ topic: '', subject: '', difficulty: 'beginner', count: 5, additionalContext: '' });
+        setAiForm({ topic: '', subject: '', difficulty: 'beginner', count: 1, additionalContext: '' });
         toast.success(`Generated ${result.count} flashcards successfully!`);
         setView('library');
       } else {
@@ -247,6 +258,8 @@ const FlashcardPage = () => {
       timeSpent: 0
     });
     setView('study');
+    // Push a new history entry so that browser back returns to library
+    router.push('/tools/flashcards?study=true');
   };
 
   // Handle study answer
@@ -281,6 +294,7 @@ const FlashcardPage = () => {
       toast.success(`Study session complete! Accuracy: ${accuracy.toFixed(1)}%`);
       setStudySession(null);
       setView('library');
+      router.push('/tools/flashcards');
       fetchFlashcards(); // Refresh to get updated statistics
     }
   };
@@ -349,7 +363,10 @@ const FlashcardPage = () => {
             <div className="flex items-center space-x-4">
               <div className="flex bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-1">
                 <button
-                  onClick={() => setView('library')}
+                  onClick={() => {
+                    setView('library');
+                    router.push('/tools/flashcards');
+                  }}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${view === 'library'
                     ? 'bg-white/40 dark:bg-gray-600/40 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -358,7 +375,10 @@ const FlashcardPage = () => {
                   Library
                 </button>
                 <button
-                  onClick={() => setView('create')}
+                  onClick={() => {
+                    setView('create');
+                    router.push('/tools/flashcards?create=true');
+                  }}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${view === 'create'
                     ? 'bg-white/40 dark:bg-gray-600/40 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -367,7 +387,10 @@ const FlashcardPage = () => {
                   Create
                 </button>
                 <button
-                  onClick={() => setView('generate')}
+                  onClick={() => {
+                    setView('generate');
+                    router.push('/tools/flashcards?generate=true');
+                  }}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${view === 'generate'
                     ? 'bg-white/40 dark:bg-gray-600/40 text-gray-900 dark:text-white shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -577,6 +600,7 @@ const FlashcardPage = () => {
                 onExit={() => {
                   setStudySession(null);
                   setView('library');
+                  router.push('/tools/flashcards');
                 }}
               />
             </motion.div>
@@ -871,11 +895,11 @@ const AIGenerateForm = ({ form, setForm, onSubmit, onCancel, isGenerating }: {
                 onChange={(e) => setForm({ ...form, count: parseInt(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
+                <option value={1}>1 Card</option>
+                <option value={2}>2 Cards</option>
                 <option value={3}>3 Cards</option>
+                <option value={4}>4 Cards</option>
                 <option value={5}>5 Cards</option>
-                <option value={10}>10 Cards</option>
-                <option value={15}>15 Cards</option>
-                <option value={20}>20 Cards</option>
               </select>
             </div>
           </div>

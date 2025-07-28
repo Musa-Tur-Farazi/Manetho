@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
-import { Plus, Brain, Download, Share2, Settings, Search, Menu, List } from 'lucide-react';
+import { Plus, Brain, Download, Share2, Search, Menu, List } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MindMapCreator from '@/components/mindmap/MindMapCreator';
 import MindMapVisualization from '@/components/mindmap/MindMapVisualization';
 import MindMapList from '@/components/mindmap/MindMapList';
@@ -27,6 +28,9 @@ interface MindMap {
 
 export default function MindMapsPage() {
   const { isSignedIn, isLoaded } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [mindMaps, setMindMaps] = useState<MindMap[]>([]);
   const [selectedMindMap, setSelectedMindMap] = useState<MindMap | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +39,16 @@ export default function MindMapsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLayout, setFilterLayout] = useState('all');
   const [showSidebar, setShowSidebar] = useState(false);
+
+  // sync with url param
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    if (createParam === 'true') {
+      setShowCreator(true);
+    } else {
+      setShowCreator(false);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -97,14 +111,15 @@ export default function MindMapsPage() {
     }
   };
 
-  const handleSelectMindMap = async (mindMap: MindMap) => {
+  const handleSelectMindMap = async (mindMap: any) => {
     try {
       const response = await fetch(`/api/mindmaps/${mindMap.mindmapId}`);
       const data = await response.json();
 
       if (data.success) {
-        setSelectedMindMap(data.mindMap);
-        setShowSidebar(false); // Close sidebar after selecting
+        setSelectedMindMap(data.mindMap as any);
+        router.push(`/tools/mind-maps?id=${mindMap.mindmapId}`);
+        setShowSidebar(false);
       } else {
         toast.error('Failed to load mind map');
       }
@@ -198,6 +213,18 @@ export default function MindMapsPage() {
     return matchesSearch && matchesFilter;
   });
 
+  // load mind map from ?id= param on initial render if not selected
+  useEffect(() => {
+    const id = searchParams.get('id');
+    if (id) {
+      if (!selectedMindMap || selectedMindMap.mindmapId !== id) {
+        handleSelectMindMap({ mindmapId: id } as any);
+      }
+    } else {
+      setSelectedMindMap(null);
+    }
+  }, [searchParams]);
+
   if (!isLoaded) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">
@@ -254,14 +281,7 @@ export default function MindMapsPage() {
                   Switch Mind Map
                 </Button>
               )}
-              <Button
-                onClick={() => setShowCreator(true)}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                New Mind Map
-              </Button>
+              {/* Header new mind map button removed to avoid redundancy */}
             </div>
           </div>
         </div>
@@ -298,18 +318,7 @@ export default function MindMapsPage() {
                   />
                 </div>
 
-                <select
-                  value={filterLayout}
-                  onChange={(e) => setFilterLayout(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="all">All Layouts</option>
-                  <option value="tree">Tree</option>
-                  <option value="radial">Radial</option>
-                  <option value="org">Organizational</option>
-                  <option value="fishbone">Fishbone</option>
-                  <option value="flowchart">Flowchart</option>
-                </select>
+                {/* Layout filter removed - layout is fixed to sequential flow */}
               </div>
 
               <MindMapList
@@ -335,7 +344,10 @@ export default function MindMapsPage() {
             {showCreator ? (
               <MindMapCreator
                 onCreateMindMap={handleCreateMindMap}
-                onCancel={() => setShowCreator(false)}
+                onCancel={() => {
+                  setShowCreator(false);
+                  router.push('/tools/mind-maps');
+                }}
                 isLoading={isCreating}
               />
             ) : selectedMindMap ? (
@@ -387,7 +399,7 @@ export default function MindMapsPage() {
                 {/* Mind Map Visualization - Full Width */}
                 <div className="bg-white/10 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 dark:border-gray-600/20 p-2">
                   <MindMapVisualization
-                    mindMap={selectedMindMap}
+                    mindMap={selectedMindMap as any}
                     onUpdateMindMap={handleUpdateMindMap}
                   />
                 </div>
@@ -405,7 +417,10 @@ export default function MindMapsPage() {
                   Start by creating a new mind map or selecting an existing one.
                 </p>
                 <Button
-                  onClick={() => setShowCreator(true)}
+                  onClick={() => {
+                    setShowCreator(true);
+                    router.push('/tools/mind-maps?create=true');
+                  }}
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
                 >
                   <Plus className="h-4 w-4 mr-2" />

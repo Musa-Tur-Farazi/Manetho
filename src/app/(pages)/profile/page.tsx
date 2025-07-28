@@ -4,17 +4,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import {
-  User, Edit, BookOpen, Calendar, Award, BarChart, Clock,
-<<<<<<< HEAD
-  Save, X, ChevronRight, Book, Pencil, MailOpen, Link as LinkIcon,
-  Star, GraduationCap, Trophy, Target, Zap, TrendingUp,
-  Crown, Medal, CheckCircle, Flame, BarChart3, Share2,
-  MessageSquare, Heart, Eye, Users, BrainCircuit, FileText,
-  BookMarked, TestTube, Bookmark, MessageCircle, ThumbsUp
-=======
-  Save, X, ChevronRight, Pencil, MailOpen, Link as LinkIcon,
-  GraduationCap
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
+  Edit, BookOpen, Calendar, Award, BarChart, Clock,
+  Save, X, ChevronRight, Star, GraduationCap, Trophy, Target,
+  Flame, BarChart3, Users, BrainCircuit, FileText,
+  TestTube, Bookmark, MessageCircle, ThumbsUp, MessageSquare
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import AchievementBadge, { Achievement } from "@/components/AchievementBadge";
@@ -112,14 +105,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [educationLevel, setEducationLevel] = useState("University");
   const [fieldOfStudy, setFieldOfStudy] = useState("Computer Science");
-  const [profileLinks, setProfileLinks] = useState<{ type: string, url: string }[]>([
-    { type: "email", url: "" },
-    { type: "website", url: "" },
-    { type: "github", url: "" }
-  ]);
-  const [studyPreferences, setStudyPreferences] = useState<string[]>([
-    "Group study", "Visual learning", "Problem-based"
-  ]);
+
 
   // Activity states
   const [activeTab, setActiveTab] = useState<"overview" | "groups" | "flashcards" | "mind-maps" | "solved" | "quiz" | "posts">("overview");
@@ -251,10 +237,15 @@ export default function ProfilePage() {
 
   const loadActivityData = async () => {
     try {
+      console.log('Loading activity data...');
       const response = await fetch('/api/profile/activity');
       const data = await response.json();
 
+      console.log('Activity data response:', data);
+
       if (response.ok) {
+        console.log('Setting activity data:', data.data);
+        console.log('Activity stats:', data.data.stats);
         setActivityData(data.data);
 
         // Update profile information if available
@@ -264,9 +255,57 @@ export default function ProfilePage() {
           setEducationLevel(profile.grade || "University");
           setFieldOfStudy(profile.school || "Computer Science");
         }
+      } else {
+        console.error('Failed to load activity data:', data.error);
+        // Set default empty data structure
+        setActivityData({
+          stats: {
+            totalStudyHours: 0,
+            totalSessions: 0,
+            totalQueries: 0,
+            flashcardDecks: 0,
+            mindMapsSaved: 0,
+            problemsSolved: 0,
+            groupsCreated: 0,
+            groupsJoined: 0,
+            postsCreated: 0,
+            postsSaved: 0,
+            activityCounts: {},
+            averageQuizScore: 0,
+            totalQuizPoints: 0,
+          },
+          recentActivities: [],
+          createdPosts: [],
+          savedPosts: [],
+          studyStreak: null,
+          userProfile: null,
+        });
       }
     } catch (error) {
       console.error('Error loading activity data:', error);
+      // Set default empty data structure on error
+      setActivityData({
+        stats: {
+          totalStudyHours: 0,
+          totalSessions: 0,
+          totalQueries: 0,
+          flashcardDecks: 0,
+          mindMapsSaved: 0,
+          problemsSolved: 0,
+          groupsCreated: 0,
+          groupsJoined: 0,
+          postsCreated: 0,
+          postsSaved: 0,
+          activityCounts: {},
+          averageQuizScore: 0,
+          totalQuizPoints: 0,
+        },
+        recentActivities: [],
+        createdPosts: [],
+        savedPosts: [],
+        studyStreak: null,
+        userProfile: null,
+      });
     } finally {
       setActivityLoading(false);
     }
@@ -274,18 +313,98 @@ export default function ProfilePage() {
 
   const loadQuizData = async () => {
     try {
+      console.log('Loading quiz data...');
       const response = await fetch('/api/quiz/stats');
       const data = await response.json();
+
+      console.log('Quiz data response:', data);
 
       if (response.ok) {
         setQuizStats(data.overallStats);
         setStudyStreak(data.studyStreak);
         setUserRanking(data.ranking);
+      } else {
+        console.error('Failed to load quiz data:', data.error);
+        // Set default empty quiz stats
+        setQuizStats({
+          totalQuizzesCompleted: 0,
+          totalPoints: 0,
+          averageScore: 0,
+          bestScore: 0,
+          maxLevel: 1,
+          totalXp: 0,
+          overallAccuracy: 0,
+          totalSubjects: 0,
+          achievementsCount: 0,
+        });
+        setStudyStreak({
+          currentStreak: 0,
+          longestStreak: 0,
+          lastStudyDate: null,
+        });
+        setUserRanking({
+          rank: 0,
+          totalPoints: 0,
+          currentLevel: 1,
+        });
       }
     } catch (error) {
       console.error('Error loading quiz data:', error);
+      // Set default empty quiz stats on error
+      setQuizStats({
+        totalQuizzesCompleted: 0,
+        totalPoints: 0,
+        averageScore: 0,
+        bestScore: 0,
+        maxLevel: 1,
+        totalXp: 0,
+        overallAccuracy: 0,
+        totalSubjects: 0,
+        achievementsCount: 0,
+      });
+      setStudyStreak({
+        currentStreak: 0,
+        longestStreak: 0,
+        lastStudyDate: null,
+      });
+      setUserRanking({
+        rank: 0,
+        totalPoints: 0,
+        currentLevel: 1,
+      });
     } finally {
       setQuizLoading(false);
+    }
+  };
+
+  // Function to generate test data
+  const generateTestData = async () => {
+    try {
+      console.log('Generating test data...');
+      const response = await fetch('/api/profile/generate-test-data', {
+        method: 'POST',
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Test data generated:', data);
+        console.log('Generated data summary:', data.data);
+        
+        // Reload the data after generating test data
+        console.log('Reloading activity data...');
+        await loadActivityData();
+        console.log('Reloading quiz data...');
+        await loadQuizData();
+        
+        // Force a page refresh to ensure we see the new data
+        window.location.reload();
+      } else {
+        console.error('Failed to generate test data:', data.error);
+        alert('Failed to generate test data: ' + data.error);
+      }
+    } catch (error) {
+      console.error('Error generating test data:', error);
+      alert('Error generating test data');
     }
   };
 
@@ -370,6 +489,16 @@ export default function ProfilePage() {
         title="Your Profile"
         description="Manage your personal information and track your learning journey"
       />
+
+      {/* Test Data Generation Button - Only for development */}
+      <div className="mb-6 flex justify-center">
+        <Button
+          onClick={generateTestData}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg"
+        >
+          Generate Test Data (Development)
+        </Button>
+      </div>
 
       <div className="mb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

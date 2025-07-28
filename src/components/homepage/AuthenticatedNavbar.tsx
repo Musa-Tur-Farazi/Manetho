@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, BookOpen, BookMarked, Network, Brain } from "lucide-react";
+import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, BookOpen, BookMarked, Network } from "lucide-react";
 import { useTheme } from "../theme/ThemeProvider";
 import { Button } from "../ui/Button";
 
@@ -51,8 +51,8 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         }`}
     >
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Left section: Logo + Doubt-solving button */}
-                  <div className="flex items-center gap-16">
+        {/* Left section: Logo */}
+        <div className="flex items-center">
           <Link href="/home" className="flex items-center">
             <span
               className={`text-2xl font-bold ${isScrolled
@@ -62,18 +62,6 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             >
               Manetho
             </span>
-          </Link>
-
-          {/* Doubt-solving button - desktop only */}
-          <Link
-            href="/tools/doubt-solving"
-            className={`hidden md:flex px-4 py-2 rounded-lg font-medium text-sm items-center ${isScrolled
-              ? "text-cyan-600 hover:bg-gray-100 dark:text-cyan-400 dark:hover:bg-gray-800"
-              : "text-cyan-600 hover:bg-white/20 dark:text-cyan-400 dark:hover:bg-gray-800/20"
-              } transition-colors duration-200`}
-          >
-            <Brain className="w-4 h-4 mr-1.5" />
-            Doubt-Solving
           </Link>
         </div>
 
@@ -135,24 +123,6 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
                         Your Profile
                       </div>
                     </Link>
-                    <Link
-                      href="/subjects"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4" />
-                        My Subjects
-                      </div>
-                    </Link>
-                    <Link
-                      href="/saved"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <BookMarked className="w-4 h-4" />
-                        Saved Resources
-                      </div>
-                    </Link>
                     <div className="border-t border-gray-200 dark:border-gray-700"></div>
                     <SignOutButton>
                       <button className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -205,15 +175,6 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
               >
                 Tools
               </button>
-              <Link
-                href="/tools/doubt-solving"
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <div className="flex items-center gap-2">
-                  <Brain className="w-4 h-4" />
-                  Doubt-Solving
-                </div>
-              </Link>
               <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <Link
                 href={user?.id ? `/profile/${user.id}` : '/profile'}

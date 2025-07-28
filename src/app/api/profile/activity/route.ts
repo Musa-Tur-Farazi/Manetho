@@ -22,11 +22,15 @@ import { eq, desc, count, sum, avg, and, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Profile activity API called');
     const { userId: clerkUserId } = await auth();
 
     if (!clerkUserId) {
+      console.log('No clerk user ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('Clerk user ID:', clerkUserId);
 
     // Get user from database
     const [user] = await db
@@ -36,8 +40,11 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (!user) {
+      console.log('User not found in database for clerk ID:', clerkUserId);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('Found user in database:', user.userId);
 
     const { userId } = user;
 
@@ -219,6 +226,21 @@ export async function GET(request: NextRequest) {
       averageQuizScore: quizSubmissionsResult[0]?.avgScore || 0,
       totalQuizPoints: quizSubmissionsResult[0]?.totalPoints || 0,
     };
+
+    // Debug logging
+    console.log('Profile Activity API Debug:', {
+      userId,
+      totalStudyHours,
+      flashcardDecks: flashcardDecksResult[0]?.deckCount,
+      mindMapsSaved: mindMapsResult[0]?.mindMapCount,
+      problemsSolved: quizSubmissionsResult[0]?.totalSubmissions,
+      groupsJoined: joinedGroupsResult[0]?.joinedCount,
+      studySessionsResult: studySessionsResult.length,
+      flashcardDecksResult: flashcardDecksResult,
+      mindMapsResult: mindMapsResult,
+      quizSubmissionsResult: quizSubmissionsResult,
+      joinedGroupsResult: joinedGroupsResult,
+    });
 
     return NextResponse.json({
       success: true,

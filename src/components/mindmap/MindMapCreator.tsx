@@ -12,19 +12,8 @@ interface MindMapCreatorProps {
 
 export default function MindMapCreator({ onCreateMindMap, onCancel, isLoading }: MindMapCreatorProps) {
   const [topic, setTopic] = useState('');
-  const [selectedLayout, setSelectedLayout] = useState('tree');
   const [selectedTheme, setSelectedTheme] = useState('default');
-  const [maxNodes, setMaxNodes] = useState(15);
-  const [language, setLanguage] = useState('en');
-
-  const exampleTopics = [
-    "Daily routine planning",
-    "Healthy eating habits",
-    "Study techniques",
-    "Project management",
-    "Personal finance basics",
-    "Exercise motivation",
-  ];
+  const [maxNodes, setMaxNodes] = useState(3); // default within 2-5 range
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +21,9 @@ export default function MindMapCreator({ onCreateMindMap, onCancel, isLoading }:
 
     onCreateMindMap({
       topic: topic.trim(),
-      layout: selectedLayout,
+      layout: 'sequential_flow',
       theme: selectedTheme,
       maxNodes,
-      language,
     });
   };
 
@@ -80,109 +68,27 @@ export default function MindMapCreator({ onCreateMindMap, onCancel, isLoading }:
             </p>
           </div>
 
-          {/* Example topics */}
+          {/* Maximum Nodes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Example Topics
+              Maximum Nodes (2 - 5)
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {exampleTopics.map((example, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setTopic(example)}
-                  className="text-left p-2 text-sm bg-white/60 dark:bg-gray-700/60 backdrop-blur-sm rounded-md hover:bg-white/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500 transition-colors"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
+            <input
+              type="range"
+              min="2"
+              max="5"
+              value={maxNodes}
+              onChange={(e) => setMaxNodes(Number(e.target.value))}
+              className="w-full accent-purple-600"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {maxNodes} nodes
+            </span>
           </div>
 
-          {/* Layout Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Layout
-            </label>
-            <select
-              value={selectedLayout}
-              onChange={(e) => setSelectedLayout(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="tree">Tree Layout</option>
-              <option value="radial">Radial Layout</option>
-              <option value="org">Organizational Layout</option>
-              <option value="fishbone">Fishbone Layout</option>
-              <option value="flowchart">Flowchart Layout</option>
-            </select>
-          </div>
+          {/* Theme selection removed - using default theme */}
 
-          {/* Theme Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Theme
-            </label>
-            <select
-              value={selectedTheme}
-              onChange={(e) => setSelectedTheme(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="default">Default Theme</option>
-              <option value="nature">Nature Theme</option>
-              <option value="ocean">Ocean Theme</option>
-              <option value="sunset">Sunset Theme</option>
-              <option value="purple">Purple Theme</option>
-            </select>
-          </div>
-
-          {/* Advanced Options */}
-          <details className="border border-gray-200 dark:border-gray-600 rounded-md bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm">
-            <summary className="px-4 py-3 cursor-pointer font-medium text-gray-900 dark:text-white">
-              Advanced Options
-            </summary>
-            <div className="px-4 pb-3 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Maximum Nodes
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="20"
-                  value={maxNodes}
-                  onChange={(e) => setMaxNodes(Number(e.target.value))}
-                  className="w-full accent-purple-600"
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {maxNodes} nodes
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Language
-                </label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                  <option value="it">Italian</option>
-                  <option value="pt">Portuguese</option>
-                  <option value="ja">Japanese</option>
-                  <option value="ko">Korean</option>
-                  <option value="zh">Chinese</option>
-                  <option value="ar">Arabic</option>
-                  <option value="hi">Hindi</option>
-                  <option value="ru">Russian</option>
-                </select>
-              </div>
-            </div>
-          </details>
+          {/* Advanced Options removed */}
         </div>
 
         {/* Create Button */}

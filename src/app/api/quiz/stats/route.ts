@@ -2,19 +2,183 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import {
-  userQuizStatsTable,
-  globalLeaderboardTable,
+  userQuizHistoryTable,
   studyStreaksTable,
-  userQuizAchievementsTable,
-  quizAchievementsTable,
   practiceTestSubmissionsTable,
   usersTable,
   subjectsTable,
-  topicsTable
+  topicsTable,
+  practiceTestsTable
 } from '@/db/schema';
 import { eq, desc, sql, and, count } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
+  try {
+    console.log('Quiz stats API called');
+    const { userId: clerkUserId } = await auth();
+
+    if (!clerkUserId) {
+      console.log('No clerk user ID found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('Clerk user ID:', clerkUserId);
+
+    const [user] = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (!user) {
+      console.log('User not found in database for clerk ID:', clerkUserId);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    console.log('Found user in database:', user.userId);
+
+    const { searchParams } = new URL(request.url);
+    const subjectId = searchParams.get('subjectId');
+    const topicId = searchParams.get('topicId');
+
+    // Get user quiz history stats
+    let statsQuery = db
+      .select({
+        historyId: userQuizHistoryTable.historyId,
+        testId: userQuizHistoryTable.testId,
+        score: userQuizHistoryTable.score,
+        accuracyRate: userQuizHistoryTable.accuracyRate,
+        timeSpent: userQuizHistoryTable.timeSpent,
+        completedAt: userQuizHistoryTable.completedAt,
+        submissionData: userQuizHistoryTable.submissionData,
+        // Test info
+        testTitle: practiceTestsTable.title,
+        testDescription: practiceTestsTable.description,
+        testDifficulty: practiceTestsTable.difficulty,
+        // Subject and topic info
+        subjectName: subjectsTable.name,
+        subjectColor: subjectsTable.color,
+        topicName: topicsTable.name,
+      })
+      .from(userQuizHistoryTable)
+      .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
+      .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
+      .leftJoin(topicsTable, eq(practiceTestsTable.topicId, topicsTable.topicId))
+      .where(eq(userQuizHistoryTable.userId, user.userId));
+
+    // Add filters if specified
+    if (subjectId) {
+      statsQuery = statsQuery.where(eq(practiceTestsTable.subjectId, subjectId));
+    }
+    if (topicId) {
+      statsQuery = statsQuery.where(eq(practiceTestsTable.topicId, topicId));
+    }
+
+    const stats = await statsQuery.orderBy(desc(userQuizHistoryTable.completedAt));
+
+    // Get overall stats (aggregated from quiz history)
+    const overallStats = await db
+      .select({
+        totalQuizzesCompleted: count(userQuizHistoryTable.historyId),
+        totalPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+        bestScore: sql<number>`MAX(${userQuizHistoryTable.score})`,
+        totalTimeSpent: sql<number>`SUM(${userQuizHistoryTable.timeSpent})`,
+        averageAccuracy: sql<number>`AVG(${userQuizHistoryTable.accuracyRate})`,
+      })
+      .from(userQuizHistoryTable)
+      .where(eq(userQuizHistoryTable.userId, user.userId));
+
+    // Get study streak info
+    const [streakInfo] = await db
+      .select({
+        currentStreak: studyStreaksTable.currentStreak,
+        longestStreak: studyStreaksTable.longestStreak,
+        lastStudyDate: studyStreaksTable.lastStudyDate,
+      })
+      .from(studyStreaksTable)
+      .where(eq(studyStreaksTable.userId, user.userId))
+      .limit(1);
+
+    // Get recent quiz activity
+    const recentQuizzes = await db
+      .select({
+        historyId: userQuizHistoryTable.historyId,
+        testTitle: practiceTestsTable.title,
+        score: userQuizHistoryTable.score,
+        accuracyRate: userQuizHistoryTable.accuracyRate,
+        completedAt: userQuizHistoryTable.completedAt,
+      })
+      .from(userQuizHistoryTable)
+      .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
+      .where(eq(userQuizHistoryTable.userId, user.userId))
+      .orderBy(desc(userQuizHistoryTable.completedAt))
+      .limit(5);
+
+    // Get subject-wise performance
+    const subjectPerformance = await db
+      .select({
+        subjectName: subjectsTable.name,
+        subjectColor: subjectsTable.color,
+        quizCount: count(userQuizHistoryTable.historyId),
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+        bestScore: sql<number>`MAX(${userQuizHistoryTable.score})`,
+        totalTimeSpent: sql<number>`SUM(${userQuizHistoryTable.timeSpent})`,
+      })
+      .from(userQuizHistoryTable)
+      .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
+      .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
+      .where(eq(userQuizHistoryTable.userId, user.userId))
+      .groupBy(subjectsTable.name, subjectsTable.color)
+      .orderBy(desc(sql`AVG(${userQuizHistoryTable.score})`));
+
+    const response = {
+      stats: stats.map(stat => ({
+        ...stat,
+        // Calculate derived fields
+        totalQuizzesAttempted: 1, // Each history entry represents one attempt
+        totalQuizzesCompleted: 1,
+        totalPoints: stat.score,
+        averageScore: stat.score,
+        bestScore: stat.score,
+        totalTimeSpent: stat.timeSpent,
+        currentLevel: Math.floor(stat.score / 10) + 1, // Simple level calculation
+        currentXp: stat.score,
+        xpToNextLevel: 100,
+        correctAnswers: Math.floor((stat.accuracyRate || 0) * 10), // Estimate
+        totalAnswers: 10, // Estimate
+        accuracyRate: stat.accuracyRate,
+        longestStreak: streakInfo?.longestStreak || 0,
+        currentStreak: streakInfo?.currentStreak || 0,
+        lastQuizDate: stat.completedAt,
+      })),
+      overallStats: {
+        totalQuizzesCompleted: overallStats[0]?.totalQuizzesCompleted || 0,
+        totalPoints: overallStats[0]?.totalPoints || 0,
+        averageScore: overallStats[0]?.averageScore || 0,
+        bestScore: overallStats[0]?.bestScore || 0,
+        totalTimeSpent: overallStats[0]?.totalTimeSpent || 0,
+        maxLevel: Math.floor((overallStats[0]?.bestScore || 0) / 10) + 1,
+        totalXp: overallStats[0]?.totalPoints || 0,
+        correctAnswers: Math.floor((overallStats[0]?.averageAccuracy || 0) * (overallStats[0]?.totalQuizzesCompleted || 0) * 10),
+        totalAnswers: (overallStats[0]?.totalQuizzesCompleted || 0) * 10,
+        longestStreak: streakInfo?.longestStreak || 0,
+      },
+      streakInfo: streakInfo || { currentStreak: 0, longestStreak: 0, lastStudyDate: null },
+      recentQuizzes,
+      subjectPerformance,
+    };
+
+    console.log('Quiz stats response:', response);
+    return NextResponse.json(response);
+
+  } catch (error) {
+    console.error('Error fetching quiz stats:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
   try {
     const { userId: clerkUserId } = await auth();
 
@@ -32,278 +196,101 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const subjectId = searchParams.get('subjectId');
-    const topicId = searchParams.get('topicId');
+    const { targetUserId } = await request.json();
 
-    // Get user quiz stats
-    let statsQuery = db
+    if (!targetUserId) {
+      return NextResponse.json({ error: 'Target user ID is required' }, { status: 400 });
+    }
+
+    // Get target user's quiz history stats
+    const targetUserStats = await db
       .select({
-        statId: userQuizStatsTable.statId,
-        totalQuizzesAttempted: userQuizStatsTable.totalQuizzesAttempted,
-        totalQuizzesCompleted: userQuizStatsTable.totalQuizzesCompleted,
-        totalPoints: userQuizStatsTable.totalPoints,
-        averageScore: userQuizStatsTable.averageScore,
-        bestScore: userQuizStatsTable.bestScore,
-        totalTimeSpent: userQuizStatsTable.totalTimeSpent,
-        currentLevel: userQuizStatsTable.currentLevel,
-        currentXp: userQuizStatsTable.currentXp,
-        xpToNextLevel: userQuizStatsTable.xpToNextLevel,
-        correctAnswers: userQuizStatsTable.correctAnswers,
-        totalAnswers: userQuizStatsTable.totalAnswers,
-        accuracyRate: userQuizStatsTable.accuracyRate,
-        longestStreak: userQuizStatsTable.longestStreak,
-        currentStreak: userQuizStatsTable.currentStreak,
-        lastQuizDate: userQuizStatsTable.lastQuizDate,
-        createdAt: userQuizStatsTable.createdAt,
-        updatedAt: userQuizStatsTable.updatedAt,
+        historyId: userQuizHistoryTable.historyId,
+        testId: userQuizHistoryTable.testId,
+        score: userQuizHistoryTable.score,
+        accuracyRate: userQuizHistoryTable.accuracyRate,
+        timeSpent: userQuizHistoryTable.timeSpent,
+        completedAt: userQuizHistoryTable.completedAt,
+        submissionData: userQuizHistoryTable.submissionData,
+        // Test info
+        testTitle: practiceTestsTable.title,
+        testDescription: practiceTestsTable.description,
+        testDifficulty: practiceTestsTable.difficulty,
         // Subject and topic info
         subjectName: subjectsTable.name,
         subjectColor: subjectsTable.color,
         topicName: topicsTable.name,
       })
-      .from(userQuizStatsTable)
-      .leftJoin(subjectsTable, eq(userQuizStatsTable.subjectId, subjectsTable.subjectId))
-      .leftJoin(topicsTable, eq(userQuizStatsTable.topicId, topicsTable.topicId))
-      .where(eq(userQuizStatsTable.userId, user.userId));
+      .from(userQuizHistoryTable)
+      .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
+      .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
+      .leftJoin(topicsTable, eq(practiceTestsTable.topicId, topicsTable.topicId))
+      .where(eq(userQuizHistoryTable.userId, targetUserId))
+      .orderBy(desc(userQuizHistoryTable.totalPoints));
 
-    // Add filters if specified
-    if (subjectId) {
-      statsQuery = statsQuery.where(eq(userQuizStatsTable.subjectId, subjectId));
-    }
-    if (topicId) {
-      statsQuery = statsQuery.where(eq(userQuizStatsTable.topicId, topicId));
-    }
-
-    const stats = await statsQuery.orderBy(desc(userQuizStatsTable.totalPoints));
-
-    // Get overall stats (sum across all subjects/topics)
-    const overallStats = await db
+    // Get target user's overall stats
+    const targetOverallStats = await db
       .select({
-        totalQuizzesCompleted: sql<number>`SUM(${userQuizStatsTable.totalQuizzesCompleted})`,
-        totalPoints: sql<number>`SUM(${userQuizStatsTable.totalPoints})`,
-        averageScore: sql<number>`AVG(${userQuizStatsTable.averageScore})`,
-        bestScore: sql<number>`MAX(${userQuizStatsTable.bestScore})`,
-        totalTimeSpent: sql<number>`SUM(${userQuizStatsTable.totalTimeSpent})`,
-        maxLevel: sql<number>`MAX(${userQuizStatsTable.currentLevel})`,
-        totalXp: sql<number>`SUM(${userQuizStatsTable.currentXp})`,
-        correctAnswers: sql<number>`SUM(${userQuizStatsTable.correctAnswers})`,
-        totalAnswers: sql<number>`SUM(${userQuizStatsTable.totalAnswers})`,
-        longestStreak: sql<number>`MAX(${userQuizStatsTable.longestStreak})`,
+        totalQuizzesCompleted: count(userQuizHistoryTable.historyId),
+        totalPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+        bestScore: sql<number>`MAX(${userQuizHistoryTable.score})`,
+        totalTimeSpent: sql<number>`SUM(${userQuizHistoryTable.timeSpent})`,
+        averageAccuracy: sql<number>`AVG(${userQuizHistoryTable.accuracyRate})`,
       })
-      .from(userQuizStatsTable)
-      .where(eq(userQuizStatsTable.userId, user.userId));
+      .from(userQuizHistoryTable)
+      .where(eq(userQuizHistoryTable.userId, targetUserId));
 
-    // Get study streak
-    const [studyStreak] = await db
-      .select()
-      .from(studyStreaksTable)
-      .where(eq(studyStreaksTable.userId, user.userId))
-      .limit(1);
-
-    // Get user's global ranking
-    const [userRank] = await db
+    // Get target user's study streak
+    const [targetStreakInfo] = await db
       .select({
-        rank: sql<number>`ROW_NUMBER() OVER (ORDER BY ${globalLeaderboardTable.totalPoints} DESC)`,
-        totalPoints: globalLeaderboardTable.totalPoints,
-        currentLevel: globalLeaderboardTable.currentLevel,
-        globalRank: globalLeaderboardTable.globalRank,
-        subjectRank: globalLeaderboardTable.subjectRank,
+        currentStreak: studyStreaksTable.currentStreak,
+        longestStreak: studyStreaksTable.longestStreak,
+        lastStudyDate: studyStreaksTable.lastStudyDate,
       })
-      .from(globalLeaderboardTable)
-      .where(eq(globalLeaderboardTable.userId, user.userId))
-      .limit(1);
-
-    // Get recent quiz history
-    const recentQuizzes = await db
-      .select({
-        submissionId: practiceTestSubmissionsTable.submissionId,
-        score: practiceTestSubmissionsTable.score,
-        totalPoints: practiceTestSubmissionsTable.totalPoints,
-        timeSpent: practiceTestSubmissionsTable.timeSpent,
-        submittedAt: practiceTestSubmissionsTable.submittedAt,
-        // Quiz info would need to be joined with practiceTestsTable
-      })
-      .from(practiceTestSubmissionsTable)
-      .where(eq(practiceTestSubmissionsTable.userId, user.userId))
-      .orderBy(desc(practiceTestSubmissionsTable.submittedAt))
-      .limit(10);
-
-    // Get user achievements
-    const achievements = await db
-      .select({
-        userAchievementId: userQuizAchievementsTable.userAchievementId,
-        earnedAt: userQuizAchievementsTable.earnedAt,
-        progress: userQuizAchievementsTable.progress,
-        notified: userQuizAchievementsTable.notified,
-        // Achievement details
-        achievementId: quizAchievementsTable.achievementId,
-        name: quizAchievementsTable.name,
-        description: quizAchievementsTable.description,
-        iconUrl: quizAchievementsTable.iconUrl,
-        badgeColor: quizAchievementsTable.badgeColor,
-        xpReward: quizAchievementsTable.xpReward,
-        pointsReward: quizAchievementsTable.pointsReward,
-        category: quizAchievementsTable.category,
-        rarity: quizAchievementsTable.rarity,
-      })
-      .from(userQuizAchievementsTable)
-      .leftJoin(quizAchievementsTable, eq(userQuizAchievementsTable.achievementId, quizAchievementsTable.achievementId))
-      .where(eq(userQuizAchievementsTable.userId, user.userId))
-      .orderBy(desc(userQuizAchievementsTable.earnedAt));
-
-    // Calculate some additional metrics
-    const totalQuizzesCompleted = overallStats[0]?.totalQuizzesCompleted || 0;
-    const totalCorrectAnswers = overallStats[0]?.correctAnswers || 0;
-    const totalAnswers = overallStats[0]?.totalAnswers || 0;
-    const overallAccuracy = totalAnswers > 0 ? (totalCorrectAnswers / totalAnswers) * 100 : 0;
-
-    return NextResponse.json({
-      stats,
-      overallStats: {
-        totalQuizzesCompleted,
-        totalPoints: overallStats[0]?.totalPoints || 0,
-        averageScore: overallStats[0]?.averageScore || 0,
-        bestScore: overallStats[0]?.bestScore || 0,
-        totalTimeSpent: overallStats[0]?.totalTimeSpent || 0,
-        maxLevel: overallStats[0]?.maxLevel || 1,
-        totalXp: overallStats[0]?.totalXp || 0,
-        overallAccuracy,
-        totalSubjects: stats.length,
-      },
-      studyStreak: studyStreak || {
-        currentStreak: 0,
-        longestStreak: 0,
-        lastStudyDate: null,
-      },
-      ranking: userRank || {
-        rank: 0,
-        totalPoints: 0,
-        currentLevel: 1,
-        globalRank: 0,
-        subjectRank: 0,
-      },
-      recentQuizzes,
-      achievements,
-      metadata: {
-        subjectId,
-        topicId,
-        timestamp: new Date().toISOString(),
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching user stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// Get specific user's stats by userId (for profile pages)
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { userId: targetUserId } = body;
-
-    if (!targetUserId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    // Get user quiz stats (public view)
-    const stats = await db
-      .select({
-        totalQuizzesCompleted: userQuizStatsTable.totalQuizzesCompleted,
-        totalPoints: userQuizStatsTable.totalPoints,
-        averageScore: userQuizStatsTable.averageScore,
-        bestScore: userQuizStatsTable.bestScore,
-        currentLevel: userQuizStatsTable.currentLevel,
-        currentXp: userQuizStatsTable.currentXp,
-        accuracyRate: userQuizStatsTable.accuracyRate,
-        longestStreak: userQuizStatsTable.longestStreak,
-        currentStreak: userQuizStatsTable.currentStreak,
-        lastQuizDate: userQuizStatsTable.lastQuizDate,
-        // Subject info
-        subjectName: subjectsTable.name,
-        subjectColor: subjectsTable.color,
-        topicName: topicsTable.name,
-      })
-      .from(userQuizStatsTable)
-      .leftJoin(subjectsTable, eq(userQuizStatsTable.subjectId, subjectsTable.subjectId))
-      .leftJoin(topicsTable, eq(userQuizStatsTable.topicId, topicsTable.topicId))
-      .where(eq(userQuizStatsTable.userId, targetUserId))
-      .orderBy(desc(userQuizStatsTable.totalPoints));
-
-    // Get overall stats
-    const overallStats = await db
-      .select({
-        totalQuizzesCompleted: sql<number>`SUM(${userQuizStatsTable.totalQuizzesCompleted})`,
-        totalPoints: sql<number>`SUM(${userQuizStatsTable.totalPoints})`,
-        averageScore: sql<number>`AVG(${userQuizStatsTable.averageScore})`,
-        bestScore: sql<number>`MAX(${userQuizStatsTable.bestScore})`,
-        maxLevel: sql<number>`MAX(${userQuizStatsTable.currentLevel})`,
-        totalXp: sql<number>`SUM(${userQuizStatsTable.currentXp})`,
-        correctAnswers: sql<number>`SUM(${userQuizStatsTable.correctAnswers})`,
-        totalAnswers: sql<number>`SUM(${userQuizStatsTable.totalAnswers})`,
-        longestStreak: sql<number>`MAX(${userQuizStatsTable.longestStreak})`,
-      })
-      .from(userQuizStatsTable)
-      .where(eq(userQuizStatsTable.userId, targetUserId));
-
-    // Get study streak
-    const [studyStreak] = await db
-      .select()
       .from(studyStreaksTable)
       .where(eq(studyStreaksTable.userId, targetUserId))
       .limit(1);
 
-    // Get user's global ranking
-    const [userRank] = await db
-      .select({
-        rank: sql<number>`ROW_NUMBER() OVER (ORDER BY ${globalLeaderboardTable.totalPoints} DESC)`,
-        totalPoints: globalLeaderboardTable.totalPoints,
-        currentLevel: globalLeaderboardTable.currentLevel,
-      })
-      .from(globalLeaderboardTable)
-      .where(eq(globalLeaderboardTable.userId, targetUserId))
-      .limit(1);
-
-    // Get achievements count
-    const [achievementsCount] = await db
-      .select({ count: count() })
-      .from(userQuizAchievementsTable)
-      .where(eq(userQuizAchievementsTable.userId, targetUserId));
-
-    const totalCorrectAnswers = overallStats[0]?.correctAnswers || 0;
-    const totalAnswers = overallStats[0]?.totalAnswers || 0;
-    const overallAccuracy = totalAnswers > 0 ? (totalCorrectAnswers / totalAnswers) * 100 : 0;
-
-    return NextResponse.json({
-      stats,
+    const response = {
+      stats: targetUserStats.map(stat => ({
+        ...stat,
+        // Calculate derived fields
+        totalQuizzesAttempted: 1,
+        totalQuizzesCompleted: 1,
+        totalPoints: stat.score,
+        averageScore: stat.score,
+        bestScore: stat.score,
+        totalTimeSpent: stat.timeSpent,
+        currentLevel: Math.floor(stat.score / 10) + 1,
+        currentXp: stat.score,
+        xpToNextLevel: 100,
+        correctAnswers: Math.floor((stat.accuracyRate || 0) * 10),
+        totalAnswers: 10,
+        accuracyRate: stat.accuracyRate,
+        longestStreak: targetStreakInfo?.longestStreak || 0,
+        currentStreak: targetStreakInfo?.currentStreak || 0,
+        lastQuizDate: stat.completedAt,
+      })),
       overallStats: {
-        totalQuizzesCompleted: overallStats[0]?.totalQuizzesCompleted || 0,
-        totalPoints: overallStats[0]?.totalPoints || 0,
-        averageScore: overallStats[0]?.averageScore || 0,
-        bestScore: overallStats[0]?.bestScore || 0,
-        maxLevel: overallStats[0]?.maxLevel || 1,
-        totalXp: overallStats[0]?.totalXp || 0,
-        overallAccuracy,
-        totalSubjects: stats.length,
-        achievementsCount: achievementsCount?.count || 0,
+        totalQuizzesCompleted: targetOverallStats[0]?.totalQuizzesCompleted || 0,
+        totalPoints: targetOverallStats[0]?.totalPoints || 0,
+        averageScore: targetOverallStats[0]?.averageScore || 0,
+        bestScore: targetOverallStats[0]?.bestScore || 0,
+        totalTimeSpent: targetOverallStats[0]?.totalTimeSpent || 0,
+        maxLevel: Math.floor((targetOverallStats[0]?.bestScore || 0) / 10) + 1,
+        totalXp: targetOverallStats[0]?.totalPoints || 0,
+        correctAnswers: Math.floor((targetOverallStats[0]?.averageAccuracy || 0) * (targetOverallStats[0]?.totalQuizzesCompleted || 0) * 10),
+        totalAnswers: (targetOverallStats[0]?.totalQuizzesCompleted || 0) * 10,
+        longestStreak: targetStreakInfo?.longestStreak || 0,
       },
-      studyStreak: studyStreak || {
-        currentStreak: 0,
-        longestStreak: 0,
-        lastStudyDate: null,
-      },
-      ranking: userRank || {
-        rank: 0,
-        totalPoints: 0,
-        currentLevel: 1,
-      },
-      timestamp: new Date().toISOString(),
-    });
+      streakInfo: targetStreakInfo || { currentStreak: 0, longestStreak: 0, lastStudyDate: null },
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    console.error('Error fetching target user quiz stats:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

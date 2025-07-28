@@ -5,10 +5,11 @@ import { Menu, X, ArrowRight, Moon, Sun, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useTheme } from "../../theme/ThemeProvider";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import AuthProtectedLink from "../AuthProtectedLink";
 import ThemeToggle from "../../theme/ThemeToggle";
+import NotificationBell from "../../NotificationBell";
 
 interface NavbarProps {
   isScrolled?: boolean;
@@ -18,6 +19,7 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -39,7 +41,7 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
   }, []);
 
   const handleProfile = () => {
-    router.push('/profile');
+    router.push(user?.id ? `/profile/${user.id}` : '/profile');
   };
 
   const handleLogin = () => {
@@ -67,63 +69,13 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
           </Link>
 
           <div className="hidden md:flex items-center gap-4">
-            <div className="relative group">
-              <button className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-                Study Tools
-                <span className="ml-1">▼</span>
-              </button>
-              <div className="absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-lg p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <AuthProtectedLink
-                  href="/tools/flashcards"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Flashcards
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/tools/mind-maps"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Mind Maps
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/tools/doubt-solving"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  AI Doubt Solver
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/group-study"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  Group Study
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/progress"
-                  className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md"
-                >
-                  My Progress
-                </AuthProtectedLink>
-              </div>
-            </div>
-
-            <Link
-              href="/community"
-              className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-            >
-              Community
-            </Link>
-
-            <Link
-              href="/chat"
-              className="py-2 px-3 text-gray-700 dark:text-gray-300 font-medium hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-            >
-              Study Chat
-            </Link>
+            {/* Study Tools, Community, and Study Chat buttons removed */}
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
           <div className="hidden md:flex items-center gap-3">
+            {isSignedIn && <NotificationBell />}
             {isFlashcardsPage && isSignedIn && (
               <Button
                 onClick={() => router.push('/tools/flashcards?create=true')}
@@ -180,57 +132,7 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
               Home
             </Link>
 
-            <div>
-              <div className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium">
-                Study Tools
-              </div>
-              <div className="ml-4">
-                <AuthProtectedLink
-                  href="/tools/flashcards"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Flashcards
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/tools/doubt-solving"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  AI Doubt Solver
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/group-study"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Group Study
-                </AuthProtectedLink>
-                <AuthProtectedLink
-                  href="/progress"
-                  className="block py-2 text-gray-600 dark:text-gray-400"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  My Progress
-                </AuthProtectedLink>
-              </div>
-            </div>
-
-            <Link
-              href="/community"
-              className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Community
-            </Link>
-
-            <Link
-              href="/chat"
-              className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Study Chat
-            </Link>
+            {/* Study Tools, Community, and Study Chat buttons removed from mobile menu */}
 
             <div className="pt-4 flex flex-col gap-3">
               {isFlashcardsPage && isSignedIn && (

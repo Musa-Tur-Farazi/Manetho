@@ -91,7 +91,9 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
     // Calculate positions based on layout
     const positioned = new Map<string, Node>();
 
-    if (layout === 'tree') {
+    if (layout === 'sequential_flow') {
+      calculateSequentialFlowLayout(rootNode, nodeMap, positioned);
+    } else if (layout === 'tree') {
       calculateTreeLayout(rootNode, nodeMap, positioned);
     } else if (layout === 'radial') {
       calculateRadialLayout(rootNode, nodeMap, positioned);
@@ -176,6 +178,35 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
 
       positioned.set(child.nodeId, { ...child, positionX: x, positionY: y });
     });
+  };
+
+  const calculateSequentialFlowLayout = (
+    root: Node,
+    nodeMap: Map<string, Node>,
+    positioned: Map<string, Node>
+  ) => {
+    const H_SPACING = 600;
+    const V_SPACING = 200;
+
+    // simple BFS ordering left-to-right by level
+    const queue: { node: Node; depth: number }[] = [{ node: root, depth: 0 }];
+    const depthCounts: Record<number, number> = {};
+
+    while (queue.length) {
+      const { node, depth } = queue.shift() as { node: Node; depth: number };
+
+      const idx = depthCounts[depth] ?? 0;
+      depthCounts[depth] = idx + 1;
+
+      const x = 400 + depth * H_SPACING;
+      const y = 300 + idx * V_SPACING;
+
+      positioned.set(node.nodeId, { ...node, positionX: x, positionY: y });
+
+      // enqueue children in the order they appear
+      const children = Array.from(nodeMap.values()).filter(n => n.parentNodeId === node.nodeId);
+      children.forEach(child => queue.push({ node: child, depth: depth + 1 }));
+    }
   };
 
   const handleZoomIn = () => {
@@ -305,6 +336,7 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
         stroke="rgba(99, 102, 241, 0.7)"
         strokeWidth="4"
         strokeLinecap="round"
+        markerEnd="url(#arrowhead)"
         className="dark:stroke-purple-400"
       />
     );
@@ -497,6 +529,9 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
               />
             </pattern>
           </defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" markerUnits="strokeWidth">
+            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(99,102,241,0.9)" />
+          </marker>
           <rect width="100%" height="100%" fill="url(#grid)" className="dark:fill-[url(#grid-dark)]" />
 
           {/* Connections */}

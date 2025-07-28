@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import {
-  globalLeaderboardTable,
+  userQuizHistoryTable,
   usersTable,
   subjectsTable,
-  topicsTable
+  topicsTable,
+  practiceTestsTable
 } from '@/db/schema';
 import { eq, desc, sql, and, isNull } from 'drizzle-orm';
 
@@ -20,55 +21,62 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     let whereConditions = [];
-    let orderByColumn = globalLeaderboardTable.totalPoints;
+    let timeFilter = '';
 
     // Filter by type
     if (type === 'global') {
-      whereConditions.push(isNull(globalLeaderboardTable.subjectId));
-      whereConditions.push(isNull(globalLeaderboardTable.topicId));
+      // No additional filters for global leaderboard
     } else if (type === 'subject' && subjectId) {
-      whereConditions.push(eq(globalLeaderboardTable.subjectId, subjectId));
-      whereConditions.push(isNull(globalLeaderboardTable.topicId));
+      whereConditions.push(eq(practiceTestsTable.subjectId, subjectId));
     } else if (type === 'topic' && topicId) {
-      whereConditions.push(eq(globalLeaderboardTable.topicId, topicId));
+      whereConditions.push(eq(practiceTestsTable.topicId, topicId));
     }
 
     // Filter by period
     if (period === 'weekly') {
-      orderByColumn = globalLeaderboardTable.weeklyPoints;
+      timeFilter = "AND completed_at > NOW() - INTERVAL '7 days'";
     } else if (period === 'monthly') {
-      orderByColumn = globalLeaderboardTable.monthlyPoints;
+      timeFilter = "AND completed_at > NOW() - INTERVAL '30 days'";
     }
 
-    // Get leaderboard data
+    // Get leaderboard data based on quiz history aggregation
     const leaderboard = await db
       .select({
-        leaderboardId: globalLeaderboardTable.leaderboardId,
-        userId: globalLeaderboardTable.userId,
-        totalPoints: globalLeaderboardTable.totalPoints,
-        totalQuizzes: globalLeaderboardTable.totalQuizzes,
-        averageScore: globalLeaderboardTable.averageScore,
-        currentLevel: globalLeaderboardTable.currentLevel,
-        globalRank: globalLeaderboardTable.globalRank,
-        subjectRank: globalLeaderboardTable.subjectRank,
-        weeklyPoints: globalLeaderboardTable.weeklyPoints,
-        monthlyPoints: globalLeaderboardTable.monthlyPoints,
-        lastActiveDate: globalLeaderboardTable.lastActiveDate,
+        userId: userQuizHistoryTable.userId,
+        totalPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        totalQuizzes: sql<number>`COUNT(${userQuizHistoryTable.historyId})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+        bestScore: sql<number>`MAX(${userQuizHistoryTable.score})`,
+        totalTimeSpent: sql<number>`SUM(${userQuizHistoryTable.timeSpent})`,
+        lastActiveDate: sql<Date>`MAX(${userQuizHistoryTable.completedAt})`,
         // User info
         fullName: usersTable.fullName,
         avatarUrl: usersTable.avatarUrl,
-        // Subject info
+        // Subject info (for subject/topic leaderboards)
         subjectName: subjectsTable.name,
         subjectColor: subjectsTable.color,
-        // Topic info
         topicName: topicsTable.name,
       })
-      .from(globalLeaderboardTable)
-      .leftJoin(usersTable, eq(globalLeaderboardTable.userId, usersTable.userId))
-      .leftJoin(subjectsTable, eq(globalLeaderboardTable.subjectId, subjectsTable.subjectId))
-      .leftJoin(topicsTable, eq(globalLeaderboardTable.topicId, topicsTable.topicId))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(orderByColumn))
+      .from(userQuizHistoryTable)
+      .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
+      .leftJoin(usersTable, eq(userQuizHistoryTable.userId, usersTable.userId))
+      .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
+      .leftJoin(topicsTable, eq(practiceTestsTable.topicId, topicsTable.topicId))
+      .where(
+        and(
+          whereConditions.length > 0 ? and(...whereConditions) : undefined,
+          sql`1=1 ${sql.raw(timeFilter)}`
+        )
+      )
+      .groupBy(
+        userQuizHistoryTable.userId,
+        usersTable.fullName,
+        usersTable.avatarUrl,
+        subjectsTable.name,
+        subjectsTable.color,
+        topicsTable.name
+      )
+      .orderBy(desc(sql`SUM(${userQuizHistoryTable.score})`))
       .limit(limit)
       .offset(offset);
 
@@ -76,9 +84,8 @@ export async function GET(request: NextRequest) {
     const rankedLeaderboard = leaderboard.map((entry, index) => ({
       ...entry,
       rank: offset + index + 1,
-      points: period === 'weekly' ? entry.weeklyPoints :
-        period === 'monthly' ? entry.monthlyPoints :
-          entry.totalPoints,
+      points: entry.totalPoints,
+      currentLevel: Math.floor(entry.totalPoints / 100) + 1,
     }));
 
     // Get current user's position if authenticated
@@ -96,58 +103,46 @@ export async function GET(request: NextRequest) {
         // Get user's ranking
         const userRankQuery = await db
           .select({
-            rank: sql<number>`ROW_NUMBER() OVER (ORDER BY ${orderByColumn} DESC)`,
-            totalPoints: globalLeaderboardTable.totalPoints,
-            weeklyPoints: globalLeaderboardTable.weeklyPoints,
-            monthlyPoints: globalLeaderboardTable.monthlyPoints,
-            totalQuizzes: globalLeaderboardTable.totalQuizzes,
-            averageScore: globalLeaderboardTable.averageScore,
-            currentLevel: globalLeaderboardTable.currentLevel,
+            rank: sql<number>`ROW_NUMBER() OVER (ORDER BY SUM(${userQuizHistoryTable.score}) DESC)`,
+            totalPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+            totalQuizzes: sql<number>`COUNT(${userQuizHistoryTable.historyId})`,
+            averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
           })
-          .from(globalLeaderboardTable)
+          .from(userQuizHistoryTable)
+          .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
           .where(
             and(
-              eq(globalLeaderboardTable.userId, user.userId),
-              ...(whereConditions.length > 0 ? whereConditions : [])
+              eq(userQuizHistoryTable.userId, user.userId),
+              whereConditions.length > 0 ? and(...whereConditions) : undefined,
+              sql`1=1 ${sql.raw(timeFilter)}`
             )
           )
-          .limit(1);
+          .groupBy(userQuizHistoryTable.userId);
 
         if (userRankQuery.length > 0) {
           currentUserRank = {
-            ...userRankQuery[0],
-            points: period === 'weekly' ? userRankQuery[0].weeklyPoints :
-              period === 'monthly' ? userRankQuery[0].monthlyPoints :
-                userRankQuery[0].totalPoints,
+            rank: userRankQuery[0].rank,
+            totalPoints: userRankQuery[0].totalPoints,
+            totalQuizzes: userRankQuery[0].totalQuizzes,
+            averageScore: userRankQuery[0].averageScore,
+            currentLevel: Math.floor(userRankQuery[0].totalPoints / 100) + 1,
           };
         }
       }
     }
 
-    // Get some statistics
-    const totalParticipants = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(globalLeaderboardTable)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
-
-    const topPerformer = rankedLeaderboard[0] || null;
-
     return NextResponse.json({
       leaderboard: rankedLeaderboard,
       currentUserRank,
-      statistics: {
-        totalParticipants: totalParticipants[0]?.count || 0,
-        topPerformer,
-        period,
+      metadata: {
         type,
         subjectId,
         topicId,
-      },
-      pagination: {
+        period,
         limit,
         offset,
-        total: rankedLeaderboard.length,
-      }
+        totalEntries: rankedLeaderboard.length,
+      },
     });
 
   } catch (error) {
@@ -156,109 +151,112 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Get top performers for homepage
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { type = 'top-global', limit = 5 } = body;
+    const { userId: clerkUserId } = await auth();
 
-    let query;
-
-    switch (type) {
-      case 'top-global':
-        // Top 5 global performers
-        query = db
-          .select({
-            userId: globalLeaderboardTable.userId,
-            totalPoints: globalLeaderboardTable.totalPoints,
-            currentLevel: globalLeaderboardTable.currentLevel,
-            totalQuizzes: globalLeaderboardTable.totalQuizzes,
-            averageScore: globalLeaderboardTable.averageScore,
-            fullName: usersTable.fullName,
-            avatarUrl: usersTable.avatarUrl,
-          })
-          .from(globalLeaderboardTable)
-          .leftJoin(usersTable, eq(globalLeaderboardTable.userId, usersTable.userId))
-          .where(
-            and(
-              isNull(globalLeaderboardTable.subjectId),
-              isNull(globalLeaderboardTable.topicId)
-            )
-          )
-          .orderBy(desc(globalLeaderboardTable.totalPoints))
-          .limit(limit);
-        break;
-
-      case 'top-weekly':
-        // Top weekly performers
-        query = db
-          .select({
-            userId: globalLeaderboardTable.userId,
-            weeklyPoints: globalLeaderboardTable.weeklyPoints,
-            currentLevel: globalLeaderboardTable.currentLevel,
-            totalQuizzes: globalLeaderboardTable.totalQuizzes,
-            averageScore: globalLeaderboardTable.averageScore,
-            fullName: usersTable.fullName,
-            avatarUrl: usersTable.avatarUrl,
-          })
-          .from(globalLeaderboardTable)
-          .leftJoin(usersTable, eq(globalLeaderboardTable.userId, usersTable.userId))
-          .where(
-            and(
-              isNull(globalLeaderboardTable.subjectId),
-              isNull(globalLeaderboardTable.topicId)
-            )
-          )
-          .orderBy(desc(globalLeaderboardTable.weeklyPoints))
-          .limit(limit);
-        break;
-
-      case 'rising-stars':
-        // Users with highest level but relatively new
-        query = db
-          .select({
-            userId: globalLeaderboardTable.userId,
-            currentLevel: globalLeaderboardTable.currentLevel,
-            totalPoints: globalLeaderboardTable.totalPoints,
-            totalQuizzes: globalLeaderboardTable.totalQuizzes,
-            averageScore: globalLeaderboardTable.averageScore,
-            fullName: usersTable.fullName,
-            avatarUrl: usersTable.avatarUrl,
-            createdAt: globalLeaderboardTable.createdAt,
-          })
-          .from(globalLeaderboardTable)
-          .leftJoin(usersTable, eq(globalLeaderboardTable.userId, usersTable.userId))
-          .where(
-            and(
-              isNull(globalLeaderboardTable.subjectId),
-              isNull(globalLeaderboardTable.topicId),
-              sql`${globalLeaderboardTable.createdAt} > NOW() - INTERVAL '30 days'`
-            )
-          )
-          .orderBy(desc(globalLeaderboardTable.currentLevel))
-          .limit(limit);
-        break;
-
-      default:
-        return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
+    if (!clerkUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const results = await query;
+    const [user] = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
 
-    // Add rank numbers
-    const rankedResults = results.map((entry, index) => ({
-      ...entry,
-      rank: index + 1,
-    }));
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type') || 'global';
+    const period = searchParams.get('period') || 'all-time';
+
+    let timeFilter = '';
+    if (period === 'weekly') {
+      timeFilter = "AND completed_at > NOW() - INTERVAL '7 days'";
+    } else if (period === 'monthly') {
+      timeFilter = "AND completed_at > NOW() - INTERVAL '30 days'";
+    }
+
+    // Get user's global ranking
+    const [globalRank] = await db
+      .select({
+        rank: sql<number>`ROW_NUMBER() OVER (ORDER BY SUM(${userQuizHistoryTable.score}) DESC)`,
+        totalPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        totalQuizzes: sql<number>`COUNT(${userQuizHistoryTable.historyId})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+      })
+      .from(userQuizHistoryTable)
+      .where(
+        and(
+          eq(userQuizHistoryTable.userId, user.userId),
+          sql`1=1 ${sql.raw(timeFilter)}`
+        )
+      )
+      .groupBy(userQuizHistoryTable.userId);
+
+    // Get weekly ranking
+    const [weeklyRank] = await db
+      .select({
+        rank: sql<number>`ROW_NUMBER() OVER (ORDER BY SUM(${userQuizHistoryTable.score}) DESC)`,
+        weeklyPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        totalQuizzes: sql<number>`COUNT(${userQuizHistoryTable.historyId})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+      })
+      .from(userQuizHistoryTable)
+      .where(
+        and(
+          eq(userQuizHistoryTable.userId, user.userId),
+          sql`completed_at > NOW() - INTERVAL '7 days'`
+        )
+      )
+      .groupBy(userQuizHistoryTable.userId);
+
+    // Get monthly ranking
+    const [monthlyRank] = await db
+      .select({
+        rank: sql<number>`ROW_NUMBER() OVER (ORDER BY SUM(${userQuizHistoryTable.score}) DESC)`,
+        monthlyPoints: sql<number>`SUM(${userQuizHistoryTable.score})`,
+        totalQuizzes: sql<number>`COUNT(${userQuizHistoryTable.historyId})`,
+        averageScore: sql<number>`AVG(${userQuizHistoryTable.score})`,
+      })
+      .from(userQuizHistoryTable)
+      .where(
+        and(
+          eq(userQuizHistoryTable.userId, user.userId),
+          sql`completed_at > NOW() - INTERVAL '30 days'`
+        )
+      )
+      .groupBy(userQuizHistoryTable.userId);
 
     return NextResponse.json({
-      performers: rankedResults,
-      type,
-      timestamp: new Date().toISOString(),
+      globalRank: globalRank ? {
+        rank: globalRank.rank,
+        totalPoints: globalRank.totalPoints,
+        totalQuizzes: globalRank.totalQuizzes,
+        averageScore: globalRank.averageScore,
+        currentLevel: Math.floor(globalRank.totalPoints / 100) + 1,
+      } : null,
+      weeklyRank: weeklyRank ? {
+        rank: weeklyRank.rank,
+        weeklyPoints: weeklyRank.weeklyPoints,
+        totalQuizzes: weeklyRank.totalQuizzes,
+        averageScore: weeklyRank.averageScore,
+        currentLevel: Math.floor(weeklyRank.weeklyPoints / 100) + 1,
+      } : null,
+      monthlyRank: monthlyRank ? {
+        rank: monthlyRank.rank,
+        monthlyPoints: monthlyRank.monthlyPoints,
+        totalQuizzes: monthlyRank.totalQuizzes,
+        averageScore: monthlyRank.averageScore,
+        currentLevel: Math.floor(monthlyRank.monthlyPoints / 100) + 1,
+      } : null,
     });
 
   } catch (error) {
-    console.error('Error fetching top performers:', error);
+    console.error('Error fetching user rankings:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

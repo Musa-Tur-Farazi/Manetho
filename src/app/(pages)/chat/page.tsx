@@ -426,7 +426,7 @@ export default function ChatPage() {
       const messageData: {
         recipientId: string;
         content: string;
-        files?: any[];
+        files?: FileUpload[];
       } = {
         recipientId: selectedChat,
         content: newMessage || '',
@@ -450,7 +450,7 @@ export default function ChatPage() {
 
         // Add all created messages to the UI
         if (data.messages && data.messages.length > 0) {
-          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; files?: any[] }) => ({
+          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; files?: FileUpload[] }) => ({
             ...msg,
             senderName: data.sender.fullName,
             senderAvatar: data.sender.avatarUrl,
@@ -614,7 +614,12 @@ export default function ChatPage() {
     if (selectedFiles.length === 0) return [];
 
     setUploadingFiles(true);
-    const uploadedFiles: any[] = [];
+    const uploadedFiles: Array<{
+      url: string;
+      name: string;
+      type: string;
+      size: number;
+    }> = [];
 
     try {
       for (const fileUpload of selectedFiles) {
