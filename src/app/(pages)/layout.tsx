@@ -14,7 +14,7 @@ export default function PagesLayout({
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
 
-  // Check if the current path is the doubt-solving page
+
   const isDoubtSolvingPage = pathname?.includes('/tools/doubt-solving');
 
   // Check if the current path is the community page
