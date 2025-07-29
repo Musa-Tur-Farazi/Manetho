@@ -17,7 +17,8 @@ import {
   Search,
   Trash2,
   AlertTriangle,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 
 interface StudyGroup {
@@ -48,7 +49,6 @@ export default function GroupStudyPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'my-groups' | 'explore'>('my-groups');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Confirmation modal state
@@ -71,13 +71,6 @@ export default function GroupStudyPage() {
     subjectName: '',
     meetingType: 'online' as 'online' | 'in-person' | 'hybrid',
     maxParticipants: 10
-  });
-
-  // Invite friend form state
-  const [inviteForm, setInviteForm] = useState({
-    friendId: '',
-    groupId: '',
-    message: ''
   });
 
   useEffect(() => {
@@ -277,46 +270,6 @@ export default function GroupStudyPage() {
     }
   };
 
-  const handleInviteFriend = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!inviteForm.friendId.trim() || !inviteForm.groupId.trim()) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/community/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          friendId: inviteForm.friendId,
-          groupId: inviteForm.groupId,
-          message: inviteForm.message
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setShowInviteModal(false);
-        setInviteForm({
-          friendId: '',
-          groupId: '',
-          message: ''
-        });
-        alert('Invitation sent successfully!');
-      } else {
-        alert(data.error || 'Failed to send invitation');
-      }
-    } catch (error) {
-      console.error('Error sending invitation:', error);
-      alert('Failed to send invitation');
-    }
-  };
-
   const openConfirmModal = (type: 'leave' | 'delete', groupId: string, groupName: string) => {
     setConfirmModal({
       isOpen: true,
@@ -408,107 +361,11 @@ export default function GroupStudyPage() {
     );
   };
 
-  // Invite Friend Modal Component
-  const InviteModal = () => {
-    if (!showInviteModal) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
-              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Invite Friend to Study Group
-            </h3>
-          </div>
-
-          <form onSubmit={handleInviteFriend} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Select Friend *</label>
-              <select
-                value={inviteForm.friendId}
-                onChange={(e) => setInviteForm({ ...inviteForm, friendId: e.target.value })}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                required
-              >
-                <option value="">Choose a friend</option>
-                {friends.map((friend) => (
-                  <option key={friend.userId} value={friend.userId}>
-                    {friend.fullName}
-                  </option>
-                ))}
-              </select>
-              {friends.length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  No friends found. Add friends to your following list to invite them.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Select Study Group *</label>
-              <select
-                value={inviteForm.groupId}
-                onChange={(e) => setInviteForm({ ...inviteForm, groupId: e.target.value })}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                required
-              >
-                <option value="">Choose a study group</option>
-                {myGroups.filter(group => group.memberRole === 'organizer').map((group) => (
-                  <option key={group.groupId} value={group.groupId}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-              {myGroups.filter(group => group.memberRole === 'organizer').length === 0 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  You can only invite friends to groups you created.
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Personal Message (optional)</label>
-              <textarea
-                value={inviteForm.message}
-                onChange={(e) => setInviteForm({ ...inviteForm, message: e.target.value })}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                rows={3}
-                placeholder="Add a personal message to your invitation..."
-              />
-            </div>
-
-            <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowInviteModal(false)}
-                className="flex items-center gap-2"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex items-center gap-2"
-                disabled={friends.length === 0 || myGroups.filter(group => group.memberRole === 'organizer').length === 0}
-              >
-                <Users className="w-4 h-4" />
-                Send Invitation
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
         </div>
       </div>
     );
@@ -523,9 +380,6 @@ export default function GroupStudyPage() {
 
       {/* Confirmation Modal */}
       <ConfirmationModal />
-
-      {/* Invite Friend Modal */}
-      <InviteModal />
 
       {/* Tab Navigation */}
       <div className="flex space-x-4 mb-8">
@@ -547,14 +401,6 @@ export default function GroupStudyPage() {
           onClick={() => setActiveTab('explore')}
         >
           Explore Groups
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2"
-        >
-          <Users className="w-4 h-4" />
-          Invite Friend
         </Button>
       </div>
 
