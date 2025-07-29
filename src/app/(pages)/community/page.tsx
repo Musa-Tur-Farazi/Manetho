@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Smile, Bookmark, Send, Users, BarChart3, Moon, Sun, Move, ExternalLink, ChevronDown, UserPlus, Search } from "lucide-react";
+import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Bookmark, Send, Users, BarChart3, Moon, Sun, Move, ExternalLink, ChevronDown, UserPlus, Search } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import ChatSidebar from "@/components/ChatSidebar";
 import { useRouter } from "next/navigation";
@@ -678,7 +678,7 @@ export default function CommunityPage() {
             </button>
             <button
               onClick={() => router.push('/home')}
-              className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </button>
@@ -1818,9 +1818,6 @@ export default function CommunityPage() {
                       >
                         <ImageIcon className="w-5 h-5" />
                       </label>
-                      <button className="p-2 text-gray-500 dark:text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-xl transition-all duration-200">
-                        <Smile className="w-5 h-5" />
-                      </button>
                       {imagePreviewUrls.length > 0 && (
                         <span className="text-xs text-gray-500 dark:text-slate-500 ml-2">
                           {imagePreviewUrls.length}/4
@@ -1939,7 +1936,7 @@ export default function CommunityPage() {
                       className="flex-1 px-3 py-2 bg-gray-100 dark:bg-slate-800/60 border border-gray-300 dark:border-slate-700/30 rounded-lg text-sm text-gray-900 dark:text-white"
                     />
                     <button
-                      onClick={() => {}}
+                      onClick={() => { }}
                       className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
                     >
                       Copy
@@ -1997,7 +1994,7 @@ export default function CommunityPage() {
                 </button>
                 {false && (
                   <button
-                    onClick={() => {}}
+                    onClick={() => { }}
                     disabled={false}
                     className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
                   >

@@ -104,9 +104,9 @@ export default function QuizGameplayPage() {
   const [showExplanations, setShowExplanations] = useState(false);
 
   const difficultyColors = {
-    beginner: 'bg-green-100 text-green-700 border-green-200',
-    intermediate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    advanced: 'bg-red-100 text-red-700 border-red-200',
+    beginner: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700',
+    intermediate: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-700',
+    advanced: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-700',
   };
 
   const difficultyIcons = {
@@ -472,7 +472,7 @@ export default function QuizGameplayPage() {
                       </p>
                     </div>
                   )}
-                  
+
                   <h3 className="text-lg font-semibold mb-4">{currentQuestion.question}</h3>
 
                   {currentQuestion.options ? (
@@ -544,7 +544,7 @@ export default function QuizGameplayPage() {
                           : skippedQuestions.has(quizData.questions[index].questionId)
                             ? 'bg-orange-500 text-white'
                             : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                          }`}
+                        }`}
                     >
                       {index + 1}
                     </button>

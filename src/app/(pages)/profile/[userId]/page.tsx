@@ -250,6 +250,13 @@ export default function UserProfilePage() {
     return `Active ${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
+  // Helper function to check if user is currently active (within last 5 minutes)
+  const isUserActive = (lastActiveAt?: string) => {
+    if (!lastActiveAt) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastActiveAt) > fiveMinutesAgo;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 w-full">
@@ -266,7 +273,7 @@ export default function UserProfilePage() {
               </button>
               <button
                 onClick={() => router.push('/home')}
-                className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+                className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
               >
                 Manetho
               </button>
@@ -329,7 +336,7 @@ export default function UserProfilePage() {
               </button>
               <button
                 onClick={() => router.push('/home')}
-                className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+                className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
               >
                 Manetho
               </button>
@@ -390,7 +397,7 @@ export default function UserProfilePage() {
             </button>
             <button
               onClick={() => router.push('/home')}
-              className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </button>
@@ -464,8 +471,8 @@ export default function UserProfilePage() {
 
       {/* Main Content */}
       <div className="pt-16 pb-20">
-        <div className="max-w-4xl mx-auto px-6">
-          {/* Profile Card */}
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Profile Header Card */}
           <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur-sm rounded-2xl border border-gray-200/30 dark:border-slate-700/30 overflow-hidden mb-6 shadow-xl">
             <div className="p-6">
               <div className="flex flex-col md:flex-row items-start gap-6">
@@ -476,7 +483,9 @@ export default function UserProfilePage() {
                     alt={userProfile.fullName}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800"></div>
+                  {isUserActive(userProfile.lastActiveAt) && (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800"></div>
+                  )}
                 </div>
 
                 {/* User Info */}
@@ -542,130 +551,197 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          {userStats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-blue-400 mx-auto mb-3" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followersCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Learning Partners</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <User className="w-6 h-6 text-green-400 mx-auto mb-3" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followingCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Following</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-orange-400 mx-auto mb-3" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.groupsJoined}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Groups Joined</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BookOpen className="w-6 h-6 text-cyan-400 mx-auto mb-3" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.flashcardDecks}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Flashcard Decks</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BarChart className="w-6 h-6 text-pink-400 mx-auto mb-3" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.mindMapsSaved}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Mind Maps</p>
-              </div>
-            </div>
-          )}
-
-
-
-
-
-
-
-          {/* Tab Navigation */}
-          <div className="mb-6">
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg overflow-hidden">
-              <div className="flex">
-                <button
-                  onClick={() => setActiveTab('posts')}
-                  className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'posts'
-                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  Posts ({userPosts.filter(p => !p.isShared).length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('shared')}
-                  className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'shared'
-                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  Shared ({userPosts.filter(p => p.isShared).length})
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Posts Section */}
-          <div className="space-y-4 mb-6">
-            {postsLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 animate-pulse shadow-lg">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-gray-300 dark:bg-slate-700 rounded-full"></div>
-                      <div>
-                        <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
-                        <div className="h-3 w-20 bg-gray-300 dark:bg-slate-700 rounded"></div>
+          {/* Main Layout with Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Stats Overview */}
+              {userStats && (
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Profile Stats</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Learning Partners</span>
                       </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.followersCount}</span>
                     </div>
-                    <div className="h-6 w-3/4 bg-gray-300 dark:bg-slate-700 rounded mb-2"></div>
-                    <div className="h-4 w-full bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
-                    <div className="h-4 w-2/3 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Following</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.followingCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Groups Joined</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.groupsJoined}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Flashcard Decks</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.flashcardDecks}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-red-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Mind Maps</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.mindMapsSaved}</span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userPosts
-                  .filter(post => activeTab === 'posts' ? !post.isShared : post.isShared)
-                  .map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                </div>
+              )}
 
-                {userPosts.filter(post => activeTab === 'posts' ? !post.isShared : post.isShared).length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
-                      <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-2">
-                        No {activeTab} yet
-                      </h3>
-                      <p className="text-gray-600 dark:text-slate-400">
-                        {activeTab === 'posts'
-                          ? "This user hasn't created any posts yet."
-                          : "This user hasn't shared any posts yet."
-                        }
-                      </p>
+              {/* About Section */}
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
+                  </div>
+                  {userProfile.lastActiveAt && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
                     </div>
+                  )}
+                  {userStats && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Study Hours</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{userStats.totalStudyHours}h total</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Quick Actions</h3>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleMessage}
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Send Message
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Invite to Group
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Study Together
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Tab Navigation */}
+              <div className="mb-6">
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg overflow-hidden">
+                  <div className="flex">
+                    <button
+                      onClick={() => setActiveTab('posts')}
+                      className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'posts'
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
+                        }`}
+                    >
+                      Posts ({userPosts.filter(p => !p.isShared).length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('shared')}
+                      className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'shared'
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
+                        }`}
+                    >
+                      Shared ({userPosts.filter(p => p.isShared).length})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Posts Section */}
+              <div className="space-y-4 mb-6">
+                {postsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 animate-pulse shadow-lg">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gray-300 dark:bg-slate-700 rounded-full"></div>
+                          <div>
+                            <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
+                            <div className="h-3 w-20 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="h-6 w-3/4 bg-gray-300 dark:bg-slate-700 rounded mb-2"></div>
+                        <div className="h-4 w-full bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
+                        <div className="h-4 w-2/3 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userPosts
+                      .filter(post => activeTab === 'posts' ? !post.isShared : post.isShared)
+                      .map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+
+                    {userPosts.filter(post => activeTab === 'posts' ? !post.isShared : post.isShared).length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
+                          <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                            No {activeTab} yet
+                          </h3>
+                          <p className="text-gray-600 dark:text-slate-400 mb-6">
+                            {activeTab === 'posts'
+                              ? "This user hasn't created any posts yet."
+                              : "This user hasn't shared any posts yet."
+                            }
+                          </p>
+                          {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
+                            <div className="space-y-3">
+                              <p className="text-sm text-gray-500 dark:text-slate-500">Why not start a conversation?</p>
+                              <Button
+                                onClick={handleMessage}
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg"
+                              >
+                                <MessageCircle className="w-4 h-4 mr-2" />
+                                Send Message
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Additional Info */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
-                <p className="text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
-              </div>
-              {userProfile.lastActiveAt && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
-                  <p className="text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
@@ -999,7 +1075,7 @@ const PostCard = ({ post }: { post: UserPost }) => {
               <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span>{likeCount}</span>
             </button>
-            <button 
+            <button
               onClick={handleComment}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300"
             >
@@ -1015,7 +1091,7 @@ const PostCard = ({ post }: { post: UserPost }) => {
             >
               <Share className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={handleBookmark}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isBookmarked
                 ? "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"

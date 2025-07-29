@@ -55,10 +55,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         <div className="flex items-center">
           <Link href="/home" className="flex items-center">
             <span
-              className={`text-2xl font-bold ${isScrolled
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-900 dark:text-white"
-                }`}
+              className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </span>
