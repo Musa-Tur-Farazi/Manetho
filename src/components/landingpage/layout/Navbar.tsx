@@ -9,7 +9,7 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
 import AuthProtectedLink from "../AuthProtectedLink";
 import ThemeToggle from "../../theme/ThemeToggle";
-import NotificationBell from "../../NotificationBell";
+// NotificationBell import removed
 
 interface NavbarProps {
   isScrolled?: boolean;
@@ -75,7 +75,7 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
 
         <div className="flex items-center gap-2 md:gap-4">
           <div className="hidden md:flex items-center gap-3">
-            {isSignedIn && <NotificationBell />}
+            {/* NotificationBell removed */}
             {isFlashcardsPage && isSignedIn && (
               <Button
                 onClick={() => router.push('/tools/flashcards?create=true')}
