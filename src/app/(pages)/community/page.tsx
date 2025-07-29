@@ -7,7 +7,7 @@ import ChatSidebar from "@/components/ChatSidebar";
 import { useRouter } from "next/navigation";
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import NotificationBell from "@/components/NotificationBell";
+// NotificationBell import removed
 
 interface Comment {
   id: string;
@@ -713,8 +713,7 @@ export default function CommunityPage() {
               )}
             </button>
 
-            {/* Notifications */}
-            <NotificationBell />
+            {/* Notifications - Removed */}
 
             {/* User Avatar Dropdown */}
             <div className="relative group">
