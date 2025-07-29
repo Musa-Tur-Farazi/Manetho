@@ -5,7 +5,7 @@ const { sql } = require('drizzle-orm');
 
 async function checkImages() {
   try {
-    console.log('Connecting to database.....');
+    console.log('Connecting to database......');
 
     const queryClient = neon(process.env.DATABASE_URL);
     const db = drizzle(queryClient);
