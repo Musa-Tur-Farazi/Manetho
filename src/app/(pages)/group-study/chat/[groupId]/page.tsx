@@ -160,6 +160,7 @@ export default function GroupStudyChatPage() {
   const [showUploadOptions, setShowUploadOptions] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [resourceDescription, setResourceDescription] = useState('');
+  const [meetingLinkInput, setMeetingLinkInput] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -169,7 +170,6 @@ export default function GroupStudyChatPage() {
       fetchGroupInfo();
       fetchMessages();
       fetchMembers();
-      fetchMeetingLinks();
       fetchSharedResources();
       setupPusherSubscription();
     }
@@ -182,9 +182,47 @@ export default function GroupStudyChatPage() {
     };
   }, [groupId, userId]);
 
+  // Fetch meeting links only after we have group info and member data
+  useEffect(() => {
+    if (groupInfo && members.length > 0 && !loading) {
+      const currentMember = members.find(member => member.isCurrentUser);
+      if (currentMember) {
+        console.log('👤 User confirmed as group member, fetching meeting links');
+        fetchMeetingLinks();
+      } else {
+        console.log('🚫 User is not a group member, skipping initial meeting links fetch');
+      }
+    }
+  }, [groupInfo, members, loading]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Periodic polling for meeting links to keep them in sync between users
+  useEffect(() => {
+    // Only start polling if user has access to the group
+    if (!groupId || !userId || !groupInfo || loading) return;
+
+    // Additional check: only poll if user is a group member
+    const currentMember = members.find(member => member.isCurrentUser);
+    if (!currentMember) {
+      console.log('🚫 User is not a group member, skipping meeting links polling');
+      return;
+    }
+
+    console.log('🔄 Starting meeting links polling for group member:', groupId);
+
+    const pollMeetingLinks = setInterval(() => {
+      console.log('📡 Polling group meeting links...');
+      fetchMeetingLinks();
+    }, 3000); // Poll every 3 seconds for real-time sync
+
+    return () => {
+      console.log('⏹️ Stopping group meeting links polling');
+      clearInterval(pollMeetingLinks);
+    };
+  }, [groupId, userId, groupInfo, members, loading]);
 
   const setupPusherSubscription = () => {
     const channel = pusherClient.subscribe(getGroupChatChannel(groupId));
@@ -254,16 +292,31 @@ export default function GroupStudyChatPage() {
 
   const fetchMeetingLinks = async () => {
     try {
+      console.log('📞 Fetching group meeting links for group:', groupId);
+
       const response = await fetch(`/api/community/study-groups/${groupId}/meeting-links`);
       const data = await response.json();
 
       if (response.ok) {
+        const previousCount = meetingLinks.length;
+        const newCount = data.meetingLinks?.length || 0;
+
         setMeetingLinks(data.meetingLinks || []);
+
+        if (newCount !== previousCount) {
+          console.log('🔄 Group meeting links updated:', previousCount, '→', newCount);
+        }
+
+        console.log('✅ Group meeting links synced:', newCount, 'active meetings');
+      } else if (response.status === 403) {
+        // 403 Access denied is expected for non-members - don't log as error
+        console.log('🚫 Access denied to group meeting links (not a member)');
+        return;
       } else {
-        console.error('Error fetching meeting links:', data.error);
+        console.error('❌ Error fetching group meeting links:', data.error);
       }
     } catch (error) {
-      console.error('Error fetching meeting links:', error);
+      console.error('❌ Network error fetching group meeting links:', error);
     }
   };
 
@@ -473,14 +526,7 @@ export default function GroupStudyChatPage() {
   };
 
   const getPlatformName = (platform: string) => {
-    switch (platform) {
-      case 'google':
-        return 'Google Meet';
-      case 'zoom':
-        return 'Zoom';
-      default:
-        return 'Custom Link';
-    }
+    return 'Google Meet';
   };
 
 
@@ -491,23 +537,23 @@ export default function GroupStudyChatPage() {
     return currentMember?.userId || '';
   };
 
-  const generateMeetingLink = async (platform: 'google' | 'zoom') => {
+  const generateMeetingLink = async () => {
     try {
-      if (platform === 'google') {
-        // Open Google Meet in a new tab for manual creation
-        window.open('https://meet.google.com/new', '_blank');
-        return;
-      } else if (platform === 'zoom') {
-        // Open Zoom in a new tab for manual creation
-        window.open('https://zoom.us/start/webmeeting', '_blank');
-        return;
-      }
+      // Open Google Meet in a new tab for manual creation
+      window.open('https://meet.google.com/new', '_blank');
     } catch (error) {
-      console.error('Error opening meeting platform:', error);
+      console.error('Error opening Google Meet:', error);
     }
   };
 
   const createMeetingLink = async (platform: string, url: string) => {
+    // Check if user is a group member before creating meeting link
+    const currentMember = members.find(member => member.isCurrentUser);
+    if (!currentMember) {
+      console.log('🚫 Cannot create meeting link - user not a group member');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/community/study-groups/${groupId}/meeting-links`, {
         method: 'POST',
@@ -521,13 +567,25 @@ export default function GroupStudyChatPage() {
       });
 
       if (response.ok) {
+        const linkData = await response.json();
+        console.log('✅ Group meeting link created successfully:', linkData);
+
+        // Immediately fetch updated meeting links
         await fetchMeetingLinks();
         setShowMeetingOptions(false);
+
+        // Clear input
+        setMeetingLinkInput('');
+
+        // Show success feedback
+        console.log(`🎉 Google Meet link created for group: ${groupInfo?.name}`);
+        console.log('🔄 Other group members should see this meeting within 2 seconds via polling');
       } else {
-        console.error('Failed to create meeting link');
+        const errorData = await response.json();
+        console.error('❌ Failed to create group meeting link:', errorData);
       }
     } catch (error) {
-      console.error('Error creating meeting link:', error);
+      console.error('❌ Network error creating group meeting link:', error);
     }
   };
 
@@ -559,7 +617,6 @@ export default function GroupStudyChatPage() {
     setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
-  const [meetingLinkInput, setMeetingLinkInput] = useState('');
   const sharedResourceInputRef = useRef<HTMLInputElement>(null);
 
   const deleteSharedResource = async (resourceId: string) => {
@@ -695,7 +752,20 @@ export default function GroupStudyChatPage() {
                 <div className="relative">
                   <Button
                     variant="outline"
-                    onClick={() => setShowMeetingOptions(!showMeetingOptions)}
+                    onClick={() => {
+                      const isOpening = !showMeetingOptions;
+                      setShowMeetingOptions(isOpening);
+                      // Refresh meeting links when opening the dropdown
+                      if (isOpening) {
+                        const currentMember = members.find(member => member.isCurrentUser);
+                        if (currentMember) {
+                          console.log('🔄 Refreshing group meeting links (dropdown opened)');
+                          fetchMeetingLinks();
+                        } else {
+                          console.log('🚫 Cannot refresh meeting links - user not a member');
+                        }
+                      }
+                    }}
                     size="sm"
                     className="h-6 px-2"
                     title="Manage meeting links"
@@ -713,11 +783,16 @@ export default function GroupStudyChatPage() {
                           {meetingLinks.map((link) => (
                             <div key={link.linkId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                {getPlatformIcon(link.platform)}
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-xs font-medium text-gray-900 dark:text-white">
-                                    {getPlatformName(link.platform)}
-                                  </span>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                      Google Meet
+                                    </span>
+                                    <div className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">
+                                      LIVE
+                                    </div>
+                                  </div>
                                   <p
                                     className="text-xs text-blue-600 dark:text-blue-400 truncate cursor-pointer"
                                     onClick={() => window.open(link.url, '_blank')}
@@ -764,45 +839,44 @@ export default function GroupStudyChatPage() {
                         </div>
 
                         <div className="border-t pt-3">
-                          <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Add New Link</h5>
-                          <div className="space-y-2 mb-3">
+                          <div className="mb-3">
                             <Button
-                              variant="ghost"
-                              onClick={() => generateMeetingLink('google')}
-                              className="w-full justify-start"
+                              onClick={() => generateMeetingLink()}
+                              className="w-full justify-center bg-[#1a73e8] hover:bg-[#1557b0] text-white shadow-sm hover:shadow-md transition-all duration-200 h-10"
                             >
-                              <Video className="w-4 h-4 mr-2 text-blue-600" />
-                              Google Meet
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => generateMeetingLink('zoom')}
-                              className="w-full justify-start"
-                            >
-                              <Video className="w-4 h-4 mr-2 text-blue-500" />
-                              Zoom Meeting
+                              <Plus className="w-4 h-4 mr-2" />
+                              Start Google Meet
                             </Button>
                           </div>
-                          <div className="flex gap-2">
-                            <input
-                              type="url"
-                              value={meetingLinkInput}
-                              onChange={(e) => setMeetingLinkInput(e.target.value)}
-                              placeholder="Paste meeting link..."
-                              className="flex-1 px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-                            />
-                            <Button
-                              onClick={() => {
-                                if (meetingLinkInput.trim()) {
-                                  createMeetingLink('custom', meetingLinkInput.trim());
-                                  setMeetingLinkInput('');
-                                }
-                              }}
-                              disabled={!meetingLinkInput.trim()}
-                              size="sm"
-                            >
-                              Add
-                            </Button>
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Or paste existing Google Meet link
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={meetingLinkInput}
+                                onChange={(e) => setMeetingLinkInput(e.target.value)}
+                                placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                className="flex-1 px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                              />
+                              <Button
+                                onClick={() => {
+                                  if (meetingLinkInput.trim()) {
+                                    createMeetingLink('google', meetingLinkInput.trim());
+                                    setMeetingLinkInput('');
+                                  }
+                                }}
+                                disabled={!meetingLinkInput.trim()}
+                                className={`h-10 px-4 transition-all duration-200 ${meetingLinkInput.trim()
+                                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md'
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                                  }`}
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -830,7 +904,7 @@ export default function GroupStudyChatPage() {
             {members.map((member) => (
               <div key={member.userId} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <button
-                  onClick={() => handleProfileClick(member.userId) }
+                  onClick={() => handleProfileClick(member.userId)}
                   className="relative"
                 >
                   <img
@@ -844,7 +918,7 @@ export default function GroupStudyChatPage() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <button
-                    onClick={() => handleProfileClick(member.userId) }
+                    onClick={() => handleProfileClick(member.userId)}
                     className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
                   >
                     {member.fullName}

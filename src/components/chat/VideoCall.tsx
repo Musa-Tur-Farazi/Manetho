@@ -49,7 +49,7 @@ export default function VideoCall({
   const isMountedRef = useRef(true);
   const isInitializingRef = useRef(false);
   const cleanupInProgressRef = useRef(false);
-  
+
   // State management
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.IDLE);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
@@ -63,10 +63,10 @@ export default function VideoCall({
   // Memoized event handlers to prevent race conditions
   const handleUserPublished = useCallback(async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
     if (!isMountedRef.current) return;
-    
+
     try {
       await clientRef.current.subscribe(user, mediaType);
-      
+
       if (mediaType === 'video' && user.videoTrack) {
         setRemoteUsers(prev => {
           const newMap = new Map(prev);
@@ -74,11 +74,11 @@ export default function VideoCall({
           return newMap;
         });
       }
-      
+
       if (mediaType === 'audio' && user.audioTrack) {
         user.audioTrack.play();
       }
-      
+
       console.log(`User ${user.uid} published ${mediaType}`);
     } catch (error) {
       console.error(`Failed to subscribe to user ${user.uid} ${mediaType}:`, error);
@@ -87,9 +87,9 @@ export default function VideoCall({
 
   const handleUserUnpublished = useCallback((user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
     if (!isMountedRef.current) return;
-    
+
     console.log(`User ${user.uid} unpublished ${mediaType}`);
-    
+
     if (mediaType === 'video') {
       setRemoteUsers(prev => {
         const newMap = new Map(prev);
@@ -101,7 +101,7 @@ export default function VideoCall({
 
   const handleUserLeft = useCallback((user: IAgoraRTCRemoteUser) => {
     if (!isMountedRef.current) return;
-    
+
     console.log(`User ${user.uid} left the channel`);
     setRemoteUsers(prev => {
       const newMap = new Map(prev);
@@ -112,7 +112,7 @@ export default function VideoCall({
 
   const handleConnectionStateChange = useCallback((curState: string, revState: string) => {
     console.log(`Connection state changed: ${revState} -> ${curState}`);
-    
+
     if (curState === 'DISCONNECTED' && revState === 'CONNECTED') {
       // Handle unexpected disconnection
       if (isMountedRef.current && connectionState === ConnectionState.CONNECTED) {
@@ -128,16 +128,16 @@ export default function VideoCall({
       console.log('Cleanup already in progress, skipping...');
       return;
     }
-    
+
     cleanupInProgressRef.current = true;
     console.log('Starting cleanup...');
 
     try {
       const client = clientRef.current;
-      
+
       // Remove all event listeners first
       client.removeAllListeners();
-      
+
       // Close local tracks
       if (localVideoTrack) {
         localVideoTrack.close();
@@ -170,10 +170,10 @@ export default function VideoCall({
   // Initialize call with improved error handling
   const initializeCall = useCallback(async () => {
     if (isInitializingRef.current || !isMountedRef.current || cleanupInProgressRef.current) {
-      console.log('Initialization blocked:', { 
-        isInitializing: isInitializingRef.current, 
-        isMounted: isMountedRef.current, 
-        cleanupInProgress: cleanupInProgressRef.current 
+      console.log('Initialization blocked:', {
+        isInitializing: isInitializingRef.current,
+        isMounted: isMountedRef.current,
+        cleanupInProgress: cleanupInProgressRef.current
       });
       return;
     }
@@ -189,7 +189,7 @@ export default function VideoCall({
       }
 
       const client = clientRef.current;
-      
+
       // Ensure clean state
       if (client.connectionState === 'CONNECTED' || client.connectionState === 'CONNECTING') {
         console.log('Client already connected/connecting, cleaning up first...');
@@ -233,6 +233,8 @@ export default function VideoCall({
       let tokenData;
       try {
         console.log('Requesting Agora token...');
+        console.log('Channel:', channelName);
+        console.log('User ID:', userId);
         const tokenResponse = await fetch('/api/agora-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -244,28 +246,48 @@ export default function VideoCall({
 
         if (!tokenResponse.ok) {
           const errorData = await tokenResponse.json();
+          console.error('Token request failed:', errorData);
           throw new Error(errorData.error || 'Failed to get token');
         }
 
         tokenData = await tokenResponse.json();
         console.log('Token received successfully');
+        console.log('Token data:', {
+          uid: tokenData.uid,
+          appId: tokenData.appId,
+          channelName: tokenData.channelName,
+          role: tokenData.role,
+          expiresAt: tokenData.expiresAt
+        });
       } catch (tokenError) {
         console.error('Token generation failed:', tokenError);
-        
+
         let errorMessage = 'Failed to generate secure token. ';
         if ((tokenError as Error).message?.includes('App Certificate')) {
           errorMessage += 'App Certificate not configured properly. Please check your Agora console settings.';
         } else {
           errorMessage += 'Please check server configuration and try again.';
         }
-        
+
         throw new Error(errorMessage);
       }
 
       // Join channel
       console.log('Joining channel...');
-      await client.join(appId, channelName, tokenData.token, tokenData.uid);
-      console.log('Successfully joined channel');
+      console.log('Join parameters:', {
+        appId,
+        channelName,
+        uid: tokenData.uid,
+        hasToken: !!tokenData.token
+      });
+
+      try {
+        await client.join(appId, channelName, tokenData.token, tokenData.uid);
+        console.log('Successfully joined channel with UID:', tokenData.uid);
+      } catch (joinError) {
+        console.error('Failed to join channel:', joinError);
+        throw new Error(`Failed to join channel: ${(joinError as Error).message || 'Unknown error'}`);
+      }
 
       if (!isMountedRef.current) {
         // Component unmounted after join
@@ -274,21 +296,26 @@ export default function VideoCall({
       }
 
       // Publish tracks
-      await client.publish([videoTrack, audioTrack]);
-      console.log('Successfully published tracks');
+      try {
+        await client.publish([videoTrack, audioTrack]);
+        console.log('Successfully published tracks');
+      } catch (publishError) {
+        console.error('Failed to publish tracks:', publishError);
+        throw new Error(`Failed to publish audio/video: ${(publishError as Error).message || 'Unknown error'}`);
+      }
 
       if (isMountedRef.current) {
         setConnectionState(ConnectionState.CONNECTED);
       }
-      
+
     } catch (error) {
       console.error('Failed to initialize call:', error);
-      
+
       if (isMountedRef.current) {
         setConnectionError((error as Error).message || 'Failed to connect to the call');
         setConnectionState(ConnectionState.ERROR);
       }
-      
+
       await cleanup();
     } finally {
       isInitializingRef.current = false;
@@ -492,13 +519,12 @@ export default function VideoCall({
       <div className="relative z-10 px-6 py-3 bg-black/30 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${
-              connectionState === ConnectionState.CONNECTED ? 'bg-green-500' : 'bg-yellow-500'
-            }`}></div>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${connectionState === ConnectionState.CONNECTED ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
             <div className="text-white">
               <h2 className="text-sm font-semibold">Video Call</h2>
               <p className="text-xs text-white/70">
-                {connectionState === ConnectionState.CONNECTED && remoteUsersArray.length > 0 
+                {connectionState === ConnectionState.CONNECTED && remoteUsersArray.length > 0
                   ? `Connected with ${remoteUsersArray.length} participant${remoteUsersArray.length > 1 ? 's' : ''}`
                   : 'Waiting for participants...'
                 }
@@ -513,13 +539,12 @@ export default function VideoCall({
 
       {/* Video Grid */}
       <div className="flex-1 relative">
-        <div className={`absolute inset-0 ${
-          remoteUsersArray.length === 0 ? 'grid grid-cols-1' : 
+        <div className={`absolute inset-0 ${remoteUsersArray.length === 0 ? 'grid grid-cols-1' :
           remoteUsersArray.length === 1 ? 'grid grid-cols-2 gap-1' :
-          remoteUsersArray.length <= 4 ? 'grid grid-cols-2 gap-1' :
-          'grid grid-cols-3 gap-1'
-        }`}>
-          
+            remoteUsersArray.length <= 4 ? 'grid grid-cols-2 gap-1' :
+              'grid grid-cols-3 gap-1'
+          }`}>
+
           {/* Remote Users */}
           {remoteUsersArray.map((user) => (
             <div key={user.uid} className="relative bg-slate-800/50 rounded-lg overflow-hidden">
@@ -531,11 +556,10 @@ export default function VideoCall({
           ))}
 
           {/* Local Video */}
-          <div className={`relative bg-slate-800/50 rounded-lg overflow-hidden ${
-            remoteUsersArray.length === 0 ? 'col-span-1' : ''
-          }`}>
-            <LocalVideoPlayer 
-              videoTrack={localVideoTrack} 
+          <div className={`relative bg-slate-800/50 rounded-lg overflow-hidden ${remoteUsersArray.length === 0 ? 'col-span-1' : ''
+            }`}>
+            <LocalVideoPlayer
+              videoTrack={localVideoTrack}
               isVideoEnabled={isVideoEnabled}
               isScreenSharing={isScreenSharing}
             />
@@ -565,11 +589,10 @@ export default function VideoCall({
           {/* Video Toggle */}
           <button
             onClick={toggleVideo}
-            className={`p-4 rounded-full transition-all duration-300 ${
-              isVideoEnabled
-                ? 'bg-white/20 hover:bg-white/30 text-white'
-                : 'bg-red-500/90 hover:bg-red-600 text-white'
-            }`}
+            className={`p-4 rounded-full transition-all duration-300 ${isVideoEnabled
+              ? 'bg-white/20 hover:bg-white/30 text-white'
+              : 'bg-red-500/90 hover:bg-red-600 text-white'
+              }`}
             title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
           >
             {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
@@ -578,11 +601,10 @@ export default function VideoCall({
           {/* Audio Toggle */}
           <button
             onClick={toggleAudio}
-            className={`p-4 rounded-full transition-all duration-300 ${
-              isAudioEnabled
-                ? 'bg-white/20 hover:bg-white/30 text-white'
-                : 'bg-red-500/90 hover:bg-red-600 text-white'
-            }`}
+            className={`p-4 rounded-full transition-all duration-300 ${isAudioEnabled
+              ? 'bg-white/20 hover:bg-white/30 text-white'
+              : 'bg-red-500/90 hover:bg-red-600 text-white'
+              }`}
             title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
           >
             {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
@@ -591,11 +613,10 @@ export default function VideoCall({
           {/* Screen Share Toggle */}
           <button
             onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-            className={`p-4 rounded-full transition-all duration-300 ${
-              isScreenSharing
-                ? 'bg-green-500/90 hover:bg-green-600 text-white'
-                : 'bg-white/20 hover:bg-white/30 text-white'
-            }`}
+            className={`p-4 rounded-full transition-all duration-300 ${isScreenSharing
+              ? 'bg-green-500/90 hover:bg-green-600 text-white'
+              : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
             title={isScreenSharing ? 'Stop screen sharing' : 'Start screen sharing'}
           >
             <Monitor className="w-5 h-5" />
@@ -649,8 +670,8 @@ function LocalVideoPlayer({ videoTrack, isVideoEnabled, isScreenSharing }: Local
   }
 
   return (
-    <div 
-      ref={videoRef} 
+    <div
+      ref={videoRef}
       className="w-full h-full bg-slate-800"
       style={{ transform: isScreenSharing ? 'none' : 'scaleX(-1)' }}
     />

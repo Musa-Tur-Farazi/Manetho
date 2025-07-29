@@ -10,7 +10,8 @@ const activeCallSignals = new Map<string, {
   callerId: string;
   callerName: string;
   callerAvatar: string;
-  channelName: string;
+  channelName?: string; // Keep for compatibility, but not used with Google Meet
+  meetingUrl: string;
   isVideoCall: boolean;
   timestamp: number;
 }>();
@@ -22,12 +23,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { recipientId, channelName, isVideoCall, action } = await request.json();
-    console.log('📞 POST Call Signal:', { recipientId, channelName, isVideoCall, action });
+    const { recipientId, isVideoCall, action } = await request.json();
+    console.log('📞 POST Call Signal:', { recipientId, isVideoCall, action });
 
-    if (!recipientId || !channelName || typeof isVideoCall !== 'boolean' || !action) {
+    if (!recipientId || typeof isVideoCall !== 'boolean' || !action) {
       return NextResponse.json({
-        error: 'Missing required fields: recipientId, channelName, isVideoCall, action'
+        error: 'Missing required fields: recipientId, isVideoCall, action'
       }, { status: 400 });
     }
 
@@ -53,19 +54,28 @@ export async function POST(request: NextRequest) {
       // **FIX: Prevent users from calling themselves**
       if (callerInfo.userId === recipientId) {
         console.warn('🚫 User attempted to call themselves:', callerInfo.userId);
-        return NextResponse.json({ 
-          error: 'Cannot call yourself' 
+        return NextResponse.json({
+          error: 'Cannot call yourself'
         }, { status: 400 });
       }
 
-      // Store the call signal
+      // Generate Google Meet URL
+      const timestamp = Date.now();
+      const roomName = `${callerInfo.userId.substring(0, 8)}-${recipientId.substring(0, 8)}-${timestamp}`;
+
+      // Create Google Meet link - in production, you'd use Google Meet API
+      const meetingUrl = `https://meet.google.com/new`;
+      const customMeetUrl = `https://meet.google.com/${roomName}`;
+
+      // Store the call signal with Google Meet URL
       const callSignal = {
         callerId: callerInfo.userId,
         callerName: callerInfo.fullName,
         callerAvatar: callerInfo.avatarUrl || '',
-        channelName,
+        channelName: roomName, // Keep for compatibility
+        meetingUrl: customMeetUrl,
         isVideoCall,
-        timestamp: Date.now()
+        timestamp
       };
 
       activeCallSignals.set(recipientId, callSignal);
@@ -73,10 +83,10 @@ export async function POST(request: NextRequest) {
       console.log('📊 Call signal details:', callSignal);
       console.log('📊 All active signals:', Array.from(activeCallSignals.entries()));
 
-      // Clean up old signals (older than 5 minutes)
-      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      // Clean up old signals (older than 2 minutes)
+      const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
       for (const [key, signal] of activeCallSignals.entries()) {
-        if (signal.timestamp < fiveMinutesAgo) {
+        if (signal.timestamp < twoMinutesAgo) {
           activeCallSignals.delete(key);
           console.log('🧹 Cleaned up expired signal for:', key);
         }
@@ -86,7 +96,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Call signal sent',
         recipientId,
-        channelName
+        meetingUrl: customMeetUrl,
+        fallbackUrl: meetingUrl
       });
     }
 
@@ -139,9 +150,9 @@ export async function GET() {
     console.log('📋 Found call signal:', callSignal);
 
     if (callSignal) {
-      // Check if signal is not too old (older than 1 minute)
-      const oneMinuteAgo = Date.now() - (60 * 1000);
-      if (callSignal.timestamp < oneMinuteAgo) {
+      // Check if signal is not too old (older than 2 minutes)
+      const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
+      if (callSignal.timestamp < twoMinutesAgo) {
         activeCallSignals.delete(currentUserInternalId);
         console.log('⏰ Call signal expired for:', currentUserInternalId);
         return NextResponse.json({ hasCall: false });

@@ -35,26 +35,31 @@ export async function POST(request: NextRequest) {
 
     // Token configuration
     const account = userId; // Use userId as account
-    const uid = 0; // Use 0 for auto-generated UID
+    // Generate a unique UID based on userId to avoid conflicts
+    const uid = Math.abs(userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000; // Generate UID from user ID hash
     const userRole = role === 'host' ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const expirationTimeInSeconds = 3600; // 1 hour
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-    // Generate token
-    const token = RtcTokenBuilder.buildTokenWithUserAccount(
+    // Generate token using buildTokenWithUid with version parameter
+    const token = RtcTokenBuilder.buildTokenWithUid(
       appId,
       appCertificate,
       channelName,
-      account,
       uid,
       userRole,
-      privilegeExpiredTs
+      privilegeExpiredTs,
+      privilegeExpiredTs // Add token version/privilege parameter
     );
 
     return NextResponse.json({
       success: true,
       token,
+      uid, // Add this line - the VideoCall component expects this field
       appId,
       channelName,
       account,

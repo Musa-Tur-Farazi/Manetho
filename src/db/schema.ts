@@ -376,6 +376,17 @@ export const meetingLinksTable = pgTable("meeting_links", {
   isActive: boolean("is_active").default(true).notNull(),
 });
 
+export const directChatMeetingLinksTable = pgTable("direct_chat_meeting_links", {
+  linkId: uuid("link_id").primaryKey().defaultRandom(),
+  user1Id: uuid("user1_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  user2Id: uuid("user2_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // 'google', 'zoom', 'custom'
+  url: text("url").notNull(),
+  createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
 export const sharedResourcesTable = pgTable("shared_resources", {
   resourceId: uuid("resource_id").primaryKey().defaultRandom(),
   groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
@@ -1018,6 +1029,17 @@ export const sharedResourcesRelations = relations(sharedResourcesTable, ({ one }
   }),
   uploader: one(usersTable, {
     fields: [sharedResourcesTable.uploadedBy],
+    references: [usersTable.userId],
+  }),
+}));
+
+export const directChatMeetingLinksRelations = relations(directChatMeetingLinksTable, ({ one }) => ({
+  user1: one(usersTable, {
+    fields: [directChatMeetingLinksTable.user1Id],
+    references: [usersTable.userId],
+  }),
+  user2: one(usersTable, {
+    fields: [directChatMeetingLinksTable.user2Id],
     references: [usersTable.userId],
   }),
 }));

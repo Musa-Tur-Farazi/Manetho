@@ -8,7 +8,6 @@ import {
   Search,
   Phone,
   Video,
-  MoreVertical,
   ChevronLeft,
   MessageCircle,
   Check,
@@ -16,13 +15,16 @@ import {
   Paperclip,
   X,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink,
+  Copy,
+  CheckCircle,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { downloadFile } from '@/lib/utils';
-import VideoCall from '@/components/chat/VideoCall';
-import AudioCall from '@/components/chat/AudioCall';
-import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
+import { Button } from '@/components/ui/Button';
 import { pusherClient } from '@/lib/pusher-client';
 import { getChatChannel } from '@/lib/chat';
 
@@ -85,24 +87,27 @@ export default function ChatPage() {
   const [isResizing, setIsResizing] = useState(false);
   const [lastActiveUpdate, setLastActiveUpdate] = useState(Date.now());
 
-  // Call states
-  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
-  const [isAudioCallActive, setIsAudioCallActive] = useState(false);
-  const [callChannelName, setCallChannelName] = useState<string>('');
+  // Meeting functionality - no call states needed
 
-  // Incoming call notification states
-  const [incomingCall, setIncomingCall] = useState<{
-    callerId: string;
-    callerName: string;
-    callerAvatar: string;
-    channelName: string;
-    isVideoCall: boolean;
-    timestamp: number;
-  } | null>(null);
-  const [showIncomingCall, setShowIncomingCall] = useState(false);
+  // Meeting links state (similar to group chat)
+  const [meetingLinks, setMeetingLinks] = useState<Array<{
+    linkId: string;
+    platform: string;
+    url: string;
+    createdAt: string;
+    isActive: boolean;
+    createdBy: string;
+    creatorName: string;
+    creatorAvatar: string;
+  }>>([]);
+  const [showMeetingOptions, setShowMeetingOptions] = useState(false);
+  const [meetingLinkInput, setMeetingLinkInput] = useState('');
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [isLoadingMeetingLinks, setIsLoadingMeetingLinks] = useState(false);
 
-  // Agora configuration (you'll need to add these to your environment variables)
-  const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+  // Meeting functionality - no incoming call states needed
+
+  // Google Meet integration - no configuration needed
 
   // Pusher subscription for real-time messages
   useEffect(() => {
@@ -126,20 +131,130 @@ export default function ChatPage() {
     };
   }, [currentUserInternalId, selectedChat]);
 
-  // Helper function to generate valid Agora channel names
-  const generateChannelName = (userId1: string, userId2: string): string => {
-    // Remove hyphens and take first 8 characters of each UUID
-    const user1Short = userId1.replace(/-/g, '').substring(0, 8);
-    const user2Short = userId2.replace(/-/g, '').substring(0, 8);
+  // Google Meet integration - no channel name generation needed
 
-    // Sort to ensure consistent channel name regardless of who starts the call
-    const sortedUsers = [user1Short, user2Short].sort();
+  // Meeting Links Functions (similar to group chat)
+  const fetchMeetingLinks = async () => {
+    if (!selectedUser?.userId) {
+      console.log('⚠️ Cannot fetch meeting links: selectedUser not available');
+      return;
+    }
 
-    // Create a short timestamp (last 6 digits)
-    const shortTimestamp = Date.now().toString().slice(-6);
+    try {
+      setIsLoadingMeetingLinks(true);
+      console.log('📞 Fetching meeting links for user:', selectedUser.fullName, selectedUser.userId);
 
-    // Format: user1_user2_timestamp (should be well under 64 bytes)
-    return `${sortedUsers[0]}_${sortedUsers[1]}_${shortTimestamp}`;
+      const response = await fetch(`/api/direct-chat/meeting-links?otherUserId=${selectedUser.userId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const previousCount = meetingLinks.length;
+        const newCount = data.meetingLinks?.length || 0;
+
+        setMeetingLinks(data.meetingLinks || []);
+
+        if (newCount !== previousCount) {
+          console.log('🔄 Meeting links updated:', previousCount, '→', newCount);
+        }
+
+        console.log('✅ Meeting links synced:', newCount, 'active meetings');
+      } else {
+        console.error('❌ Error fetching meeting links:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Network error fetching meeting links:', error);
+    } finally {
+      setIsLoadingMeetingLinks(false);
+    }
+  };
+
+  const generateMeetingLink = async (platform: 'google' | 'zoom') => {
+    try {
+      if (platform === 'google') {
+        // Open Google Meet in a new tab for manual creation
+        window.open('https://meet.google.com/new', '_blank');
+        return;
+      } else if (platform === 'zoom') {
+        // Open Zoom in a new tab for manual creation
+        window.open('https://zoom.us/start/webmeeting', '_blank');
+        return;
+      }
+    } catch (error) {
+      console.error('Error opening meeting platform:', error);
+    }
+  };
+
+  const createMeetingLink = async (platform: string, url: string) => {
+    if (!selectedUser?.userId) return;
+
+    try {
+      const response = await fetch('/api/direct-chat/meeting-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          otherUserId: selectedUser.userId,
+          platform,
+          url,
+        }),
+      });
+
+      if (response.ok) {
+        const linkData = await response.json();
+        console.log('✅ Meeting link created successfully:', linkData);
+
+        // Immediately fetch updated meeting links
+        await fetchMeetingLinks();
+        setShowMeetingOptions(false);
+        setMeetingLinkInput('');
+
+        // Show success feedback
+        console.log(`🎉 Google Meet link created and shared with ${selectedUser.fullName}`);
+        console.log('🔄 Other user should see this meeting within 2 seconds via polling');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to create meeting link:', errorData.error);
+        alert('Failed to create meeting link: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('Error creating meeting link:', error);
+      alert('Failed to create meeting link. Please try again.');
+    }
+  };
+
+  const deleteMeetingLink = async (linkId: string) => {
+    try {
+      const response = await fetch('/api/direct-chat/meeting-links', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          linkId,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('🗑️ Meeting link deleted successfully');
+        await fetchMeetingLinks();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to delete meeting link:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error deleting meeting link:', error);
+    }
+  };
+
+  const copyMeetingLink = (url: string, linkId: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkId(linkId);
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+  const getPlatformName = (platform: string) => {
+    return 'Google Meet';
   };
 
   // Auto-scroll to bottom when new messages arrive
@@ -205,46 +320,7 @@ export default function ChatPage() {
     return () => clearInterval(refreshInterval);
   }, []);
 
-  // Poll for incoming calls
-  useEffect(() => {
-    if (!user || !currentUserInternalId) return;
-
-    const pollForIncomingCalls = async () => {
-      try {
-        console.log('🔄 Polling for incoming calls...');
-        const response = await fetch('/api/call-signal');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📥 Call signal response:', data);
-
-          if (data.hasCall && data.callSignal) {
-            // **FIX: Prevent callers from receiving their own call notifications**
-            if (data.callSignal.callerId === currentUserInternalId) {
-              console.log('🚫 Ignoring own call signal - this is the call I initiated');
-              return;
-            }
-
-            console.log('📞 INCOMING CALL DETECTED:', data.callSignal);
-            console.log('🎯 Setting incoming call state...');
-            setIncomingCall(data.callSignal);
-            setShowIncomingCall(true);
-            console.log('✅ Incoming call notification should show now');
-          } else {
-            console.log('❌ No incoming calls');
-          }
-        } else {
-          console.log('❌ Call signal response not ok:', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to check for incoming calls:', error);
-      }
-    };
-
-    // Poll every 2 seconds for incoming calls
-    const callInterval = setInterval(pollForIncomingCalls, 2000);
-
-    return () => clearInterval(callInterval);
-  }, [user, currentUserInternalId]);
+  // Meeting functionality - no call signal polling needed
 
   // Handle mouse events for resizing
   useEffect(() => {
@@ -312,8 +388,26 @@ export default function ChatPage() {
     if (selectedChat) {
       fetchMessages(selectedChat);
       fetchUserInfo(selectedChat);
+      fetchMeetingLinks(); // Fetch meeting links when a chat is selected
     }
   }, [selectedChat]);
+
+  // Periodic polling for meeting links to keep them in sync between users
+  useEffect(() => {
+    if (!selectedUser?.userId) return;
+
+    console.log('🔄 Starting meeting links polling for user:', selectedUser.fullName);
+
+    const pollMeetingLinks = setInterval(() => {
+      console.log('📡 Polling meeting links...');
+      fetchMeetingLinks();
+    }, 2000); // Poll every 2 seconds for faster real-time sync
+
+    return () => {
+      console.log('⏹️ Stopping meeting links polling');
+      clearInterval(pollMeetingLinks);
+    };
+  }, [selectedUser?.userId]);
 
   // Search functionality
   useEffect(() => {
@@ -736,156 +830,7 @@ export default function ChatPage() {
     }
   };
 
-  // Call functions
-  const startVideoCall = async () => {
-    if (!selectedUser || !currentUserInternalId) return;
-
-    // **FIX: Prevent calling yourself**
-    if (selectedUser.userId === currentUserInternalId) {
-      console.warn('🚫 Cannot call yourself');
-      alert('You cannot call yourself!');
-      return;
-    }
-
-    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('📹 Starting video call:');
-    console.log('   Caller:', currentUserInternalId);
-    console.log('   Recipient:', selectedUser.userId);
-    console.log('   Channel:', channelName);
-
-    // Send call signal to recipient
-    try {
-      const response = await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: selectedUser.userId,
-          channelName,
-          isVideoCall: true,
-          action: 'initiate'
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ Call signal sent successfully');
-      } else {
-        console.error('❌ Failed to send call signal:', response.status);
-        const errorData = await response.json();
-        console.error('Error details:', errorData);
-      }
-    } catch (error) {
-      console.error('Failed to send call signal:', error);
-    }
-
-    setCallChannelName(channelName);
-    setIsVideoCallActive(true);
-  };
-
-  const startAudioCall = async () => {
-    if (!selectedUser || !currentUserInternalId) return;
-
-    // **FIX: Prevent calling yourself**
-    if (selectedUser.userId === currentUserInternalId) {
-      console.warn('🚫 Cannot call yourself');
-      alert('You cannot call yourself!');
-      return;
-    }
-
-    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('🎵 Starting audio call:');
-    console.log('   Caller:', currentUserInternalId);
-    console.log('   Recipient:', selectedUser.userId);
-    console.log('   Channel:', channelName);
-
-    // Send call signal to recipient
-    try {
-      const response = await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: selectedUser.userId,
-          channelName,
-          isVideoCall: false,
-          action: 'initiate'
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ Call signal sent successfully');
-      } else {
-        console.error('❌ Failed to send call signal:', response.status);
-        const errorData = await response.json();
-        console.error('Error details:', errorData);
-      }
-    } catch (error) {
-      console.error('Failed to send call signal:', error);
-    }
-
-    setCallChannelName(channelName);
-    setIsAudioCallActive(true);
-  };
-
-  const endCall = async () => {
-    // Cancel call signal if active
-    if (selectedUser && (isVideoCallActive || isAudioCallActive)) {
-      try {
-        await fetch('/api/call-signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipientId: selectedUser.userId,
-            channelName: callChannelName,
-            isVideoCall: isVideoCallActive,
-            action: 'cancel'
-          })
-        });
-      } catch (error) {
-        console.error('Failed to cancel call signal:', error);
-      }
-    }
-
-    setIsVideoCallActive(false);
-    setIsAudioCallActive(false);
-    setCallChannelName('');
-  };
-
-  // Incoming call handlers
-  const acceptIncomingCall = () => {
-    if (!incomingCall) return;
-
-    setCallChannelName(incomingCall.channelName);
-    if (incomingCall.isVideoCall) {
-      setIsVideoCallActive(true);
-    } else {
-      setIsAudioCallActive(true);
-    }
-
-    setShowIncomingCall(false);
-    setIncomingCall(null);
-  };
-
-  const declineIncomingCall = async () => {
-    if (!incomingCall) return;
-
-    // Send decline signal
-    try {
-      await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: incomingCall.callerId,
-          channelName: incomingCall.channelName,
-          isVideoCall: incomingCall.isVideoCall,
-          action: 'decline'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to send decline signal:', error);
-    }
-
-    setShowIncomingCall(false);
-    setIncomingCall(null);
-  };
+  // Meeting functionality replaces old call functions - no call handlers needed
 
   if (loading) {
     return (
@@ -898,29 +843,7 @@ export default function ChatPage() {
     );
   }
 
-  // Render call components
-  if (isVideoCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
-    return (
-      <VideoCall
-        channelName={callChannelName}
-        userId={currentUserInternalId}
-        onCallEnd={endCall}
-        appId={AGORA_APP_ID}
-      />
-    );
-  }
-
-  if (isAudioCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
-    return (
-      <AudioCall
-        channelName={callChannelName}
-        userId={currentUserInternalId}
-        onCallEnd={endCall}
-        appId={AGORA_APP_ID}
-        recipientName={selectedUser.fullName}
-      />
-    );
-  }
+  // Meeting functionality - no call component rendering needed
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -1252,25 +1175,220 @@ export default function ChatPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={startAudioCall}
-                    disabled={!AGORA_APP_ID}
-                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={!AGORA_APP_ID ? 'Audio calls not configured' : 'Start audio call'}
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={startVideoCall}
-                    disabled={!AGORA_APP_ID}
-                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={!AGORA_APP_ID ? 'Video calls not configured' : 'Start video call'}
-                  >
-                    <Video className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                  {/* Meeting Links Section */}
+                  <div className="relative">
+                    {meetingLinks.length > 0 && (
+                      <div className="flex items-center gap-1 mr-2">
+                        {meetingLinks.slice(0, 1).map((link) => (
+                          <div key={link.linkId} className="flex items-center gap-1">
+                            <Button
+                              onClick={() => window.open(link.url, '_blank')}
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 h-7 text-xs"
+                              size="sm"
+                              title={`Join ${getPlatformName(link.platform)}`}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              <span className="hidden sm:inline">Join {getPlatformName(link.platform)}</span>
+                              <span className="sm:hidden">Join</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => copyMeetingLink(link.url, link.linkId)}
+                              size="sm"
+                              title="Copy link"
+                              className="px-1 py-1 h-7"
+                            >
+                              {copiedLinkId === link.linkId ? (
+                                <CheckCircle className="w-3 h-3 text-green-500" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        const isOpening = !showMeetingOptions;
+                        setShowMeetingOptions(isOpening);
+                        // Refresh meeting links when opening the dropdown
+                        if (isOpening) {
+                          console.log('🔄 Refreshing meeting links (dropdown opened)');
+                          fetchMeetingLinks();
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${meetingLinks.length === 0
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                        }`}
+                      title={meetingLinks.length === 0 ? "Start a new meeting" : "Manage meetings"}
+                    >
+                      {meetingLinks.length === 0 ? (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span>Start Meeting</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span>Meeting</span>
+                          <div className="w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                            {meetingLinks.length}
+                          </div>
+                          <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${showMeetingOptions ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Meeting Options Dropdown */}
+                    {showMeetingOptions && (
+                      <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg z-50">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {meetingLinks.length === 0 ? 'Start Meeting' : 'Active Meetings'}
+                              </h4>
+                              {meetingLinks.length > 0 && (
+                                <div className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
+                                  {meetingLinks.length} Live
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  console.log('🔄 Manual refresh of meeting links');
+                                  fetchMeetingLinks();
+                                }}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-500 dark:text-gray-400 transition-colors"
+                                title="Refresh meetings"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setShowMeetingOptions(false)}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Existing Meeting Links */}
+                          <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
+                            {meetingLinks.map((link) => (
+                              <div key={link.linkId} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      {getPlatformName(link.platform)} Meeting
+                                    </span>
+                                    <div className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">
+                                      LIVE
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    Started by {link.creatorName}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    onClick={() => window.open(link.url, '_blank')}
+                                    className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium text-xs"
+                                    title="Join meeting"
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    Join
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => copyMeetingLink(link.url, link.linkId)}
+                                    className="h-8 px-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                                    title="Copy link"
+                                  >
+                                    {copiedLinkId === link.linkId ? (
+                                      <CheckCircle className="w-3 h-3 text-green-500" />
+                                    ) : (
+                                      <Copy className="w-3 h-3 text-gray-500" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => deleteMeetingLink(link.linkId)}
+                                    className="h-8 px-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    title="End meeting"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            {meetingLinks.length === 0 && (
+                              <div className="text-center py-6">
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                                  <Video className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">No active meetings</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">Start a meeting to connect instantly</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Start Google Meet Section */}
+                          <div className={`${meetingLinks.length > 0 ? 'border-t pt-4' : ''}`}>
+                            <Button
+                              onClick={() => generateMeetingLink('google')}
+                              className="w-full justify-center bg-[#1a73e8] hover:bg-[#1557b0] text-white shadow-sm hover:shadow-md transition-all duration-200 h-12 text-base font-medium mb-4"
+                            >
+                              <Plus className="w-5 h-5 mr-2" />
+                              {meetingLinks.length > 0 ? 'Start New Google Meet' : 'Start Google Meet'}
+                            </Button>
+
+                            {/* Custom Link Input */}
+                            <div className="space-y-2">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <span>Or paste existing Google Meet link</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                  value={meetingLinkInput}
+                                  onChange={(e) => setMeetingLinkInput(e.target.value)}
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                />
+                                <Button
+                                  onClick={() => {
+                                    if (meetingLinkInput.trim()) {
+                                      createMeetingLink('google', meetingLinkInput.trim());
+                                    }
+                                  }}
+                                  disabled={!meetingLinkInput.trim()}
+                                  className={`h-10 px-4 transition-all duration-200 ${meetingLinkInput.trim()
+                                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                                    }`}
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </div>
 
@@ -1541,16 +1659,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Incoming Call Notification */}
-      {showIncomingCall && incomingCall && (
-        <IncomingCallNotification
-          callerName={incomingCall.callerName}
-          callerAvatar={incomingCall.callerAvatar}
-          isVideoCall={incomingCall.isVideoCall}
-          onAccept={acceptIncomingCall}
-          onDecline={declineIncomingCall}
-        />
-      )}
+      {/* Meeting functionality - no incoming call notification needed */}
     </div>
   );
 } 
