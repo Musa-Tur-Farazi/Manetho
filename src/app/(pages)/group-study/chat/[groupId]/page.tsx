@@ -1,0 +1,1194 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
+import { Button } from '@/components/ui/Button';
+import {
+  Users,
+  Send,
+  ArrowLeft,
+  FileText,
+  Image,
+  Download,
+  Video,
+  Plus,
+  Copy,
+  ExternalLink,
+  Link,
+  Trash2,
+  CheckCircle,
+  MessageSquare,
+  XCircle
+} from 'lucide-react';
+import { pusherClient } from '@/lib/pusher-client';
+import { getGroupChatChannel } from '@/lib/chat';
+
+interface GroupMessage {
+  messageId: string;
+  groupId: string;
+  senderId: string;
+  content: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileType: string | null;
+  fileSize: number | null;
+  timestamp: string;
+  senderName: string;
+  senderAvatar: string | null;
+}
+
+interface GroupMember {
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  lastActiveAt: string | null;
+  role: 'member' | 'organizer';
+  joinedAt: string;
+  isOnline: boolean;
+  isCurrentUser: boolean;
+}
+
+interface GroupInfo {
+  groupId: string;
+  name: string;
+  description: string;
+  meetingType: 'online' | 'in-person' | 'hybrid';
+  location: string | null;
+  meetingLink: string | null;
+  nextMeeting: string | null;
+  meetingTime: string | null;
+  maxParticipants: number;
+  currentParticipants: number;
+  tags: string[];
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+  creatorName: string;
+  creatorAvatar: string | null;
+  subjectName: string | null;
+  subjectColor: string | null;
+  onlineMembersCount: number;
+  userRole: 'member' | 'organizer';
+  isCreator: boolean;
+}
+
+interface MeetingLink {
+  linkId: string;
+  platform: string;
+  url: string;
+  createdAt: string;
+  isActive: boolean;
+  creatorName: string;
+  creatorAvatar: string | null;
+}
+
+export default function GroupStudyChatPage() {
+  // Enhanced CSS for modern chat design
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Simplified Chat Styles */
+      .chat-container {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+      }
+      
+      .dark .chat-container {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      }
+      
+      .messages-container {
+        height: 100%;
+        max-height: calc(100vh - 105px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+      }
+      
+      .messages-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .messages-container::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      
+      .messages-container::-webkit-scrollbar-thumb {
+        background-color: rgba(59, 130, 246, 0.3);
+        border-radius: 10px;
+      }
+      
+      .messages-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(59, 130, 246, 0.5);
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  const { userId } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const groupId = params.groupId as string;
+
+  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
+  const [meetingLinks, setMeetingLinks] = useState<MeetingLink[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [messageInput, setMessageInput] = useState('');
+  const [showMeetingOptions, setShowMeetingOptions] = useState(false);
+  const [showUploadOptions, setShowUploadOptions] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [resourceDescription, setResourceDescription] = useState('');
+  const [meetingLinkInput, setMeetingLinkInput] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle file downloads
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      console.log('📥 Starting download:', filename);
+      
+      // Fetch the file
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+      
+      // Get the blob
+      const blob = await response.blob();
+      
+      // Create download URL
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('✅ Download completed:', filename);
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(url, '_blank');
+    }
+  };
+
+  useEffect(() => {
+    if (groupId && userId) {
+      fetchGroupInfo();
+      fetchMessages();
+      fetchMembers();
+      fetchMeetingLinks();
+      setupPusherSubscription();
+    }
+
+    return () => {
+      // Clean up Pusher subscription
+      if (groupId) {
+        pusherClient.unsubscribe(getGroupChatChannel(groupId));
+      }
+    };
+  }, [groupId, userId]);
+
+  // Fetch meeting links only after we have group info and member data
+  useEffect(() => {
+    if (groupInfo && members.length > 0 && !loading) {
+      const currentMember = members.find(member => member.isCurrentUser);
+      if (currentMember) {
+        console.log('👤 User confirmed as group member, fetching meeting links');
+        fetchMeetingLinks();
+      } else {
+        console.log('🚫 User is not a group member, skipping initial meeting links fetch');
+      }
+    }
+  }, [groupInfo, members, loading]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Periodic polling for meeting links to keep them in sync between users
+  useEffect(() => {
+    // Only start polling if user has access to the group
+    if (!groupId || !userId || !groupInfo || loading) return;
+
+    // Additional check: only poll if user is a group member
+    const currentMember = members.find(member => member.isCurrentUser);
+    if (!currentMember) {
+      console.log('🚫 User is not a group member, skipping meeting links polling');
+      return;
+    }
+
+    console.log('🔄 Starting meeting links polling for group member:', groupId);
+
+    const pollMeetingLinks = setInterval(() => {
+      console.log('📡 Polling group meeting links...');
+      fetchMeetingLinks();
+    }, 3000); // Poll every 3 seconds for real-time sync
+
+    return () => {
+      console.log('⏹️ Stopping group meeting links polling');
+      clearInterval(pollMeetingLinks);
+    };
+  }, [groupId, userId, groupInfo, members, loading]);
+
+  const setupPusherSubscription = () => {
+    const channel = pusherClient.subscribe(getGroupChatChannel(groupId));
+
+    channel.bind('message:new', (data: GroupMessage) => {
+      setMessages(prev => [...prev, data]);
+    });
+
+    channel.bind('user:typing', () => {
+      // Handle typing indicators if needed
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusherClient.unsubscribe(getGroupChatChannel(groupId));
+    };
+  };
+
+  const fetchGroupInfo = async () => {
+    try {
+      const response = await fetch(`/api/community/study-groups/${groupId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setGroupInfo(data.group);
+      } else {
+        console.error('Error fetching group info:', data.error);
+        router.push('/group-study');
+      }
+    } catch (error) {
+      console.error('Error fetching group info:', error);
+      router.push('/group-study');
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`/api/community/study-groups/messages?groupId=${groupId}&limit=50`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessages(data.messages || []);
+      } else {
+        console.error('Error fetching messages:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMembers = async () => {
+    try {
+      const response = await fetch(`/api/community/study-groups/${groupId}/members`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setMembers(data.members || []);
+      } else {
+        console.error('Error fetching members:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    }
+  };
+
+  const fetchMeetingLinks = async () => {
+    try {
+      console.log('📞 Fetching group meeting links for group:', groupId);
+
+      const response = await fetch(`/api/community/study-groups/${groupId}/meeting-links`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const previousCount = meetingLinks.length;
+        const newCount = data.meetingLinks?.length || 0;
+
+        setMeetingLinks(data.meetingLinks || []);
+
+        if (newCount !== previousCount) {
+          console.log('🔄 Group meeting links updated:', previousCount, '→', newCount);
+        }
+
+        console.log('✅ Group meeting links synced:', newCount, 'active meetings');
+      } else if (response.status === 403) {
+        // 403 Access denied is expected for non-members - don't log as error
+        console.log('🚫 Access denied to group meeting links (not a member)');
+        return;
+      } else {
+        console.error('❌ Error fetching group meeting links:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Network error fetching group meeting links:', error);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleProfileClick = (userId: string) => {
+    router.push(`/profile/${userId}`);
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Prevent double submission
+    if (sending) {
+      console.log('🚫 Already sending, ignoring duplicate submission');
+      return;
+    }
+
+    if (!messageInput.trim() && !uploadedFile) return;
+
+    const messageText = messageInput.trim();
+    const fileToSend = uploadedFile;
+    
+    // Set sending state and clear inputs immediately
+    setSending(true);
+    setMessageInput('');
+    setUploadedFile(null);
+
+    console.log('📤 Sending message:', { text: messageText, hasFile: !!fileToSend });
+
+    try {
+      const requestBody: any = {
+        groupId,
+        content: messageText,
+      };
+
+      // Add file if present
+      if (fileToSend) {
+        requestBody.files = [{
+          url: fileToSend.url,
+          name: fileToSend.name,
+          type: fileToSend.type,
+          size: fileToSend.size,
+        }];
+        console.log('📎 Including file in message:', fileToSend.name);
+      }
+
+      const response = await fetch('/api/community/study-groups/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+      console.log('📬 Message API response:', { ok: response.ok, data });
+
+      if (!response.ok) {
+        console.error('❌ Error sending message:', data.error);
+        // Restore message and file if failed
+        setMessageInput(messageText);
+        if (fileToSend) setUploadedFile(fileToSend);
+        alert('Failed to send message. Please try again.');
+      } else {
+        console.log('✅ Message sent successfully');
+      }
+    } catch (error) {
+      console.error('💥 Error sending message:', error);
+      // Restore message and file if failed
+      setMessageInput(messageText);
+      if (fileToSend) setUploadedFile(fileToSend);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+      return;
+    }
+
+    setUploading(true);
+    try {
+      console.log('📁 Uploading file:', file.name);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+      console.log('📤 Upload response:', uploadData);
+
+      if (uploadResponse.ok && uploadData.success) {
+        // Store the uploaded file for manual sending
+        setUploadedFile({
+          url: uploadData.file.url,
+          name: uploadData.file.name,
+          type: uploadData.file.type,
+          size: uploadData.file.size,
+        });
+        setShowUploadOptions(false);
+        console.log('✅ File uploaded and ready to send:', uploadData.file.name);
+      } else {
+        console.error('Error uploading file:', uploadData.error);
+        alert(`Upload failed: ${uploadData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+
+    // Clear file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const formatMessageTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  const formatMessageDate = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+
+
+  const getFileIcon = (fileType: string | null) => {
+    if (!fileType) return <FileText className="w-4 h-4" />;
+
+    if (fileType.startsWith('image/')) {
+      return <Image className="w-4 h-4" />;
+    }
+
+    return <FileText className="w-4 h-4" />;
+  };
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'google':
+        return <Video className="w-4 h-4 text-blue-600" />;
+      case 'zoom':
+        return <Video className="w-4 h-4 text-blue-500" />;
+      default:
+        return <Link className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getPlatformName = (platform: string) => {
+    return 'Google Meet';
+  };
+
+
+
+  // Get current user's internal ID from the members list
+  const getCurrentUserInternalId = () => {
+    const currentMember = members.find(member => member.isCurrentUser);
+    return currentMember?.userId || '';
+  };
+
+  const generateMeetingLink = async () => {
+    try {
+      // Open Google Meet in a new tab for manual creation
+      window.open('https://meet.google.com/new', '_blank');
+    } catch (error) {
+      console.error('Error opening Google Meet:', error);
+    }
+  };
+
+  const createMeetingLink = async (platform: string, url: string) => {
+    // Check if user is a group member before creating meeting link
+    const currentMember = members.find(member => member.isCurrentUser);
+    if (!currentMember) {
+      console.log('🚫 Cannot create meeting link - user not a group member');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/community/study-groups/${groupId}/meeting-links`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform,
+          url,
+        }),
+      });
+
+      if (response.ok) {
+        const linkData = await response.json();
+        console.log('✅ Group meeting link created successfully:', linkData);
+
+        // Immediately fetch updated meeting links
+        await fetchMeetingLinks();
+        setShowMeetingOptions(false);
+
+        // Clear input
+        setMeetingLinkInput('');
+
+        // Show success feedback
+        console.log(`🎉 Google Meet link created for group: ${groupInfo?.name}`);
+        console.log('🔄 Other group members should see this meeting within 2 seconds via polling');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Failed to create group meeting link:', errorData);
+      }
+    } catch (error) {
+      console.error('❌ Network error creating group meeting link:', error);
+    }
+  };
+
+  const deleteMeetingLink = async (linkId: string) => {
+    try {
+      const response = await fetch(`/api/community/study-groups/${groupId}/meeting-links`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          linkId,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchMeetingLinks();
+      } else {
+        console.error('Failed to delete meeting link');
+      }
+    } catch (error) {
+      console.error('Error deleting meeting link:', error);
+    }
+  };
+
+  const copyMeetingLink = (url: string, linkId: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkId(linkId);
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+  const sharedResourceInputRef = useRef<HTMLInputElement>(null);
+
+  const deleteSharedResource = async (resourceId: string) => {
+    try {
+      const response = await fetch(`/api/community/study-groups/${groupId}/shared-resources`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resourceId,
+        }),
+      });
+
+      if (response.ok) {
+        // await fetchSharedResources(); // This function is no longer defined
+      } else {
+        console.error('Failed to delete shared resource');
+      }
+    } catch (error) {
+      console.error('Error deleting shared resource:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!groupInfo) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Group Not Found</h1>
+          <Button onClick={() => router.push('/group-study')}>
+            Back to Study Groups
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentUserInternalId = getCurrentUserInternalId();
+
+  return (
+    <div className="chat-container h-screen flex flex-col">
+      {/* Simplified Header */}
+      <div className="flex-shrink-0 px-3 py-2 bg-white/95 dark:bg-slate-900/95 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/group-study')}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                {groupInfo.name}
+              </h1>
+              <div className="flex items-center gap-3 mt-1">
+                {groupInfo.subjectName && (
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: `${groupInfo.subjectColor || '#667eea'}20`, color: groupInfo.subjectColor || '#667eea' }}
+                  >
+                    {groupInfo.subjectName}
+                  </span>
+                )}
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {members.length} members
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Meeting Links Section - Moved to top right */}
+          {groupInfo.meetingType === 'online' && (
+            <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                <Video className="w-3 h-3 text-blue-500" />
+                <span className="hidden sm:inline">Meeting Links ({meetingLinks.length})</span>
+                <span className="sm:hidden">Links ({meetingLinks.length})</span>
+              </div>
+
+              {meetingLinks.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  {meetingLinks.slice(0, 2).map((link, index) => (
+                    <div key={link.linkId} className={`flex items-center gap-1 ${index > 0 ? 'hidden sm:flex' : ''}`}>
+                      <Button
+                        onClick={() => window.open(link.url, '_blank')}
+                        className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 h-6 text-xs"
+                        size="sm"
+                        title={`Join ${getPlatformName(link.platform)}`}
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">{getPlatformName(link.platform)}</span>
+                        <span className="sm:hidden">Join</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => copyMeetingLink(link.url, link.linkId)}
+                        size="sm"
+                        title="Copy link"
+                        className="px-1 py-1 h-6"
+                      >
+                        {copiedLinkId === link.linkId ? (
+                          <CheckCircle className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                  {meetingLinks.length > 2 && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="hidden sm:inline">+{meetingLinks.length - 2} more</span>
+                      <span className="sm:hidden">+{meetingLinks.length - 1} more</span>
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-gray-500 dark:text-gray-400">No links yet</span>
+              )}
+
+              {groupInfo.userRole === 'organizer' && (
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const isOpening = !showMeetingOptions;
+                      setShowMeetingOptions(isOpening);
+                      // Refresh meeting links when opening the dropdown
+                      if (isOpening) {
+                        const currentMember = members.find(member => member.isCurrentUser);
+                        if (currentMember) {
+                          console.log('🔄 Refreshing group meeting links (dropdown opened)');
+                          fetchMeetingLinks();
+                        } else {
+                          console.log('🚫 Cannot refresh meeting links - user not a member');
+                        }
+                      }
+                    }}
+                    size="sm"
+                    className="h-6 px-2"
+                    title="Manage meeting links"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+
+                  {showMeetingOptions && (
+                    <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-[320px] max-w-[400px]">
+                      <div className="p-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-3">Meeting Links</h4>
+
+                        {/* Show all links in dropdown */}
+                        <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                          {meetingLinks.map((link) => (
+                            <div key={link.linkId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                      Google Meet
+                                    </span>
+                                    <div className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">
+                                      LIVE
+                                    </div>
+                                  </div>
+                                  <p
+                                    className="text-xs text-blue-600 dark:text-blue-400 truncate cursor-pointer"
+                                    onClick={() => window.open(link.url, '_blank')}
+                                    title={link.url}
+                                  >
+                                    {link.url}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  onClick={() => window.open(link.url, '_blank')}
+                                  className="bg-green-500 hover:bg-green-600 text-white px-2 py-0.5 h-6 text-xs"
+                                  size="sm"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => copyMeetingLink(link.url, link.linkId)}
+                                  size="sm"
+                                  title="Copy link"
+                                  className="px-1 py-0.5 h-6"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => deleteMeetingLink(link.linkId)}
+                                  size="sm"
+                                  title="Delete link"
+                                  className="text-red-500 hover:text-red-600 px-1 py-0.5 h-6"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                          {meetingLinks.length === 0 && (
+                            <div className="text-center py-2 text-gray-500 dark:text-gray-400 text-xs">
+                              No meeting links yet
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="border-t pt-3">
+                          <div className="mb-3">
+                            <Button
+                              onClick={() => generateMeetingLink()}
+                              className="w-full justify-center bg-[#1a73e8] hover:bg-[#1557b0] text-white shadow-sm hover:shadow-md transition-all duration-200 h-10"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Start Google Meet
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Or paste existing Google Meet link
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={meetingLinkInput}
+                                onChange={(e) => setMeetingLinkInput(e.target.value)}
+                                placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                className="flex-1 px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                              />
+                              <Button
+                                onClick={() => {
+                                  if (meetingLinkInput.trim()) {
+                                    createMeetingLink('google', meetingLinkInput.trim());
+                                    setMeetingLinkInput('');
+                                  }
+                                }}
+                                disabled={!meetingLinkInput.trim()}
+                                className={`h-10 px-4 transition-all duration-200 ${meetingLinkInput.trim()
+                                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md'
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                                  }`}
+                              >
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex min-h-0">
+        {/* Members Sidebar - Now shown on the left */}
+        <div className="w-64 bg-white/95 dark:bg-gray-800/95 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          {/* Members Section */}
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Members ({members.length})
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {members.map((member) => (
+              <div key={member.userId} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={() => handleProfileClick(member.userId)}
+                  className="relative"
+                >
+                  <img
+                    src={member.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=667eea&color=fff`}
+                    alt={member.fullName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  {member.isOnline && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                  )}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => handleProfileClick(member.userId)}
+                    className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
+                  >
+                    {member.fullName}
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {member.role === 'organizer' ? 'Organizer' : 'Member'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col">
+          {/* Messages */}
+          <div className="messages-container p-4 space-y-4 bg-white/30 dark:bg-slate-950/30">
+            {messages.map((message, index) => {
+              const isOwn = message.senderId === currentUserInternalId;
+              const showDate = index === 0 || formatMessageDate(messages[index - 1]?.timestamp) !== formatMessageDate(message.timestamp);
+
+              return (
+                <div key={`${message.messageId}-${index}`} className="w-full">
+                  {/* Date separator */}
+                  {showDate && (
+                    <div className="flex justify-center my-6">
+                      <div className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-4 py-2 rounded-full">
+                        {formatMessageDate(message.timestamp)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Message */}
+                  <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-6 w-full`}>
+                    <div className={`max-w-[70%] ${isOwn ? 'flex flex-col items-end' : 'flex items-start gap-3'}`}>
+                      {!isOwn && (
+                        <div className="flex-shrink-0">
+                          <button
+                            onClick={() => handleProfileClick(message.senderId)}
+                            className="hover:scale-110 transition-transform duration-300"
+                          >
+                            <img
+                              src={message.senderAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.senderName)}&background=667eea&color=fff`}
+                              alt={message.senderName}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0 max-w-full">
+                        {/* Sender name and time */}
+                        <div className={`flex items-center gap-2 mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                          <button
+                            onClick={() => handleProfileClick(message.senderId)}
+                            className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                          >
+                            {isOwn ? 'You' : message.senderName}
+                          </button>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatMessageTime(message.timestamp)}
+                          </span>
+                        </div>
+
+                        {message.content && (
+                          <div className={`p-4 rounded-2xl ${isOwn
+                            ? 'bg-blue-500 text-white rounded-br-md'
+                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700'
+                            }`}>
+                            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed overflow-wrap-anywhere">{message.content}</p>
+                          </div>
+                        )}
+
+                        {message.fileUrl && (
+                          <div className={`p-4 mt-2 rounded-2xl ${isOwn
+                            ? 'bg-blue-500 text-white rounded-br-md'
+                            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700'
+                            }`}>
+                            {/* Show image preview for image files */}
+                            {message.fileType?.startsWith('image/') && (
+                              <div className="mb-3 relative group">
+                                <img
+                                  src={message.fileUrl}
+                                  alt={message.fileName || 'Uploaded image'}
+                                  className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                  style={{ maxHeight: '300px' }}
+                                  onClick={() => window.open(message.fileUrl!, '_blank')}
+                                  title="Click to view full size"
+                                />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    downloadFile(message.fileUrl!, message.fileName || 'image');
+                                  }}
+                                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Download image"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            
+                            <div className={`flex items-center gap-3 p-3 rounded-lg ${isOwn
+                              ? 'bg-blue-400/20'
+                              : 'bg-gray-100 dark:bg-gray-700'
+                              }`}>
+                              <div className="flex-shrink-0">
+                                <span className={isOwn ? 'text-white' : 'text-gray-600 dark:text-gray-300'}>
+                                  {getFileIcon(message.fileType)}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                  {message.fileName}
+                                </p>
+                                {message.fileSize && (
+                                  <p className={`text-xs ${isOwn ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    {Math.round(message.fileSize / 1024)} KB
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => downloadFile(message.fileUrl!, message.fileName || 'download')}
+                                className={`flex-shrink-0 ${isOwn
+                                  ? 'bg-white/20 border-white/30 text-white hover:bg-white/30'
+                                  : 'bg-gray-100 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'
+                                  }`}
+                                title="Download file"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Message Input */}
+          <div className="p-4 bg-white/95 dark:bg-gray-800/95 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            {/* File preview area */}
+            {uploadedFile && (
+              <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {uploadedFile.type.startsWith('image/') && (
+                      <img
+                        src={uploadedFile.url}
+                        alt={uploadedFile.name}
+                        className="w-12 h-12 object-cover rounded border"
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {getFileIcon(uploadedFile.type)}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {uploadedFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {Math.round(uploadedFile.size / 1024)} KB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setUploadedFile(null)}
+                    className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+                    title="Remove file"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                disabled={uploading}
+              />
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadOptions(!showUploadOptions)}
+                  className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Upload file"
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
+                </button>
+
+                {showUploadOptions && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-[200px]">
+                    <div className="p-3">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Upload File</h4>
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            fileInputRef.current?.click();
+                            setShowUploadOptions(false);
+                          }}
+                          disabled={uploading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          {uploading ? 'Uploading...' : 'Upload File'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <input
+                type="text"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                placeholder={uploadedFile ? "Add a message (optional)..." : "Type your message..."}
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              />
+              <button
+                type="submit"
+                disabled={(!messageInput.trim() && !uploadedFile) || sending}
+                className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full transition-colors"
+              >
+                {sending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
