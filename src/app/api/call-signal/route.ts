@@ -102,13 +102,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'cancel' || action === 'decline') {
-      // Remove the call signal
+      // **FIX: Remove call signals more thoroughly**
+      console.log('🧹 Removing call signal for recipient:', recipientId);
+      console.log('   Action:', action);
+      console.log('   Caller info:', callerInfo.userId);
+      
+      // Remove signal for both the recipient and any reverse signals
       activeCallSignals.delete(recipientId);
-      console.log('🗑️ Removed call signal for:', recipientId);
+      
+      // **FIX: Also remove any signals where this user is the caller**
+      for (const [key, signal] of activeCallSignals.entries()) {
+        if (signal.callerId === callerInfo.userId) {
+          activeCallSignals.delete(key);
+          console.log('🗑️ Also removed reverse signal for:', key);
+        }
+      }
+      
+      console.log('📊 Remaining active signals after cleanup:', Array.from(activeCallSignals.entries()).length);
 
       return NextResponse.json({
         success: true,
-        message: 'Call signal removed'
+        message: 'Call signal removed',
+        action: action
       });
     }
 
@@ -150,11 +165,15 @@ export async function GET() {
     console.log('📋 Found call signal:', callSignal);
 
     if (callSignal) {
-      // Check if signal is not too old (older than 2 minutes)
-      const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
-      if (callSignal.timestamp < twoMinutesAgo) {
+      // **FIX: Extend timeout from 1 minute to 3 minutes for video calls**
+      const timeoutDuration = callSignal.isVideoCall ? (3 * 60 * 1000) : (2 * 60 * 1000); // 3 min for video, 2 min for audio
+      const timeoutThreshold = Date.now() - timeoutDuration;
+      
+      if (callSignal.timestamp < timeoutThreshold) {
         activeCallSignals.delete(currentUserInternalId);
         console.log('⏰ Call signal expired for:', currentUserInternalId);
+        console.log('   Signal age:', Math.round((Date.now() - callSignal.timestamp) / 1000), 'seconds');
+        console.log('   Timeout threshold:', Math.round(timeoutDuration / 1000), 'seconds');
         return NextResponse.json({ hasCall: false });
       }
 

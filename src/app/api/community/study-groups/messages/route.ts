@@ -144,30 +144,51 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Study group not found' }, { status: 404 });
     }
 
-    // If files are provided, send them as separate messages
+    // Create messages based on what's provided
     const createdMessages = [];
 
     if (files && files.length > 0) {
-      for (const file of files) {
-        const messageData = {
+      // For the first file, include both content and file
+      const firstFile = files[0];
+      const messageData = {
+        groupId,
+        senderId: currentUserId,
+        content: content?.trim() || null,
+        fileUrl: firstFile.url,
+        fileName: firstFile.name,
+        fileType: firstFile.type,
+        fileSize: firstFile.size,
+      };
+
+      const newMessage = await db
+        .insert(studyGroupMessagesTable)
+        .values(messageData)
+        .returning();
+
+      createdMessages.push(newMessage[0]);
+
+      // For additional files (if any), create separate messages without content
+      for (let i = 1; i < files.length; i++) {
+        const file = files[i];
+        const additionalMessageData = {
           groupId,
           senderId: currentUserId,
-          content: content?.trim() || null,
+          content: null, // No content for additional files
           fileUrl: file.url,
           fileName: file.name,
           fileType: file.type,
           fileSize: file.size,
         };
 
-        const newMessage = await db
+        const additionalMessage = await db
           .insert(studyGroupMessagesTable)
-          .values(messageData)
+          .values(additionalMessageData)
           .returning();
 
-        createdMessages.push(newMessage[0]);
+        createdMessages.push(additionalMessage[0]);
       }
     } else if (content?.trim()) {
-      // Regular text message
+      // Regular text message (only if no files)
       const newMessage = await db
         .insert(studyGroupMessagesTable)
         .values({

@@ -4,23 +4,29 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Send,
   Search,
+  MoreVertical,
   Phone,
   Video,
+  User,
+  Users,
+  ChevronRight,
   ChevronLeft,
+  Loader2,
+  Download,
+  FileText,
+  X,
   MessageCircle,
   Check,
   CheckCheck,
   Paperclip,
-  X,
-  FileText,
   Image as ImageIcon,
   ExternalLink,
   Copy,
   CheckCircle,
   Trash2,
-  Plus
+  Plus,
+  Send
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { downloadFile } from '@/lib/utils';
@@ -62,6 +68,43 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle file downloads
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      console.log('📥 Starting download:', filename);
+
+      // Fetch the file
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      // Get the blob
+      const blob = await response.blob();
+
+      // Create download URL
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log('✅ Download completed:', filename);
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(url, '_blank');
+    }
+  };
 
   // Get chat parameter from URL
   const chatUserId = searchParams.get('with');
@@ -79,9 +122,13 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileUpload[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [currentUserInternalId, setCurrentUserInternalId] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default 320px (w-80)
   const [isResizing, setIsResizing] = useState(false);
@@ -515,37 +562,55 @@ export default function ChatPage() {
   }, [searchQuery]);
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedChat || sendingMessage) return;
+    console.log('🚀 sendMessage called', {
+      newMessage: newMessage.trim(),
+      uploadedFile: !!uploadedFile,
+      selectedChat,
+      sendingMessage
+    });
+
+    if ((!newMessage.trim() && uploadedFile === null) || !selectedChat || sendingMessage) {
+      console.log('❌ sendMessage blocked:', {
+        hasMessage: !!newMessage.trim(),
+        hasFile: !!uploadedFile,
+        hasSelectedChat: !!selectedChat,
+        isSending: sendingMessage
+      });
+      return;
+    }
 
     setSendingMessage(true);
     try {
-      // Upload files first if any
-      const uploadedFiles = await uploadFiles();
+      // Upload file if any
+      const uploadedFileData = uploadedFile ? await uploadFile(uploadedFile) : null;
+      console.log('📤 File data prepared:', uploadedFileData);
 
-      // Send message with files
+      // Send message with file
       const messageData: {
         recipientId: string;
         content: string;
         files?: Array<{
-          fileUrl: string;
-          fileName: string;
-          fileType: string;
-          fileSize: number;
+          url: string;
+          name: string;
+          type: string;
+          size: number;
         }>;
       } = {
         recipientId: selectedChat,
         content: newMessage || '',
       };
 
-      // Add file information if files were uploaded
-      if (uploadedFiles.length > 0) {
-        messageData.files = uploadedFiles.map(file => ({
-          fileUrl: file.url,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size
-        }));
+      // Add file information if file was uploaded
+      if (uploadedFileData) {
+        messageData.files = [{
+          url: uploadedFileData.url,
+          name: uploadedFileData.name,
+          type: uploadedFileData.type,
+          size: uploadedFileData.size,
+        }];
       }
+
+      console.log('📨 Sending message data:', messageData);
 
       const response = await fetch('/api/community/direct-messages', {
         method: 'POST',
@@ -555,12 +620,15 @@ export default function ChatPage() {
         body: JSON.stringify(messageData),
       });
 
+      console.log('📨 Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Message sent successfully:', data);
 
         // Add all created messages to the UI
         if (data.messages && data.messages.length > 0) {
-          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; files?: FileUpload[] }) => ({
+          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number }) => ({
             ...msg,
             senderName: data.sender.fullName,
             senderAvatar: data.sender.avatarUrl,
@@ -577,15 +645,18 @@ export default function ChatPage() {
         }
 
         setNewMessage('');
-        setSelectedFiles([]);
+        setUploadedFile(null);
         setShouldAutoScroll(true);
 
         // Update recent chats
         fetchRecentChats();
         fetchUnknownUsers();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Message send failed:', response.status, errorData);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('💥 Error sending message:', error);
     } finally {
       setSendingMessage(false);
     }
@@ -653,11 +724,20 @@ export default function ChatPage() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.log('❌ No file selected');
+      return;
+    }
 
-    const newFiles: FileUpload[] = [];
+    console.log('📁 File selected:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    // Validate file type
     const allowedTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
       'application/pdf',
@@ -668,105 +748,85 @@ export default function ChatPage() {
       'application/x-zip-compressed'
     ];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    if (!allowedTypes.includes(file.type)) {
+      console.log('❌ File type not allowed:', file.type);
+      alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+      return;
+    }
 
-      // Validate file type
-      if (!allowedTypes.includes(file.type)) {
-        alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
-        continue;
-      }
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      console.log('❌ File too large:', file.size);
+      alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+      return;
+    }
 
-      // Validate file size
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
-        continue;
-      }
+    setUploading(true);
+    try {
+      console.log('📤 Starting upload for:', file.name);
 
-      const fileUpload: FileUpload = { file };
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Create preview for images only
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          fileUpload.preview = e.target?.result as string;
-          setSelectedFiles(prev => [...prev]);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('📤 Upload response:', {
+        status: response.status,
+        success: data.success,
+        file: data.file
+      });
+
+      if (response.ok && data.success) {
+        // Store the uploaded file for manual sending
+        const uploadedFileData = {
+          url: data.file.url,
+          name: data.file.name,
+          type: data.file.type,
+          size: data.file.size,
         };
-        reader.readAsDataURL(file);
-      }
 
-      newFiles.push(fileUpload);
+        // Add preview for images
+        if (file.type.startsWith('image/')) {
+          try {
+            const preview = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            (uploadedFileData as any).preview = preview;
+            console.log('✅ Image preview created');
+          } catch (error) {
+            console.error('❌ Error creating preview:', error);
+          }
+        }
+
+        setUploadedFile(uploadedFileData);
+        console.log('✅ File uploaded and ready to send:', uploadedFileData.name);
+      } else {
+        console.error('❌ Upload failed:', data.error);
+        alert(`Upload failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('💥 Upload error:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
     }
 
-    if (newFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...newFiles]);
-
-      // Show success message for PDFs and documents
-      const pdfCount = newFiles.filter(f => f.file.type === 'application/pdf').length;
-      const docCount = newFiles.filter(f => f.file.type.includes('document') || f.file.type.includes('msword')).length;
-
-      if (pdfCount > 0 || docCount > 0) {
-        console.log(`📄 Successfully selected ${pdfCount} PDF(s) and ${docCount} document(s) for upload`);
-      }
-    }
-
-    // Reset input
+    // Clear file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadFiles = async (): Promise<Array<{
-    url: string;
-    name: string;
-    type: string;
-    size: number;
-  }>> => {
-    if (selectedFiles.length === 0) return [];
-
-    setUploadingFiles(true);
-    const uploadedFiles: Array<{
-      url: string;
-      name: string;
-      type: string;
-      size: number;
-    }> = [];
-
-    try {
-      for (const fileUpload of selectedFiles) {
-        const formData = new FormData();
-        formData.append('file', fileUpload.file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          uploadedFiles.push({
-            url: data.file.url,
-            name: fileUpload.file.name,
-            type: fileUpload.file.type,
-            size: fileUpload.file.size,
-          });
-        } else {
-          throw new Error(`Failed to upload ${fileUpload.file.name}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Failed to upload files. Please try again.');
-      setUploadingFiles(false);
-      return [];
-    }
-
-    setUploadingFiles(false);
-    return uploadedFiles;
+  const uploadFile = async (fileData: { url: string; name: string; type: string; size: number }) => {
+    // File is already uploaded, just return the data
+    return fileData;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -782,39 +842,7 @@ export default function ChatPage() {
       return <ImageIcon className="w-4 h-4" />;
     }
     if (fileType === 'application/pdf') {
-      return (
-        <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M8.597 11.085h.906v2.189h-.906v-2.189zm4.045 0h.906v2.189h-.906v-2.189z" />
-        </svg>
-      );
-    }
-    if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return (
-        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M10.5 12.5L9.5 16l-1-3.5L7.5 16l-1-3.5h1.25l.5 2 .5-2h.5l.5 2 .5-2h1.25z" />
-        </svg>
-      );
-    }
-    if (fileType === 'text/plain') {
-      return (
-        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      );
-    }
-    if (fileType === 'application/zip' || fileType === 'application/x-zip-compressed') {
-      return (
-        <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M10 11h1v1h-1v-1zm1 1h1v1h-1v-1zm-1 1h1v1h-1v-1zm1 1h1v1h-1v-1z" />
-        </svg>
-      );
+      return <FileText className="w-4 h-4 text-red-500" />;
     }
     return <FileText className="w-4 h-4" />;
   };
@@ -1020,100 +1048,8 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Following Users */}
-            {!searchQuery && followingUsers.length > 0 && (
-              <div className="p-3">
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Learning Partners</h3>
-                {followingUsers.map((user) => (
-                  <div
-                    key={user.userId}
-                    onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
-                      }`}
-                  >
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="hover:scale-110 transition-transform duration-300"
-                      >
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        {isUserOnline(user.lastActiveAt) && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                      >
-                        {user.fullName}
-                      </button>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Unknown Users */}
-            {!searchQuery && unknownUsers.length > 0 && (
-              <div className="p-3">
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Unknown person message</h3>
-                {unknownUsers.map((user) => (
-                  <div
-                    key={user.userId}
-                    onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
-                      }`}
-                  >
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="hover:scale-110 transition-transform duration-300"
-                      >
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        {isUserOnline(user.lastActiveAt) && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                      >
-                        {user.fullName}
-                      </button>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Empty State */}
-            {!searchQuery && recentChats.length === 0 && followingUsers.length === 0 && unknownUsers.length === 0 && (
+            {!searchQuery && recentChats.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <MessageCircle className="w-16 h-16 text-gray-300 dark:text-slate-600 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No conversations yet</h3>
@@ -1399,7 +1335,7 @@ export default function ChatPage() {
                   const showDate = index === 0 || formatMessageDate(messages[index - 1]?.timestamp) !== formatMessageDate(message.timestamp);
 
                   return (
-                    <div key={message.messageId}>
+                    <div key={`${message.messageId}-${index}`}>
                       {/* Date separator */}
                       {showDate && (
                         <div className="flex justify-center my-4">
@@ -1441,13 +1377,23 @@ export default function ChatPage() {
                               {message.fileUrl && (
                                 <div className="mb-2">
                                   {message.fileType?.startsWith('image/') ? (
-                                    <div className="relative">
+                                    <div className="relative group">
                                       <img
                                         src={message.fileUrl}
                                         alt={message.fileName}
-                                        className="max-w-sm max-h-80 rounded-lg object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                                        onClick={() => window.open(message.fileUrl, '_blank')}
+                                        className="max-w-sm max-h-80 rounded-lg object-cover"
+                                        title="Image preview"
                                       />
+                                      {/* Download button overlay */}
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <button
+                                          onClick={() => downloadFile(message.fileUrl!, message.fileName || 'image')}
+                                          className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                                          title="Download image"
+                                        >
+                                          <Download className="w-5 h-5" />
+                                        </button>
+                                      </div>
                                     </div>
                                   ) : message.fileType === 'application/pdf' ? (
                                     <div className={`p-3 rounded-lg border-2 border-dashed ${isOwn
@@ -1475,7 +1421,7 @@ export default function ChatPage() {
                                               ? 'bg-white/20 text-white hover:bg-white/30'
                                               : 'bg-red-500 text-white hover:bg-red-600'
                                               }`}
-                                            title="Open in new tab"
+                                            title="Open PDF in new tab"
                                           >
                                             Preview
                                           </button>
@@ -1485,7 +1431,7 @@ export default function ChatPage() {
                                               ? 'bg-white/20 text-white hover:bg-white/30'
                                               : 'bg-gray-500 text-white hover:bg-gray-600'
                                               }`}
-                                            title="Download file"
+                                            title="Download PDF"
                                           >
                                             Download
                                           </button>
@@ -1559,47 +1505,45 @@ export default function ChatPage() {
               {/* Message Input */}
               <div className="p-4 bg-white/95 dark:bg-slate-900/95 border-t border-gray-200/30 dark:border-slate-700/30">
                 {/* File Previews */}
-                {selectedFiles.length > 0 && (
+                {uploadedFile && (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    {selectedFiles.map((fileUpload, index) => (
-                      <div key={index} className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {fileUpload.preview ? (
-                            <img src={fileUpload.preview} alt="" className="w-10 h-10 rounded object-cover" />
-                          ) : (
-                            <div className={`w-10 h-10 rounded flex items-center justify-center ${fileUpload.file.type === 'application/pdf'
-                              ? 'bg-red-100 dark:bg-red-900/30'
-                              : 'bg-gray-200 dark:bg-slate-700'
-                              }`}>
-                              {getFileIcon(fileUpload.file.type)}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                              {fileUpload.file.type === 'application/pdf' ? '📄 ' : ''}{fileUpload.file.name}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-slate-400">
-                              {fileUpload.file.type === 'application/pdf' && 'PDF • '}{formatFileSize(fileUpload.file.size)}
-                            </p>
+                    <div className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {(uploadedFile as any).preview ? (
+                          <img src={(uploadedFile as any).preview} alt="" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className={`w-10 h-10 rounded flex items-center justify-center ${uploadedFile.type === 'application/pdf'
+                            ? 'bg-red-100 dark:bg-red-900/30'
+                            : 'bg-gray-200 dark:bg-slate-700'
+                            }`}>
+                            {getFileIcon(uploadedFile.type)}
                           </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                            {uploadedFile.type === 'application/pdf' ? '📄 ' : ''}{uploadedFile.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
+                            {uploadedFile.type === 'application/pdf' && 'PDF • '}{formatFileSize(uploadedFile.size)}
+                          </p>
                         </div>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
                       </div>
-                    ))}
+                      <button
+                        onClick={() => setUploadedFile(null)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  {/* File Input */}
+                {/* Message Input */}
+                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex items-center gap-3 bg-gray-100 dark:bg-slate-800/80 rounded-2xl">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                     accept="image/*,.pdf,.doc,.docx,.txt,.zip"
@@ -1607,41 +1551,39 @@ export default function ChatPage() {
 
                   {/* File Button */}
                   <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFiles || sendingMessage}
+                    disabled={uploading || sendingMessage}
                     className="p-3 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Paperclip className="w-5 h-5" />
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-600 border-t-transparent"></div>
+                    ) : (
+                      <Paperclip className="w-5 h-5" />
+                    )}
                   </button>
 
                   <div className="flex-1 relative">
-                    <textarea
+                    <input
+                      type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder={`Message ${selectedUser.fullName}...`}
-                      className="w-full px-4 py-3 bg-gray-100 dark:bg-slate-800/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 resize-none max-h-32"
-                      rows={1}
-                      style={{ height: 'auto', minHeight: '2.75rem' }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
-                      }}
+                      placeholder={uploadedFile ? "Add a message (optional)..." : "Type a message..."}
+                      className="flex-1 px-4 py-3 bg-transparent border-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 text-sm w-full"
                     />
                   </div>
                   <button
-                    onClick={sendMessage}
-                    disabled={(!newMessage.trim() && selectedFiles.length === 0) || sendingMessage || uploadingFiles}
+                    type="submit"
+                    disabled={(!newMessage.trim() && uploadedFile === null) || sendingMessage || uploading}
                     className="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center justify-center min-w-[3rem]"
                   >
-                    {(sendingMessage || uploadingFiles) ? (
+                    {(sendingMessage || uploading) ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     ) : (
                       <Send className="w-5 h-5" />
                     )}
                   </button>
-                </div>
+                </form>
               </div>
             </>
           ) : (

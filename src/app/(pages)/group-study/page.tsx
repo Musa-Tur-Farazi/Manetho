@@ -153,6 +153,11 @@ export default function GroupStudyPage() {
       return;
     }
 
+    if (!createForm.maxParticipants || createForm.maxParticipants < 2 || createForm.maxParticipants > 100) {
+      alert('Max participants must be between 2 and 100');
+      return;
+    }
+
     try {
       const response = await fetch('/api/community/study-groups', {
         method: 'POST',
@@ -616,11 +621,22 @@ export default function GroupStudyPage() {
                     <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Max Participants</label>
                     <input
                       type="number"
-                      value={createForm.maxParticipants}
-                      onChange={(e) => setCreateForm({ ...createForm, maxParticipants: parseInt(e.target.value) })}
+                      value={createForm.maxParticipants || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setCreateForm({ ...createForm, maxParticipants: 0 });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setCreateForm({ ...createForm, maxParticipants: numValue });
+                          }
+                        }
+                      }}
                       className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       min="2"
                       max="100"
+                      placeholder="10"
                     />
                   </div>
                   <div className="flex gap-2">

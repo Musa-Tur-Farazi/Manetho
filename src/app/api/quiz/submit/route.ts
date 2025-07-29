@@ -132,16 +132,18 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      submissionId: submission.submissionId,
-      score: totalPoints,
-      maxScore: maxPoints,
-      percentage: score,
-      accuracyRate,
-      correctAnswers,
-      totalQuestions: questions.length,
-      timeSpent,
-      xpEarned: totalXp,
-      detailedResults,
+      results: {
+        submissionId: submission.submissionId,
+        score: score, // This is the percentage
+        accuracyRate,
+        correctAnswers,
+        totalQuestions: questions.length,
+        totalPoints,
+        maxPoints,
+        timeSpent,
+        xpEarned: totalXp,
+        detailedResults,
+      }
     });
 
   } catch (error) {
