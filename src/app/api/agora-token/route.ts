@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { channelName, role = 'audience' } = await request.json();
+    const { channelName, role = 'host' } = await request.json();
 
     if (!channelName) {
       return NextResponse.json({
@@ -21,9 +21,16 @@ export async function POST(request: NextRequest) {
     const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
     const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
+    console.log('🔑 Token Generation Request:');
+    console.log('   App ID:', appId ? appId.substring(0, 8) + '...' : 'Missing');
+    console.log('   Certificate:', appCertificate ? 'Present' : 'Missing');
+    console.log('   Channel:', channelName);
+    console.log('   Role:', role);
+    console.log('   User ID:', userId);
+
     if (!appId || !appCertificate) {
       return NextResponse.json({
-        error: 'Agora credentials not configured'
+        error: 'Agora credentials not configured. Please check NEXT_PUBLIC_AGORA_APP_ID and AGORA_APP_CERTIFICATE in your environment variables.'
       }, { status: 500 });
     }
 
@@ -33,38 +40,56 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Token configuration
-    const account = userId; // Use userId as account
-    const uid = 0; // Use 0 for auto-generated UID
+    // **FIX: Improved UID and token configuration**
+    // Generate a unique UID based on user ID for consistent identification
+    const account = userId;
+    const uid = Math.abs(userId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0));
+
+    // Ensure role is properly set for video calls
     const userRole = role === 'host' ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const expirationTimeInSeconds = 3600; // 1 hour
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-    // Generate token
-    const token = RtcTokenBuilder.buildTokenWithUserAccount(
+    console.log('🎯 Token Parameters:');
+    console.log('   Generated UID:', uid);
+    console.log('   User Role:', userRole);
+    console.log('   Expires:', new Date(privilegeExpiredTs * 1000).toISOString());
+
+    // **FIX: Use buildTokenWithUid for better compatibility**
+    const token = RtcTokenBuilder.buildTokenWithUid(
       appId,
       appCertificate,
       channelName,
-      account,
       uid,
       userRole,
+      privilegeExpiredTs,
       privilegeExpiredTs
     );
 
-    return NextResponse.json({
+    const response = {
       success: true,
       token,
       appId,
       channelName,
+      uid,
       account,
       role: role,
       expiresAt: new Date(privilegeExpiredTs * 1000).toISOString(),
       expiresIn: expirationTimeInSeconds
-    });
+    };
+
+    console.log('✅ Token generated successfully');
+    console.log('   Response UID:', response.uid);
+    console.log('   Token length:', token.length);
+
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Token generation error:', error);
+    console.error('❌ Token generation error:', error);
     return NextResponse.json({
       error: 'Failed to generate token',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -82,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const channelName = searchParams.get('channelName');
-    const role = searchParams.get('role') || 'audience';
+    const role = searchParams.get('role') || 'host';
 
     if (!channelName) {
       return NextResponse.json({

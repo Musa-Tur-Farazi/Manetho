@@ -18,8 +18,6 @@ import {
   Link,
   Trash2,
   CheckCircle,
-  FolderOpen,
-  Upload,
   MessageSquare
 } from 'lucide-react';
 import { pusherClient } from '@/lib/pusher-client';
@@ -84,18 +82,6 @@ interface MeetingLink {
   creatorAvatar: string | null;
 }
 
-interface SharedResource {
-  resourceId: string;
-  fileName: string;
-  fileUrl: string;
-  fileType: string;
-  fileSize: number;
-  description: string | null;
-  uploadedAt: string;
-  uploaderName: string;
-  uploaderAvatar: string | null;
-}
-
 export default function GroupStudyChatPage() {
   // Enhanced CSS for modern chat design
   useEffect(() => {
@@ -153,13 +139,11 @@ export default function GroupStudyChatPage() {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
   const [meetingLinks, setMeetingLinks] = useState<MeetingLink[]>([]);
-  const [sharedResources, setSharedResources] = useState<SharedResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageInput, setMessageInput] = useState('');
   const [showMeetingOptions, setShowMeetingOptions] = useState(false);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
-  const [resourceDescription, setResourceDescription] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,7 +154,6 @@ export default function GroupStudyChatPage() {
       fetchMessages();
       fetchMembers();
       fetchMeetingLinks();
-      fetchSharedResources();
       setupPusherSubscription();
     }
 
@@ -267,21 +250,6 @@ export default function GroupStudyChatPage() {
     }
   };
 
-  const fetchSharedResources = async () => {
-    try {
-      const response = await fetch(`/api/community/study-groups/${groupId}/shared-resources`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setSharedResources(data.sharedResources || []);
-      } else {
-        console.error('Error fetching shared resources:', data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching shared resources:', error);
-    }
-  };
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -364,58 +332,6 @@ export default function GroupStudyChatPage() {
       }
     } catch (error) {
       console.error('Error uploading file:', error);
-    }
-
-    // Clear file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleSharedResourceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Simple file upload simulation - in a real app, you'd upload to a storage service
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const uploadData = await uploadResponse.json();
-
-      if (uploadResponse.ok) {
-        const response = await fetch(`/api/community/study-groups/${groupId}/shared-resources`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fileName: file.name,
-            fileUrl: uploadData.url,
-            fileType: file.type,
-            fileSize: file.size,
-            description: resourceDescription.trim() || null,
-          }),
-        });
-
-        if (response.ok) {
-          await fetchSharedResources();
-          setResourceDescription('');
-          setShowUploadOptions(false);
-        } else {
-          const errorData = await response.json();
-          console.error('Error uploading shared resource:', errorData);
-        }
-      } else {
-        console.error('Error uploading file to storage:', uploadData.error);
-      }
-    } catch (error) {
-      console.error('Error uploading shared resource:', error);
     }
 
     // Clear file input
@@ -560,29 +476,6 @@ export default function GroupStudyChatPage() {
   };
 
   const [meetingLinkInput, setMeetingLinkInput] = useState('');
-  const sharedResourceInputRef = useRef<HTMLInputElement>(null);
-
-  const deleteSharedResource = async (resourceId: string) => {
-    try {
-      const response = await fetch(`/api/community/study-groups/${groupId}/shared-resources`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resourceId,
-        }),
-      });
-
-      if (response.ok) {
-        await fetchSharedResources();
-      } else {
-        console.error('Failed to delete shared resource');
-      }
-    } catch (error) {
-      console.error('Error deleting shared resource:', error);
-    }
-  };
 
   if (loading) {
     return (
@@ -856,70 +749,6 @@ export default function GroupStudyChatPage() {
               </div>
             ))}
           </div>
-
-          {/* Shared Resources Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700">
-            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <FolderOpen className="w-4 h-4" />
-                Shared Resources ({sharedResources.length})
-              </h3>
-            </div>
-            <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-              {sharedResources.map((resource) => (
-                <div key={resource.resourceId} className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <div className="flex-shrink-0 mt-1">
-                    {getFileIcon(resource.fileType)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <button
-                      onClick={() => window.open(resource.fileUrl, '_blank')}
-                      className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
-                      title={resource.fileName}
-                    >
-                      {resource.fileName}
-                    </button>
-                    {resource.description && (
-                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate" title={resource.description}>
-                        {resource.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {resource.uploaderName}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {Math.round(resource.fileSize / 1024)} KB
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => window.open(resource.fileUrl, '_blank')}
-                      className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      title="Download"
-                    >
-                      <Download className="w-3 h-3" />
-                    </button>
-                    {(groupInfo?.userRole === 'organizer' || members.find(m => m.isCurrentUser)?.fullName === resource.uploaderName) && (
-                      <button
-                        onClick={() => deleteSharedResource(resource.resourceId)}
-                        className="p-1 text-red-500 hover:text-red-600 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {sharedResources.length === 0 && (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs">
-                  No shared resources yet
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="flex-1 flex flex-col">
@@ -1038,19 +867,12 @@ export default function GroupStudyChatPage() {
                 className="hidden"
                 accept="image/*,.pdf,.doc,.docx,.txt"
               />
-              <input
-                type="file"
-                ref={sharedResourceInputRef}
-                onChange={handleSharedResourceUpload}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt"
-              />
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowUploadOptions(!showUploadOptions)}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Upload options"
+                  title="Upload file"
                 >
                   <Plus className="w-5 h-5" />
                 </button>
@@ -1058,7 +880,7 @@ export default function GroupStudyChatPage() {
                 {showUploadOptions && (
                   <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-[200px]">
                     <div className="p-3">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Upload Options</h4>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Upload File</h4>
                       <div className="space-y-2">
                         <button
                           type="button"
@@ -1069,20 +891,7 @@ export default function GroupStudyChatPage() {
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                         >
                           <MessageSquare className="w-4 h-4" />
-                          Message File
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowUploadOptions(false);
-                            // Show shared resource upload modal
-                            const modal = document.getElementById('sharedResourceModal');
-                            if (modal) modal.style.display = 'flex';
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-                        >
-                          <FolderOpen className="w-4 h-4" />
-                          Shared Resource
+                          Upload File
                         </button>
                       </div>
                     </div>
@@ -1104,63 +913,9 @@ export default function GroupStudyChatPage() {
                 <Send className="w-5 h-5" />
               </button>
             </form>
-
-            {/* Shared Resource Upload Modal */}
-            <div
-              id="sharedResourceModal"
-              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                  e.currentTarget.style.display = 'none';
-                }
-              }}
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Upload Shared Resource
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Description (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={resourceDescription}
-                      onChange={(e) => setResourceDescription(e.target.value)}
-                      placeholder="Describe this resource..."
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sharedResourceInputRef.current?.click();
-                        document.getElementById('sharedResourceModal')!.style.display = 'none';
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
-                    >
-                      <Upload className="w-4 h-4" />
-                      Choose File
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setResourceDescription('');
-                        document.getElementById('sharedResourceModal')!.style.display = 'none';
-                      }}
-                      className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
