@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
     console.log('👤 Caller info:', callerInfo);
 
     if (action === 'initiate') {
+      // **FIX: Prevent users from calling themselves**
+      if (callerInfo.userId === recipientId) {
+        console.warn('🚫 User attempted to call themselves:', callerInfo.userId);
+        return NextResponse.json({ 
+          error: 'Cannot call yourself' 
+        }, { status: 400 });
+      }
+
       // Store the call signal
       const callSignal = {
         callerId: callerInfo.userId,
@@ -61,14 +69,16 @@ export async function POST(request: NextRequest) {
       };
 
       activeCallSignals.set(recipientId, callSignal);
-      console.log('💾 Stored call signal for recipient:', recipientId, callSignal);
-      console.log('📊 Active call signals:', Array.from(activeCallSignals.entries()));
+      console.log('💾 Stored call signal for recipient:', recipientId);
+      console.log('📊 Call signal details:', callSignal);
+      console.log('📊 All active signals:', Array.from(activeCallSignals.entries()));
 
       // Clean up old signals (older than 5 minutes)
       const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
       for (const [key, signal] of activeCallSignals.entries()) {
         if (signal.timestamp < fiveMinutesAgo) {
           activeCallSignals.delete(key);
+          console.log('🧹 Cleaned up expired signal for:', key);
         }
       }
 
@@ -103,7 +113,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {

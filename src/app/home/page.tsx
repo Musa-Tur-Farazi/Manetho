@@ -9,8 +9,6 @@ import {
   Menu,
   X,
   Home,
-  Settings,
-  HelpCircle,
   User,
   Users,
   Brain,
@@ -37,17 +35,17 @@ const HomePage = () => {
   const { user, isLoaded } = useUser();
   const { theme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on all screen sizes
   const firstName = user?.firstName || user?.username?.split(' ')[0] || "there";
   const [syncChecked, setSyncChecked] = useState(false);
 
 
-  // Hide sidebar on mobile by default
-  useEffect(() => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, []);
+  // Hide sidebar on mobile by default - removed since we now start closed on all screens
+  // useEffect(() => {
+  //   if (window.innerWidth < 768) {
+  //     setSidebarOpen(false);
+  //   }
+  // }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,132 +100,132 @@ const HomePage = () => {
 
 
 
-      {/* Sidebar toggle button for mobile */}
+      {/* Sidebar toggle button - now only shows menu icon for opening */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300"
+        className="fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors"
         aria-label="Toggle sidebar"
+        style={{ display: sidebarOpen ? 'none' : 'block' }}
       >
-        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <Menu className="w-5 h-5" />
       </button>
 
-      {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed left-0 top-0 pt-20 pb-4 h-full w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
-          >
-            <div className="p-4">
-              {/* Main Navigation */}
-              <div className="mb-8">
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/home"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
+          <>
+            {/* Overlay for mobile screens when sidebar is open */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black/20 z-20 md:hidden"
+            />
+            
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="fixed left-0 top-0 pt-20 pb-4 h-full w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
+            >
+              <div className="p-4">
+                {/* Close button positioned above Home */}
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
+                    aria-label="Close sidebar"
                   >
-                    <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
-                    Home
-                  </Link>
-                  <Link
-                    href="/community"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Community
-                  </Link>
-                  <Link
-                    href="/group-study"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                    Group Study
-                  </Link>
-                  <Link
-                    href="/tools/doubt-solving"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    AI Doubt Solver
-                  </Link>
-                </nav>
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Main Navigation */}
+                <div className="mb-8">
+                  <nav className="space-y-1.5">
+                    <Link
+                      href="/home"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
+                    >
+                      <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
+                      Home
+                    </Link>
+                    <Link
+                      href="/community"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Community
+                    </Link>
+                    <Link
+                      href="/group-study"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
+                      Group Study
+                    </Link>
+                    <Link
+                      href="/tools/doubt-solving"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      AI Doubt Solver
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Study Tools Section */}
+                <div className="mb-8">
+                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                    Study Tools
+                  </h3>
+                  <nav className="space-y-1.5">
+                    <Link
+                      href="/tools/flashcards"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Flashcards
+                    </Link>
+                    <Link
+                      href="/tools/mind-maps"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Mind Maps
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Other Pages Section */}
+                <div className="mb-8">
+                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                    More
+                  </h3>
+                  <nav className="space-y-1.5">
+                    <Link
+                      href={user?.id ? `/profile/${user.id}` : '/profile'}
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Profile
+                    </Link>
+                    <Link
+                      href="/chat"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
+                      Messages
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Account section removed as it was empty */}
+
               </div>
-
-              {/* Study Tools Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Study Tools
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/tools/flashcards"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Flashcards
-                  </Link>
-                  <Link
-                    href="/tools/mind-maps"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Mind Maps
-                  </Link>
-                </nav>
-              </div>
-
-              {/* Other Pages Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  More
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href={user?.id ? `/profile/${user.id}` : '/profile'}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/chat"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-                    Messages
-                  </Link>
-                </nav>
-              </div>
-
-              {/* Account Settings */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Account
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/settings"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Settings className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Settings
-                  </Link>
-                  <Link
-                    href="/help"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <HelpCircle className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Help & Support
-                  </Link>
-                </nav>
-              </div>
-
-
-            </div>
-          </motion.aside>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 

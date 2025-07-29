@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import {
-  Edit, BookOpen, Calendar, Award, BarChart, Clock,
+  Edit, BookOpen, Calendar, Award, BarChart,
   Save, X, ChevronRight, Star, GraduationCap, Trophy, Target,
   Flame, BarChart3, Users, BrainCircuit, FileText,
-  TestTube, Bookmark, MessageCircle, ThumbsUp, MessageSquare
+  Bookmark, MessageCircle, ThumbsUp, MessageSquare
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import AchievementBadge, { Achievement } from "@/components/AchievementBadge";
@@ -222,11 +222,6 @@ export default function ProfilePage() {
   useEffect(() => {
     if (isLoaded && user) {
       setDisplayName(user.fullName || "");
-      setProfileLinks([
-        { type: "email", url: user.primaryEmailAddress?.emailAddress || "" },
-        { type: "website", url: "" },
-        { type: "github", url: "" }
-      ]);
 
       // Load real activity data
       loadActivityData();
@@ -445,7 +440,7 @@ export default function ProfilePage() {
         return <BarChart className="w-4 h-4 text-purple-500" />;
       case "solved":
       case "quiz":
-        return <TestTube className="w-4 h-4 text-orange-500" />;
+        return <Target className="w-4 h-4 text-orange-500" />;
       case "chat":
         return <MessageSquare className="w-4 h-4 text-blue-500" />;
       case "test":
@@ -487,7 +482,7 @@ export default function ProfilePage() {
     <>
       <PageHeader
         title="Your Profile"
-        description="Manage your personal information and track your learning journey"
+        subtitle="Manage your personal information and track your learning journey"
       />
 
       {/* Test Data Generation Button - Only for development */}
@@ -640,13 +635,6 @@ export default function ProfilePage() {
             {/* Stats Overview */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex flex-col items-center justify-center">
-                <Clock className="w-6 h-6 text-cyan-600 dark:text-cyan-400 mb-2" />
-                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  {activityData?.stats.totalStudyHours || 0}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Hours Studied</span>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex flex-col items-center justify-center">
                 <Users className="w-6 h-6 text-blue-500 mb-2" />
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {activityData?.stats.groupsJoined || 0}
@@ -666,13 +654,6 @@ export default function ProfilePage() {
                   {activityData?.stats.mindMapsSaved || 0}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">Mind Maps</span>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex flex-col items-center justify-center">
-                <TestTube className="w-6 h-6 text-orange-500 mb-2" />
-                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  {activityData?.stats.problemsSolved || 0}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Problems Solved</span>
               </div>
               {/* Quiz Stats */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex flex-col items-center justify-center">
@@ -1128,7 +1109,7 @@ export default function ProfilePage() {
                       {activeTab === "groups" && <Users className="w-full h-full" />}
                       {activeTab === "flashcards" && <BookOpen className="w-full h-full" />}
                       {activeTab === "mind-maps" && <BarChart className="w-full h-full" />}
-                      {activeTab === "solved" && <TestTube className="w-full h-full" />}
+                      {activeTab === "solved" && <Target className="w-full h-full" />}
                     </div>
                     <p>Coming soon - detailed view for {activeTab}</p>
                   </div>

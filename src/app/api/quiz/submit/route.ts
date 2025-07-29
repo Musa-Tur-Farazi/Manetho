@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         userId: user.userId,
         testId,
         score: totalPoints,
-        accuracyRate: accuracyRate / 100, // Convert to decimal
+        accuracyRate: (accuracyRate / 100).toFixed(2), // Convert to decimal string
         timeSpent: timeSpent || 0,
         submissionData: {
           detailedResults,
@@ -167,7 +167,7 @@ async function updateStudyStreak(userId: string) {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
 
-      if (lastStudyDate && lastStudyDate.getTime() === yesterday.getTime()) {
+      if (lastStudyDate && new Date(lastStudyDate).getTime() === yesterday.getTime()) {
         // Consecutive day - increment streak
         const newStreak = existingStreak.currentStreak + 1;
         await db
@@ -175,11 +175,11 @@ async function updateStudyStreak(userId: string) {
           .set({
             currentStreak: newStreak,
             longestStreak: Math.max(newStreak, existingStreak.longestStreak),
-            lastStudyDate: today,
+            lastStudyDate: today.toISOString().split('T')[0],
             updatedAt: new Date(),
           })
           .where(eq(studyStreaksTable.userId, userId));
-      } else if (lastStudyDate && lastStudyDate.getTime() === today.getTime()) {
+      } else if (lastStudyDate && new Date(lastStudyDate).getTime() === today.getTime()) {
         // Already studied today - no change needed
         return;
       } else {
@@ -188,7 +188,7 @@ async function updateStudyStreak(userId: string) {
           .update(studyStreaksTable)
           .set({
             currentStreak: 1,
-            lastStudyDate: today,
+            lastStudyDate: today.toISOString().split('T')[0],
             updatedAt: new Date(),
           })
           .where(eq(studyStreaksTable.userId, userId));
@@ -201,7 +201,7 @@ async function updateStudyStreak(userId: string) {
           userId,
           currentStreak: 1,
           longestStreak: 1,
-          lastStudyDate: today,
+          lastStudyDate: today.toISOString().split('T')[0],
         });
     }
   } catch (error) {

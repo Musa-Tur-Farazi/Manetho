@@ -282,7 +282,7 @@ Ensure your response is complete and comprehensive, addressing all aspects of th
                 `);
 
                 const sessionInfo = sessionInfoResult.rows[0];
-                const userMessageCount = parseInt(sessionInfo?.user_message_count) || 0;
+                const userMessageCount = parseInt(sessionInfo?.user_message_count as string) || 0;
                 const currentTitle = sessionInfo?.title || '';
 
                 // Debug: Check what messages exist

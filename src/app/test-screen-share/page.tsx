@@ -10,6 +10,8 @@ export default function TestScreenSharePage() {
   const [isTesting, setIsTesting] = useState(false);
 
   const checkSupport = () => {
+    if (typeof window === 'undefined') return;
+    
     const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
     const secure = window.isSecureContext;
 
@@ -156,10 +158,10 @@ export default function TestScreenSharePage() {
                 Current Environment
               </h3>
               <div className="text-sm text-gray-600 dark:text-slate-400 space-y-1">
-                <p>Browser: {navigator.userAgent}</p>
-                <p>Protocol: {window.location.protocol}</p>
-                <p>Host: {window.location.host}</p>
-                <p>Secure Context: {window.isSecureContext ? 'Yes' : 'No'}</p>
+                <p>Browser: {typeof navigator !== 'undefined' ? navigator.userAgent : 'Server Side'}</p>
+                <p>Protocol: {typeof window !== 'undefined' ? window.location.protocol : 'N/A'}</p>
+                <p>Host: {typeof window !== 'undefined' ? window.location.host : 'N/A'}</p>
+                <p>Secure Context: {typeof window !== 'undefined' ? (window.isSecureContext ? 'Yes' : 'No') : 'N/A'}</p>
               </div>
             </div>
           </div>

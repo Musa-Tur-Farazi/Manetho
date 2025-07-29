@@ -225,7 +225,7 @@ export async function POST(
         processingTime: newMessage.processing_time,
         modelUsed: newMessage.model_used,
         metadata: newMessage.metadata,
-        timestamp: new Date(newMessage.created_at),
+        timestamp: new Date(newMessage.created_at as string),
       }
     }, { status: 201 });
 

@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate total study hours from sessions
     const totalStudyHours = Math.round(
-      (studySessionsResult.reduce((sum, session) => sum + (session.totalDuration || 0), 0) / 60) * 100
+      (studySessionsResult.reduce((sum, session) => sum + (typeof session.totalDuration === "number" ? session.totalDuration : parseFloat(session.totalDuration || "0")), 0) / 60) * 100
     ) / 100;
 
     // Calculate activity counts

@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import {
-  User, MessageCircle, BookOpen, Calendar, Award, BarChart,
-  UserPlus, UserMinus, ChevronLeft, Star, GraduationCap, Users,
-  Heart, Share, Bookmark, MoreHorizontal, Clock, Image, BarChart3
+  User, MessageCircle, BookOpen, BarChart,
+  UserPlus, UserMinus, ChevronLeft, GraduationCap, Users,
+  Heart, Share, Bookmark, MoreHorizontal, Clock, BarChart3
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -53,13 +53,13 @@ interface UserPost {
   images?: string[];
   postType?: string;
   pollOptions?: string[];
-  pollVotes?: Record<string, any>;
+  pollVotes?: Record<string, number>;
 }
 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { user: currentUser } = useUser();
+  const currentUser = useUser().user;
   const { theme, setTheme } = useTheme();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -156,7 +156,7 @@ export default function UserProfilePage() {
 
       if (sharedResponse.ok) {
         const sharedData = await sharedResponse.json();
-        const sharedPosts = sharedData.posts.map((post: any) => ({
+        const sharedPosts = sharedData.posts.map((post: UserPost) => ({
           ...post,
           isShared: true
         }));
@@ -544,41 +544,31 @@ export default function UserProfilePage() {
 
           {/* Stats Grid */}
           {userStats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <Users className="w-6 h-6 text-blue-400 mx-auto mb-3" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followersCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Learning Partners</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Learning Partners</p>
               </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <User className="w-6 h-6 text-green-400 mx-auto mb-2" />
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <User className="w-6 h-6 text-green-400 mx-auto mb-3" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followingCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Following</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Following</p>
               </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BookOpen className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.totalStudyHours}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Study Hours</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-orange-400 mx-auto mb-2" />
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <Users className="w-6 h-6 text-orange-400 mx-auto mb-3" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.groupsJoined}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Groups Joined</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Groups Joined</p>
               </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BookOpen className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <BookOpen className="w-6 h-6 text-cyan-400 mx-auto mb-3" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.flashcardDecks}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Flashcard Decks</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Flashcard Decks</p>
               </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BarChart className="w-6 h-6 text-pink-400 mx-auto mb-2" />
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <BarChart className="w-6 h-6 text-pink-400 mx-auto mb-3" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.mindMapsSaved}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Mind Maps</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Star className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.problemsSolved}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Problems Solved</p>
+                <p className="text-xs text-gray-600 dark:text-slate-400 mt-1">Mind Maps</p>
               </div>
             </div>
           )}
@@ -686,12 +676,64 @@ export default function UserProfilePage() {
 
 // Post Card Component
 const PostCard = ({ post }: { post: UserPost }) => {
+  const [isLiked, setIsLiked] = useState(post.userStarred);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.stars);
+
   const handleLike = async () => {
-    // Like functionality
+    try {
+      const response = await fetch(`/api/community/threads/${post.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
   };
 
   const handleShare = async () => {
-    // Share functionality
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: post.title,
+          text: post.content,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(`${post.title}\n\n${post.content}\n\n${window.location.href}`);
+        // You could add a toast notification here
+        alert('Post link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing post:', error);
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      const response = await fetch('/api/community/saved-posts', {
+        method: isBookmarked ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId: post.id }),
+      });
+
+      if (response.ok) {
+        setIsBookmarked(!isBookmarked);
+      }
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+    }
+  };
+
+  const handleComment = () => {
+    // Navigate to post detail page
+    window.location.href = `/community/thread/${post.id}`;
   };
 
   return (
@@ -949,15 +991,18 @@ const PostCard = ({ post }: { post: UserPost }) => {
           <div className="flex items-center gap-6">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${post.userStarred
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isLiked
                 ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
                 : "text-gray-600 dark:text-slate-400 hover:bg-red-500/10 hover:text-red-400"
                 }`}
             >
-              <Heart className={`w-4 h-4 ${post.userStarred ? "fill-current" : ""}`} />
-              <span>{post.stars}</span>
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+              <span>{likeCount}</span>
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300">
+            <button 
+              onClick={handleComment}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300"
+            >
               <MessageCircle className="w-4 h-4" />
               <span>{post.comments}</span>
             </button>
@@ -966,11 +1011,19 @@ const PostCard = ({ post }: { post: UserPost }) => {
             <button
               onClick={handleShare}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300"
+              title="Share post"
             >
               <Share className="w-4 h-4" />
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400 transition-all duration-300">
-              <Bookmark className="w-4 h-4" />
+            <button 
+              onClick={handleBookmark}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isBookmarked
+                ? "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                : "text-gray-600 dark:text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400"
+                }`}
+              title={isBookmarked ? "Remove bookmark" : "Bookmark post"}
+            >
+              <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
             </button>
           </div>
         </div>

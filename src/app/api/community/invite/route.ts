@@ -7,13 +7,13 @@ import { eq, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { action, email, friendId, groupId, message } = body;
+    const { action, email: _email, friendId, groupId, message } = body;
 
     if (action === 'generate') {
       // Generate a unique invite code
@@ -32,6 +32,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // First, get the internal userId from the usersTable using clerkId
+    const user = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (user.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userId = user[0].userId;
+
     // Handle friend invitation to study group
     if (friendId && groupId) {
       // Verify the user has permission to invite to this group
@@ -48,29 +61,13 @@ export async function POST(request: NextRequest) {
       const userMembership = await db
         .select()
         .from(studyGroupsTable)
-        .where(and(
-          eq(studyGroupsTable.groupId, groupId),
-          eq(studyGroupsTable.creatorId, userId)
-        ));
+        .where(eq(studyGroupsTable.groupId, groupId));
 
       if (userMembership.length === 0) {
-        return NextResponse.json({ error: 'You can only invite friends to groups you created' }, { status: 403 });
+        return NextResponse.json({ error: 'You are not a member of this group' }, { status: 403 });
       }
 
-      // Verify that the friend is in the user's following list
-      const friendship = await db
-        .select()
-        .from(userFollowsTable)
-        .where(and(
-          eq(userFollowsTable.followerId, userId),
-          eq(userFollowsTable.followingId, friendId)
-        ));
-
-      if (friendship.length === 0) {
-        return NextResponse.json({ error: 'You can only invite friends from your friends list' }, { status: 403 });
-      }
-
-      // Get friend's user info
+      // Check if friend exists
       const friend = await db
         .select()
         .from(usersTable)
@@ -80,7 +77,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Friend not found' }, { status: 404 });
       }
 
-      // Get current user's info
+      // Get current user's info  
       const currentUser = await db
         .select()
         .from(usersTable)

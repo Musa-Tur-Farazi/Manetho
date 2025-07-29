@@ -79,7 +79,7 @@ export async function getThreads(options: {
 }) {
   const { limit = 10, offset = 0, sortBy = 'recent', search } = options;
 
-  let query = db
+  const baseQuery = db
     .select({
       threadId: threadsTable.threadId,
       title: threadsTable.title,
@@ -96,13 +96,13 @@ export async function getThreads(options: {
     .from(threadsTable);
 
   // Add search filter if provided
+  let query: any = baseQuery;
   if (search) {
-    query = query.where(
-      or(
-        ilike(threadsTable.title, `%${search}%`),
-        ilike(threadsTable.body, `%${search}%`)
-      )
+    const searchCondition = or(
+      ilike(threadsTable.title, `%${search}%`),
+      ilike(threadsTable.body, `%${search}%`)
     );
+    query = baseQuery.where(searchCondition);
   }
 
   // Add sorting
@@ -124,7 +124,7 @@ export async function getThreads(options: {
 }
 
 export async function getThreadCount(search?: string) {
-  let query = db
+  let query: any = db
     .select({ count: count() })
     .from(threadsTable);
 
@@ -211,7 +211,7 @@ export async function createComment(commentData: {
     })
     .where(eq(threadsTable.threadId, commentData.threadId));
 
-  return newComments[0];
+  return (newComments as any[])[0];
 }
 
 // Doubt Solving Session Operations

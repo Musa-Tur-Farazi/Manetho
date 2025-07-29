@@ -67,15 +67,23 @@ interface GeneratedMindMap {
   }[];
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   const startTime = Date.now();
 
   // Set a timeout for the entire operation (2 minutes)
   const timeout = 120000; // 2 minutes in milliseconds
 
-  const timeoutPromise = new Promise((_, reject) => {
+  const timeoutPromise = new Promise<Response>((resolve) => {
     setTimeout(() => {
-      reject(new Error('Request timeout'));
+      resolve(
+        NextResponse.json(
+          {
+            error: "Request timeout",
+            details: "The mind map generation is taking too long. Please try with a simpler topic or try again later."
+          },
+          { status: 408 }
+        )
+      );
     }, timeout);
   });
 
@@ -434,7 +442,7 @@ Focus on actionable memory strategies, not vague categories.`;
           .insert(mindMapNodesTable)
           .values(finalNodes)
           .returning();
-        console.log(`Successfully saved ${savedNodes.length} nodes`);
+        console.log(`Successfully saved ${Array.isArray(savedNodes) ? savedNodes.length : 0} nodes`);
       } catch (dbError) {
         console.error("Failed to save mind map nodes:", dbError);
         console.error("Node data that failed to save:", JSON.stringify(finalNodes, null, 2));
@@ -551,7 +559,7 @@ Focus on actionable memory strategies, not vague categories.`;
 
     return NextResponse.json({
       error: "Failed to generate mind map",
-      details: "An unexpected error occurred during mind map generation. Please try again."
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
-} 
+}

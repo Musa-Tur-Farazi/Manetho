@@ -31,16 +31,16 @@ export async function GET(
     const comments = result.rows || [];
 
     // Format the response to match frontend expectations
-    const formattedComments = comments.map((comment: any) => {
-      const authorName = comment.full_name || 'Anonymous';
+    const formattedComments = comments.map((comment: Record<string, unknown>) => {
+      const authorName = comment.full_name as string || 'Anonymous';
 
       return {
         id: comment.comment_id,
         author: authorName,
-        authorImage: comment.avatar_url || 'https://i.pravatar.cc/150?img=12',
+        authorImage: comment.avatar_url as string || 'https://i.pravatar.cc/150?img=12',
         content: comment.content,
-        timeAgo: getTimeAgo(comment.timestamp),
-        likes: comment.like_count || 0,
+        timeAgo: getTimeAgo(comment.timestamp as string),
+        likes: comment.like_count as number || 0,
         parentCommentId: comment.parent_comment_id,
       };
     });

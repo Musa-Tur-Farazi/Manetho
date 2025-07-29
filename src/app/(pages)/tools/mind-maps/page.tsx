@@ -1,14 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
-import { Plus, Brain, Download, Share2, Search, Menu, List } from 'lucide-react';
+import { Plus, Brain, Search, Menu, List } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MindMapCreator from '@/components/mindmap/MindMapCreator';
 import MindMapVisualization from '@/components/mindmap/MindMapVisualization';
 import MindMapList from '@/components/mindmap/MindMapList';
+
+interface Node {
+  nodeId: string;
+  text: string;
+  level: number;
+  parentNodeId?: string;
+  positionX: number;
+  positionY: number;
+  color: string;
+  backgroundColor: string;
+  icon?: string;
+  notes?: string;
+  isRoot: boolean;
+  isCollapsed: boolean;
+}
+
+interface Connection {
+  connectionId: string;
+  fromNodeId: string;
+  toNodeId: string;
+  label?: string;
+  color: string;
+}
 
 interface MindMap {
   mindmapId: string;
@@ -22,8 +45,30 @@ interface MindMap {
   lastEditedAt: string;
   createdAt: string;
   updatedAt: string;
-  nodes?: any[];
-  connections?: any[];
+  nodes: Node[];
+  connections: Connection[];
+}
+
+interface MindMapSummary {
+  mindmapId: string;
+  title: string;
+  description: string;
+  layout: string;
+  theme: string;
+  contentSource: string;
+  nodeCount: number;
+  connectionCount: number;
+  lastEditedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateMindMapData {
+  title: string;
+  description: string;
+  topic: string;
+  maxNodes: number;
+  additionalContext?: string;
 }
 
 export default function MindMapsPage() {
@@ -31,32 +76,15 @@ export default function MindMapsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mindMaps, setMindMaps] = useState<MindMap[]>([]);
+  const [mindMaps, setMindMaps] = useState<MindMapSummary[]>([]);
   const [selectedMindMap, setSelectedMindMap] = useState<MindMap | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [showCreator, setShowCreator] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterLayout, setFilterLayout] = useState('all');
   const [showSidebar, setShowSidebar] = useState(false);
 
-  // sync with url param
-  useEffect(() => {
-    const createParam = searchParams.get('create');
-    if (createParam === 'true') {
-      setShowCreator(true);
-    } else {
-      setShowCreator(false);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetchMindMaps();
-    }
-  }, [isLoaded, isSignedIn]);
-
-  const fetchMindMaps = async () => {
+  const fetchMindMaps = useCallback(async () => {
     try {
       const response = await fetch('/api/mindmaps');
       const data = await response.json();
@@ -72,9 +100,25 @@ export default function MindMapsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleCreateMindMap = async (mindMapData: any) => {
+  // sync with url param
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    if (createParam === 'true') {
+      setShowCreator(true);
+    } else {
+      setShowCreator(false);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      fetchMindMaps();
+    }
+  }, [isLoaded, isSignedIn, fetchMindMaps]);
+
+  const handleCreateMindMap = async (mindMapData: CreateMindMapData) => {
     setIsCreating(true);
     try {
       const response = await fetch('/api/mindmaps/generate', {
@@ -111,13 +155,13 @@ export default function MindMapsPage() {
     }
   };
 
-  const handleSelectMindMap = async (mindMap: any) => {
+  const handleSelectMindMap = useCallback(async (mindMap: MindMapSummary) => {
     try {
       const response = await fetch(`/api/mindmaps/${mindMap.mindmapId}`);
       const data = await response.json();
 
       if (data.success) {
-        setSelectedMindMap(data.mindMap as any);
+        setSelectedMindMap(data.mindMap);
         router.push(`/tools/mind-maps?id=${mindMap.mindmapId}`);
         setShowSidebar(false);
       } else {
@@ -127,9 +171,9 @@ export default function MindMapsPage() {
       console.error('Error loading mind map:', error);
       toast.error('Failed to load mind map');
     }
-  };
+  }, [router]);
 
-  const handleUpdateMindMap = async (updatedMindMap: any) => {
+  const handleUpdateMindMap = async (updatedMindMap: MindMap) => {
     try {
       const response = await fetch('/api/mindmaps', {
         method: 'PUT',
@@ -156,20 +200,18 @@ export default function MindMapsPage() {
 
   const handleDeleteMindMap = async (mindmapId: string) => {
     try {
-      const response = await fetch(`/api/mindmaps?id=${mindmapId}`, {
+      const response = await fetch(`/api/mind-maps/${mindmapId}`, {
         method: 'DELETE',
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success('Mind map deleted successfully!');
+      if (response.ok) {
+        await fetchMindMaps();
         if (selectedMindMap?.mindmapId === mindmapId) {
           setSelectedMindMap(null);
         }
-        await fetchMindMaps();
+        toast.success('Mind map deleted successfully!');
       } else {
-        toast.error(data.error || 'Failed to delete mind map');
+        toast.error('Failed to delete mind map');
       }
     } catch (error) {
       console.error('Error deleting mind map:', error);
@@ -177,40 +219,10 @@ export default function MindMapsPage() {
     }
   };
 
-  const handleExportMindMap = async (format: 'pdf' | 'png' | 'svg' | 'json') => {
-    if (!selectedMindMap) return;
-
-    try {
-      // This would be implemented with a proper export library
-      toast.info(`Exporting mind map as ${format.toUpperCase()}...`);
-
-      if (format === 'json') {
-        // Export as JSON
-        const dataStr = JSON.stringify(selectedMindMap, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        const exportFileDefaultName = `${selectedMindMap.title}.json`;
-
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
-
-        toast.success('Mind map exported successfully!');
-      } else {
-        // For PDF, PNG, SVG exports, we'd need to implement canvas/SVG conversion
-        toast.info('Advanced export formats coming soon!');
-      }
-    } catch (error) {
-      console.error('Error exporting mind map:', error);
-      toast.error('Failed to export mind map');
-    }
-  };
-
   const filteredMindMaps = mindMaps.filter(mindMap => {
     const matchesSearch = mindMap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mindMap.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterLayout === 'all' || mindMap.layout === filterLayout;
-    return matchesSearch && matchesFilter;
+    return matchesSearch;
   });
 
   // load mind map from ?id= param on initial render if not selected
@@ -218,12 +230,15 @@ export default function MindMapsPage() {
     const id = searchParams.get('id');
     if (id) {
       if (!selectedMindMap || selectedMindMap.mindmapId !== id) {
-        handleSelectMindMap({ mindmapId: id } as any);
+        const mindMapToSelect = mindMaps.find(m => m.mindmapId === id);
+        if (mindMapToSelect) {
+          handleSelectMindMap(mindMapToSelect);
+        }
       }
     } else {
       setSelectedMindMap(null);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedMindMap, mindMaps, handleSelectMindMap]);
 
   if (!isLoaded) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -270,15 +285,16 @@ export default function MindMapsPage() {
               )}
             </div>
             <div className="flex items-center space-x-4">
-              {selectedMindMap && (
+              {!selectedMindMap && (
                 <Button
-                  onClick={() => setShowSidebar(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-white/20 dark:border-gray-600/20 hover:bg-white/10 dark:hover:bg-gray-800/10 text-gray-700 dark:text-gray-300"
+                  onClick={() => {
+                    setShowCreator(true);
+                    router.push('/tools/mind-maps?create=true');
+                  }}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
                 >
-                  <List className="h-4 w-4 mr-1" />
-                  Switch Mind Map
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Mind Map
                 </Button>
               )}
               {/* Header new mind map button removed to avoid redundancy */}
@@ -323,7 +339,7 @@ export default function MindMapsPage() {
 
               <MindMapList
                 mindMaps={filteredMindMaps}
-                selectedMindMap={selectedMindMap}
+                selectedMindMap={selectedMindMap as MindMapSummary | null}
                 onSelectMindMap={handleSelectMindMap}
                 onDeleteMindMap={handleDeleteMindMap}
                 isLoading={isLoading}
@@ -361,45 +377,13 @@ export default function MindMapsPage() {
                         <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm">{selectedMindMap.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        onClick={() => handleExportMindMap('json')}
-                        variant="outline"
-                        size="sm"
-                        className="border-white/20 dark:border-gray-600/20 hover:bg-white/10 dark:hover:bg-gray-800/10 text-gray-900 dark:text-white"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Export
-                      </Button>
-                      <Button
-                        onClick={() => toast.info('Sharing feature coming soon!')}
-                        variant="outline"
-                        size="sm"
-                        className="border-white/20 dark:border-gray-600/20 hover:bg-white/10 dark:hover:bg-gray-800/10 text-gray-900 dark:text-white"
-                      >
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center">
-                      <Brain className="h-4 w-4 mr-1" />
-                      {selectedMindMap.nodeCount} nodes
-                    </span>
-                    <span>{selectedMindMap.connectionCount} connections</span>
-                    <span>Layout: {selectedMindMap.layout}</span>
-                    <span>
-                      {selectedMindMap.contentSource === 'ai_generated' ? 'AI Generated' : 'User Created'}
-                    </span>
                   </div>
                 </div>
 
                 {/* Mind Map Visualization - Full Width */}
                 <div className="bg-white/10 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 dark:border-gray-600/20 p-2">
                   <MindMapVisualization
-                    mindMap={selectedMindMap as any}
+                    mindMap={selectedMindMap}
                     onUpdateMindMap={handleUpdateMindMap}
                   />
                 </div>
@@ -410,7 +394,7 @@ export default function MindMapsPage() {
                   <Brain className="h-12 w-12 text-purple-600 dark:text-purple-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Create Your First Mind Map
+                  Create Your Own Personalized Mind Map
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
                   Transform your ideas into visual mind maps with AI assistance.

@@ -70,9 +70,6 @@ export default function CommunityPage() {
   const [pollQuestion, setPollQuestion] = useState('');
   const [shareDropdownOpen, setShareDropdownOpen] = useState<string | null>(null);
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteLink, setInviteLink] = useState<string>('');
-  const [generatingInvite, setGeneratingInvite] = useState(false);
   const [showFullPostModal, setShowFullPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -195,42 +192,7 @@ export default function CommunityPage() {
     }
   };
 
-  // Handle generating invite link
-  const handleGenerateInvite = async () => {
-    try {
-      setGeneratingInvite(true);
-      const response = await fetch('/api/community/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'generate' }),
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setInviteLink(data.inviteLink);
-        setShowInviteModal(true);
-      } else {
-        throw new Error('Failed to generate invite');
-      }
-    } catch (error) {
-      console.error('Error generating invite:', error);
-      setError('Failed to generate invite link. Please try again.');
-    } finally {
-      setGeneratingInvite(false);
-    }
-  };
-
-  const copyInviteLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      alert('Invite link copied to clipboard!');
-    } catch (error) {
-      console.error('Error copying invite link:', error);
-      alert('Failed to copy link. Please copy it manually.');
-    }
-  };
 
   // Handle escape key to close modal
   const resetModalState = useCallback(() => {
@@ -773,12 +735,7 @@ export default function CommunityPage() {
                   >
                     Profile
                   </button>
-                  <button
-                    onClick={() => router.push('/dashboard')}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
-                  >
-                    Dashboard
-                  </button>
+
                   <button className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
                     Settings
                   </button>
@@ -804,16 +761,6 @@ export default function CommunityPage() {
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 text-white bg-blue-500/20 rounded-lg hover:bg-blue-500/30 transition-all duration-200">
                   <MessageCircle className="w-5 h-5 text-blue-400" />
                   <span className="font-medium">Feed</span>
-                </button>
-
-                {/* Invite Friends */}
-                <button
-                  onClick={handleGenerateInvite}
-                  disabled={generatingInvite}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-all duration-200"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  <span className="font-medium">{generatingInvite ? 'Generating...' : 'Invite Friends'}</span>
                 </button>
 
                 {/* Create Group */}
@@ -1326,7 +1273,7 @@ export default function CommunityPage() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                         <button
                           onClick={() => handleStarPost(post.id)}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${post.userStarred
@@ -1335,7 +1282,7 @@ export default function CommunityPage() {
                             }`}
                         >
                           <Heart className={`w-4 h-4 ${post.userStarred ? "fill-current" : ""}`} />
-                          <span>{post.userStarred ? 'Loved' : 'Love'}</span>
+                          <span>Love</span>
                         </button>
 
                         <button
@@ -1349,7 +1296,7 @@ export default function CommunityPage() {
                         <div className="relative">
                           <button
                             onClick={() => setShareDropdownOpen(shareDropdownOpen === post.id ? null : post.id)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300 whitespace-nowrap"
                           >
                             <Share className="w-4 h-4" />
                             <span>Share</span>
@@ -1358,20 +1305,20 @@ export default function CommunityPage() {
 
                           {/* Share Dropdown */}
                           {shareDropdownOpen === post.id && (
-                            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-10">
+                            <div className="absolute bottom-full left-0 mb-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-20">
                               <div className="p-2">
                                 <button
                                   onClick={() => handleShareToTimeline(post.id)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left whitespace-nowrap"
                                 >
-                                  <UserPlus className="w-4 h-4" />
+                                  <UserPlus className="w-4 h-4 flex-shrink-0" />
                                   <span>Share to Timeline</span>
                                 </button>
                                 <button
                                   onClick={() => handleCopyLink(post.id)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left whitespace-nowrap"
                                 >
-                                  <ExternalLink className="w-4 h-4" />
+                                  <ExternalLink className="w-4 h-4 flex-shrink-0" />
                                   <span>Copy Link</span>
                                 </button>
                               </div>
@@ -1937,13 +1884,12 @@ export default function CommunityPage() {
       )}
 
       {/* Invite Friends Modal */}
-      {showInviteModal && (
+      {false && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowInviteModal(false);
-              setInviteLink('');
+              // Modal functionality removed
             }
           }}
         >
@@ -1958,8 +1904,7 @@ export default function CommunityPage() {
               </div>
               <button
                 onClick={() => {
-                  setShowInviteModal(false);
-                  setInviteLink('');
+                  // Modal functionality removed
                 }}
                 className="p-2 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
@@ -1981,7 +1926,7 @@ export default function CommunityPage() {
                 </p>
               </div>
 
-              {inviteLink && (
+              {false && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Share this link:
@@ -1989,12 +1934,12 @@ export default function CommunityPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={inviteLink}
+                      value=""
                       readOnly
                       className="flex-1 px-3 py-2 bg-gray-100 dark:bg-slate-800/60 border border-gray-300 dark:border-slate-700/30 rounded-lg text-sm text-gray-900 dark:text-white"
                     />
                     <button
-                      onClick={copyInviteLink}
+                      onClick={() => {}}
                       className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
                     >
                       Copy
@@ -2044,20 +1989,19 @@ export default function CommunityPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    setShowInviteModal(false);
-                    setInviteLink('');
+                    // Modal functionality removed
                   }}
                   className="flex-1 px-4 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700/50 rounded-lg font-medium transition-all duration-200"
                 >
                   Close
                 </button>
-                {!inviteLink && (
+                {false && (
                   <button
-                    onClick={handleGenerateInvite}
-                    disabled={generatingInvite}
+                    onClick={() => {}}
+                    disabled={false}
                     className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {generatingInvite ? (
+                    {false ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                         <span>Generating...</span>

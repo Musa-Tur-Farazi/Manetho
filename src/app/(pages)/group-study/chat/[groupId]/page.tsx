@@ -455,7 +455,7 @@ export default function GroupStudyChatPage() {
     if (!fileType) return <FileText className="w-4 h-4" />;
 
     if (fileType.startsWith('image/')) {
-      return <Image className="w-4 h-4" alt="Image file" />;
+      return <Image className="w-4 h-4" />;
     }
 
     return <FileText className="w-4 h-4" />;
@@ -818,111 +818,109 @@ export default function GroupStudyChatPage() {
       {/* Main Chat Area */}
       <div className="flex-1 flex min-h-0">
         {/* Members Sidebar - Now shown on the left */}
-        {showMembers && (
-          <div className="w-64 bg-white/95 dark:bg-gray-800/95 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-            {/* Members Section */}
+        <div className="w-64 bg-white/95 dark:bg-gray-800/95 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          {/* Members Section */}
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Members ({members.length})
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {members.map((member) => (
+              <div key={member.userId} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <button
+                  onClick={() => handleProfileClick(member.userId) }
+                  className="relative"
+                >
+                  <img
+                    src={member.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=667eea&color=fff`}
+                    alt={member.fullName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  {member.isOnline && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                  )}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => handleProfileClick(member.userId) }
+                    className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
+                  >
+                    {member.fullName}
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {member.role === 'organizer' ? 'Organizer' : 'Member'}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Shared Resources Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700">
             <div className="p-3 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Members ({members.length})
+                <FolderOpen className="w-4 h-4" />
+                Shared Resources ({sharedResources.length})
               </h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {members.map((member) => (
-                <div key={member.userId} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <button
-                    onClick={() => handleProfileClick(member.userId, member.fullName)}
-                    className="relative"
-                  >
-                    <img
-                      src={member.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.fullName)}&background=667eea&color=fff`}
-                      alt={member.fullName}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    {member.isOnline && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-                    )}
-                  </button>
+            <div className="max-h-64 overflow-y-auto p-3 space-y-2">
+              {sharedResources.map((resource) => (
+                <div key={resource.resourceId} className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div className="flex-shrink-0 mt-1">
+                    {getFileIcon(resource.fileType)}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => handleProfileClick(member.userId, member.fullName)}
+                      onClick={() => window.open(resource.fileUrl, '_blank')}
                       className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
+                      title={resource.fileName}
                     >
-                      {member.fullName}
+                      {resource.fileName}
                     </button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {member.role === 'organizer' ? 'Organizer' : 'Member'}
-                    </p>
+                    {resource.description && (
+                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate" title={resource.description}>
+                        {resource.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {resource.uploaderName}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {Math.round(resource.fileSize / 1024)} KB
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => window.open(resource.fileUrl, '_blank')}
+                      className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                      title="Download"
+                    >
+                      <Download className="w-3 h-3" />
+                    </button>
+                    {(groupInfo?.userRole === 'organizer' || members.find(m => m.isCurrentUser)?.fullName === resource.uploaderName) && (
+                      <button
+                        onClick={() => deleteSharedResource(resource.resourceId)}
+                        className="p-1 text-red-500 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Shared Resources Section */}
-            <div className="border-t border-gray-200 dark:border-gray-700">
-              <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4" />
-                  Shared Resources ({sharedResources.length})
-                </h3>
-              </div>
-              <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-                {sharedResources.map((resource) => (
-                  <div key={resource.resourceId} className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <div className="flex-shrink-0 mt-1">
-                      {getFileIcon(resource.fileType)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <button
-                        onClick={() => window.open(resource.fileUrl, '_blank')}
-                        className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate block w-full text-left"
-                        title={resource.fileName}
-                      >
-                        {resource.fileName}
-                      </button>
-                      {resource.description && (
-                        <p className="text-xs text-gray-600 dark:text-gray-300 truncate" title={resource.description}>
-                          {resource.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {resource.uploaderName}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {Math.round(resource.fileSize / 1024)} KB
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => window.open(resource.fileUrl, '_blank')}
-                        className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        title="Download"
-                      >
-                        <Download className="w-3 h-3" />
-                      </button>
-                      {(groupInfo?.userRole === 'organizer' || members.find(m => m.isCurrentUser)?.fullName === resource.uploaderName) && (
-                        <button
-                          onClick={() => deleteSharedResource(resource.resourceId)}
-                          className="p-1 text-red-500 hover:text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {sharedResources.length === 0 && (
-                  <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs">
-                    No shared resources yet
-                  </div>
-                )}
-              </div>
+              {sharedResources.length === 0 && (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs">
+                  No shared resources yet
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         <div className="flex-1 flex flex-col">
           {/* Messages */}
@@ -948,7 +946,7 @@ export default function GroupStudyChatPage() {
                       {!isOwn && (
                         <div className="flex-shrink-0">
                           <button
-                            onClick={() => handleProfileClick(message.senderId, message.senderName)}
+                            onClick={() => handleProfileClick(message.senderId)}
                             className="hover:scale-110 transition-transform duration-300"
                           >
                             <img
@@ -964,7 +962,7 @@ export default function GroupStudyChatPage() {
                         {/* Sender name and time */}
                         <div className={`flex items-center gap-2 mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                           <button
-                            onClick={() => handleProfileClick(message.senderId, message.senderName)}
+                            onClick={() => handleProfileClick(message.senderId)}
                             className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                           >
                             {isOwn ? 'You' : message.senderName}

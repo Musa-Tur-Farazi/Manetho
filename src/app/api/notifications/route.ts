@@ -1,37 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { notificationsTable } from '@/db/schema';
+import { notificationsTable, usersTable } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // First, get the internal userId from the usersTable using clerkId
+    const user = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (user.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userId = user[0].userId;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = db
+    const whereCondition = type
+      ? and(eq(notificationsTable.userId, userId), eq(notificationsTable.type, type as any))
+      : eq(notificationsTable.userId, userId);
+
+    const notifications = await db
       .select()
       .from(notificationsTable)
-      .where(eq(notificationsTable.userId, userId))
+      .where(whereCondition)
       .orderBy(desc(notificationsTable.createdAt))
       .limit(limit)
       .offset(offset);
-
-    if (type) {
-      query = query.where(and(
-        eq(notificationsTable.userId, userId),
-        eq(notificationsTable.type, type as any)
-      ));
-    }
-
-    const notifications = await query;
 
     return NextResponse.json({
       notifications,
@@ -49,8 +57,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -64,7 +72,7 @@ export async function POST(request: NextRequest) {
     const notification = await db
       .insert(notificationsTable)
       .values({
-        userId: targetUserId,
+        userId: targetUserId, // This should already be a UUID from the caller
         type: type as any,
         title,
         message,
@@ -89,10 +97,23 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // First, get the internal userId from the usersTable using clerkId
+    const user = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (user.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userId = user[0].userId;
 
     const body = await request.json();
     const { notificationId, isRead } = body;

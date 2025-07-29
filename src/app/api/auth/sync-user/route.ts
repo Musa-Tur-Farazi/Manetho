@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { syncUserToDatabase } from '@/lib/user-sync';
 
 export async function POST() {

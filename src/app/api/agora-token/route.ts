@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Token configuration
+    const account = userId; // Use userId as account
     const uid = 0; // Use 0 for auto-generated UID
     const userRole = role === 'host' ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
     const expirationTimeInSeconds = 3600; // 1 hour
@@ -41,10 +42,11 @@ export async function POST(request: NextRequest) {
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
     // Generate token
-    const token = RtcTokenBuilder.buildTokenWithUid(
+    const token = RtcTokenBuilder.buildTokenWithUserAccount(
       appId,
       appCertificate,
       channelName,
+      account,
       uid,
       userRole,
       privilegeExpiredTs
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
       token,
       appId,
       channelName,
-      uid,
+      account,
       role: role,
       expiresAt: new Date(privilegeExpiredTs * 1000).toISOString(),
       expiresIn: expirationTimeInSeconds

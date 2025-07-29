@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { sharedResourcesTable, studyGroupsTable, studyGroupMembersTable, usersTable } from '@/db/schema';
+import { sharedResourcesTable, studyGroupMembersTable, usersTable } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { currentUser } from '@clerk/nextjs/server';
 

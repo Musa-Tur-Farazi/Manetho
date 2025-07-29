@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+// Removed unused import
 import {
   BookOpen,
   Plus,
@@ -10,27 +10,24 @@ import {
   Edit,
   Trash2,
   Play,
-  BarChart3,
   Star,
-  Clock,
   Target,
-  Zap,
   CheckCircle,
   XCircle,
   RotateCcw,
-  Settings,
-  Filter,
   Search,
   Sparkles,
   BookMarked,
-  TrendingUp,
-  Award,
   Eye,
-  EyeOff
+  EyeOff,
+  X,
+  Save,
+  Settings,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "@/components/theme/ThemeProvider";
+// Removed unused import
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 
@@ -50,6 +47,20 @@ interface Flashcard {
   userRating?: number;
   createdAt: string;
   updatedAt: string;
+  deckId?: string;
+  deckName?: string;
+  deckColor?: string;
+}
+
+interface FlashcardDeck {
+  deckId: string;
+  name: string;
+  description?: string;
+  color: string;
+  isPublic: boolean;
+  cardCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface StudySession {
@@ -61,16 +72,40 @@ interface StudySession {
   timeSpent: number;
 }
 
+interface CreateFlashcardForm {
+  question: string;
+  answer: string;
+  hint: string;
+  explanation: string;
+  difficulty: 'beginner';
+  deckId: string;
+}
+
+interface CreateDeckForm {
+  name: string;
+  description: string;
+  color: string;
+  isPublic: boolean;
+}
+
+interface AIGenerateForm {
+  topic: string;
+  subject: string;
+  difficulty: 'beginner';
+  count: number;
+  additionalContext: string;
+}
+
 const FlashcardPage = () => {
-  const { user } = useUser();
-  const { theme } = useTheme();
+  // Removed unused variables
   const searchParams = useSearchParams();
   const router = useRouter();
 
   // State management
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [decks, setDecks] = useState<FlashcardDeck[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'library' | 'create' | 'generate' | 'study'>('library');
+  const [view, setView] = useState<'library' | 'create' | 'generate' | 'study' | 'manage-decks'>('library');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'difficulty' | 'performance'>('recent');
@@ -81,8 +116,33 @@ const FlashcardPage = () => {
     answer: '',
     hint: '',
     explanation: '',
-    difficulty: 'beginner' as const
+    difficulty: 'beginner' as const,
+    deckId: ''
   });
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Deck management state
+  const [showCreateDeckModal, setShowCreateDeckModal] = useState(false);
+  const [createDeckForm, setCreateDeckForm] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6',
+    isPublic: false
+  });
+  const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const [showMoveCardsModal, setShowMoveCardsModal] = useState(false);
+  const [selectedDeckForMove, setSelectedDeckForMove] = useState<string>('');
+  const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
+  const [isMovingCards, setIsMovingCards] = useState(false);
+  const [showEditDeckModal, setShowEditDeckModal] = useState(false);
+  const [editingDeck, setEditingDeck] = useState<FlashcardDeck | null>(null);
+  const [editDeckForm, setEditDeckForm] = useState({
+    name: '',
+    description: '',
+    color: '#3B82F6',
+    isPublic: false
+  });
+  const [isUpdatingDeck, setIsUpdatingDeck] = useState(false);
 
   // AI generation state
   const [aiForm, setAiForm] = useState({
@@ -111,15 +171,31 @@ const FlashcardPage = () => {
       } else {
         toast.error('Failed to fetch flashcards');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error fetching flashcards');
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch decks
+  const fetchDecks = async () => {
+    try {
+      const response = await fetch('/api/flashcards/decks');
+      if (response.ok) {
+        const deckData = await response.json();
+        setDecks(deckData);
+      } else {
+        toast.error('Failed to fetch decks');
+      }
+    } catch {
+      toast.error('Error fetching decks');
+    }
+  };
+
   useEffect(() => {
     fetchFlashcards();
+    fetchDecks();
   }, []);
 
   // Handle URL parameters
@@ -127,6 +203,7 @@ const FlashcardPage = () => {
     const createParam = searchParams.get('create');
     const generateParam = searchParams.get('generate');
     const studyParam = searchParams.get('study');
+    const manageDecksParam = searchParams.get('manage-decks');
 
     if (createParam === 'true') {
       setView('create');
@@ -134,10 +211,174 @@ const FlashcardPage = () => {
       setView('generate');
     } else if (studyParam === 'true') {
       setView('study');
+    } else if (manageDecksParam === 'true') {
+      setView('manage-decks');
     } else {
       setView('library');
     }
   }, [searchParams]);
+
+  // Create deck
+  const createDeck = async () => {
+    if (!createDeckForm.name.trim()) {
+      toast.error('Deck name is required');
+      return;
+    }
+
+    if (isCreatingDeck) {
+      return; // Prevent duplicate submissions
+    }
+
+    setIsCreatingDeck(true);
+    try {
+      const response = await fetch('/api/flashcards/decks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createDeckForm)
+      });
+
+      if (response.ok) {
+        const newDeck = await response.json();
+        setDecks(prev => [newDeck, ...prev]);
+        setCreateDeckForm({ name: '', description: '', color: '#3B82F6', isPublic: false });
+        toast.success('Deck created successfully!');
+        setShowCreateDeckModal(false);
+      } else {
+        toast.error('Failed to create deck');
+      }
+    } catch {
+      toast.error('Error creating deck');
+    } finally {
+      setIsCreatingDeck(false);
+    }
+  };
+
+  // Delete deck
+  const deleteDeck = async (deckId: string, deckName: string) => {
+    const confirmed = window.confirm(`Are you sure you want to delete "${deckName}"?\n\nAll flashcards in this deck will be moved to ungrouped.`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/flashcards/decks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deckId })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setDecks(prev => prev.filter(deck => deck.deckId !== deckId));
+        toast.success(`${result.deckName} deleted successfully! Cards moved to ungrouped.`);
+        fetchFlashcards(); // Refresh flashcards to show updated grouping
+      } else {
+        toast.error('Failed to delete deck');
+      }
+    } catch {
+      toast.error('Error deleting deck');
+    }
+  };
+
+  // Edit deck
+  const startEditDeck = (deck: FlashcardDeck) => {
+    setEditingDeck(deck);
+    setEditDeckForm({
+      name: deck.name,
+      description: deck.description || '',
+      color: deck.color,
+      isPublic: deck.isPublic
+    });
+    setShowEditDeckModal(true);
+  };
+
+  // Update deck
+  const updateDeck = async () => {
+    if (!editDeckForm.name.trim()) {
+      toast.error('Deck name is required');
+      return;
+    }
+
+    if (!editingDeck) {
+      return;
+    }
+
+    if (isUpdatingDeck) {
+      return; // Prevent duplicate submissions
+    }
+
+    setIsUpdatingDeck(true);
+    try {
+      const response = await fetch('/api/flashcards/decks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deckId: editingDeck.deckId,
+          ...editDeckForm
+        })
+      });
+
+      if (response.ok) {
+        const updatedDeck = await response.json();
+        setDecks(prev => prev.map(deck => 
+          deck.deckId === editingDeck.deckId ? updatedDeck : deck
+        ));
+        toast.success('Deck updated successfully!');
+        setShowEditDeckModal(false);
+        setEditingDeck(null);
+      } else {
+        toast.error('Failed to update deck');
+      }
+    } catch {
+      toast.error('Error updating deck');
+    } finally {
+      setIsUpdatingDeck(false);
+    }
+  };
+
+  // Move selected cards to deck
+  const moveCardsToDecks = async () => {
+    if (selectedCards.size === 0) {
+      toast.error('Please select cards to move');
+      return;
+    }
+
+    if (isMovingCards) {
+      return;
+    }
+
+    setIsMovingCards(true);
+    try {
+      const movePromises = Array.from(selectedCards).map(cardId =>
+        fetch('/api/flashcards/cards', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            cardId, 
+            deckId: selectedDeckForMove || null 
+          })
+        })
+      );
+
+      const results = await Promise.all(movePromises);
+      const successCount = results.filter(r => r.ok).length;
+
+      if (successCount === selectedCards.size) {
+        toast.success(`${successCount} cards moved successfully!`);
+        setSelectedCards(new Set());
+        setShowMoveCardsModal(false);
+        fetchFlashcards();
+        fetchDecks();
+      } else {
+        toast.error(`Only ${successCount} of ${selectedCards.size} cards moved successfully`);
+      }
+    } catch {
+      toast.error('Error moving cards');
+    } finally {
+      setIsMovingCards(false);
+    }
+  };
 
   // Create flashcard manually
   const createFlashcard = async () => {
@@ -146,24 +387,35 @@ const FlashcardPage = () => {
       return;
     }
 
+    if (isCreating) {
+      return; // Prevent duplicate submissions
+    }
+
+    setIsCreating(true);
     try {
       const response = await fetch('/api/flashcards/cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm)
+        body: JSON.stringify({
+          ...createForm,
+          deckId: createForm.deckId || null
+        })
       });
 
       if (response.ok) {
         const newCard = await response.json();
         setFlashcards(prev => [newCard, ...prev]);
-        setCreateForm({ question: '', answer: '', hint: '', explanation: '', difficulty: 'beginner' });
+        setCreateForm({ question: '', answer: '', hint: '', explanation: '', difficulty: 'beginner', deckId: '' });
         toast.success('Flashcard created successfully!');
         setView('library');
+        fetchDecks(); // Refresh deck card counts
       } else {
         toast.error('Failed to create flashcard');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error creating flashcard');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -192,7 +444,7 @@ const FlashcardPage = () => {
         const error = await response.json();
         toast.error(error.error || 'Failed to generate flashcards');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error generating flashcards');
     } finally {
       setIsGenerating(false);
@@ -212,7 +464,7 @@ const FlashcardPage = () => {
       } else {
         toast.error('Failed to delete flashcard');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error deleting flashcard');
     }
   };
@@ -236,7 +488,7 @@ const FlashcardPage = () => {
       } else {
         toast.error('Failed to update flashcard');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error updating flashcard');
     }
   };
@@ -321,6 +573,26 @@ const FlashcardPage = () => {
       }
     });
 
+  // Group flashcards by deck
+  const groupedFlashcards = filteredFlashcards.reduce((groups, card) => {
+    const deckId = card.deckId || 'ungrouped';
+    const deckName = card.deckName || 'Ungrouped Cards';
+    const deckColor = card.deckColor || '#6B7280';
+    
+    if (!groups[deckId]) {
+      groups[deckId] = {
+        deckId,
+        deckName,
+        deckColor,
+        cards: []
+      };
+    }
+    groups[deckId].cards.push(card);
+    return groups;
+  }, {} as Record<string, { deckId: string; deckName: string; deckColor: string; cards: Flashcard[] }>);
+
+  const deckGroups = Object.values(groupedFlashcards);
+
   // Get study statistics
   const getStudyStats = () => {
     const totalCards = flashcards.length;
@@ -398,6 +670,15 @@ const FlashcardPage = () => {
                 >
                   AI Generate
                 </button>
+                <button
+                  onClick={() => setView('manage-decks')}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${view === 'manage-decks'
+                    ? 'bg-white/40 dark:bg-gray-600/40 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                >
+                  Manage Decks
+                </button>
               </div>
             </div>
           </div>
@@ -469,7 +750,7 @@ const FlashcardPage = () => {
 
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
+                      onChange={(e) => setSortBy(e.target.value as 'recent' | 'difficulty' | 'performance')}
                       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="recent">Most Recent</option>
@@ -490,6 +771,16 @@ const FlashcardPage = () => {
                   </Button>
 
                   <Button
+                    onClick={() => setShowMoveCardsModal(true)}
+                    disabled={filteredFlashcards.length === 0}
+                    variant="outline"
+                    className="border-indigo-500 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-400 dark:text-indigo-400 dark:hover:bg-indigo-950"
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    Move Cards ({selectedCards.size})
+                  </Button>
+
+                  <Button
                     onClick={() => startStudySession(flashcards.filter(card => card.needsReview))}
                     disabled={stats.needsReview === 0}
                     className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all duration-300"
@@ -502,46 +793,75 @@ const FlashcardPage = () => {
 
               {/* Flashcards Grid */}
               {filteredFlashcards.length === 0 ? (
-                <div className="text-center py-16">
-                  <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {flashcards.length === 0 ? 'No flashcards yet' : 'No flashcards match your search'}
-                  </h3>
+                <div className="text-center py-12">
+                  <BookOpen className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No flashcards found</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    {flashcards.length === 0
-                      ? 'Create your first flashcard or generate some with AI to get started!'
-                      : 'Try adjusting your search or filter criteria'
+                    {flashcards.length === 0 
+                      ? "Create your first flashcard to get started with studying"
+                      : "Try adjusting your search or filters to find flashcards"
                     }
                   </p>
-                  {flashcards.length === 0 && (
-                    <div className="flex gap-4 justify-center">
-                      <Button
-                        onClick={() => setView('create')}
-                        className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Flashcard
-                      </Button>
-                      <Button
-                        onClick={() => setView('generate')}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300"
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        AI Generate
-                      </Button>
-                    </div>
-                  )}
+                  <Button
+                    onClick={() => {
+                      setView('create');
+                      router.push('/tools/flashcards?create=true');
+                    }}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Your First Flashcard
+                  </Button>
                 </div>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredFlashcards.map((card) => (
-                    <FlashcardItem
-                      key={card.cardId}
-                      card={card}
-                      onEdit={setEditingCard}
-                      onDelete={deleteFlashcard}
-                      onStudy={() => startStudySession([card])}
-                    />
+                <div className="space-y-8">
+                  {deckGroups.map((group) => (
+                    <div key={group.deckId} className="bg-white/5 dark:bg-gray-800/20 rounded-xl p-6 border border-gray-200/30 dark:border-gray-700/30">
+                      {/* Deck Header */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <div 
+                          className="w-4 h-4 rounded-full"
+                          style={{ backgroundColor: group.deckColor }}
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {group.deckName}
+                        </h3>
+                        <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm px-2 py-1 rounded-full">
+                          {group.cards.length} cards
+                        </span>
+                        <Button
+                          onClick={() => startStudySession(group.cards)}
+                          size="sm"
+                          className="ml-auto bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
+                        >
+                          <Play className="w-4 h-4 mr-1" />
+                          Study Deck
+                        </Button>
+                      </div>
+                      
+                      {/* Deck Cards */}
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {group.cards.map((card) => (
+                          <FlashcardItem
+                            key={card.cardId}
+                            card={card}
+                            onEdit={setEditingCard}
+                            onDelete={deleteFlashcard}
+                            onStudy={() => startStudySession([card])}
+                            onToggleSelect={(cardId) => {
+                              const newSelected = new Set(selectedCards);
+                              if (newSelected.has(cardId)) {
+                                newSelected.delete(cardId);
+                              } else {
+                                newSelected.add(cardId);
+                              }
+                              setSelectedCards(newSelected);
+                            }}
+                            isSelected={selectedCards.has(card.cardId)}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -561,6 +881,8 @@ const FlashcardPage = () => {
                 setForm={setCreateForm}
                 onSubmit={createFlashcard}
                 onCancel={() => setView('library')}
+                isCreating={isCreating}
+                decks={decks}
               />
             </motion.div>
           )}
@@ -605,6 +927,24 @@ const FlashcardPage = () => {
               />
             </motion.div>
           )}
+
+          {view === 'manage-decks' && (
+            <motion.div
+              key="manage-decks"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DeckManagementView
+                decks={decks}
+                onCreateDeck={() => setShowCreateDeckModal(true)}
+                onRefreshDecks={fetchDecks}
+                onDeleteDeck={deleteDeck}
+                onEditDeck={startEditDeck}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -616,16 +956,61 @@ const FlashcardPage = () => {
           onCancel={() => setEditingCard(null)}
         />
       )}
+
+      {/* Create Deck Modal */}
+      {showCreateDeckModal && (
+        <CreateDeckModal
+          form={createDeckForm}
+          setForm={setCreateDeckForm}
+          onSubmit={createDeck}
+          onCancel={() => setShowCreateDeckModal(false)}
+          isCreating={isCreatingDeck}
+        />
+      )}
+
+      {/* Move Cards Modal */}
+      {showMoveCardsModal && (
+        <MoveCardsModal
+          cards={flashcards}
+          decks={decks}
+          selectedCards={selectedCards}
+          onClose={() => {
+            setShowMoveCardsModal(false);
+            setSelectedCards(new Set());
+          }}
+          onMoveCards={moveCardsToDecks}
+          selectedDeck={selectedDeckForMove}
+          setSelectedDeck={setSelectedDeckForMove}
+          isMoving={isMovingCards}
+        />
+      )}
+
+      {/* Edit Deck Modal */}
+      {showEditDeckModal && editingDeck && (
+        <EditDeckModal
+          deck={editingDeck}
+          form={editDeckForm}
+          setForm={setEditDeckForm}
+          onSubmit={updateDeck}
+          onCancel={() => {
+            setShowEditDeckModal(false);
+            setEditingDeck(null);
+          }}
+          isUpdating={isUpdatingDeck}
+        />
+      )}
     </div>
   );
 };
 
 // Flashcard Item Component
-const FlashcardItem = ({ card, onEdit, onDelete, onStudy }: {
+const FlashcardItem = ({ card, onEdit, onDelete, onStudy, onToggleSelect, isSelected }: {
   card: Flashcard;
   onEdit: (card: Flashcard) => void;
   onDelete: (cardId: string) => void;
   onStudy: () => void;
+  onToggleSelect?: (cardId: string) => void;
+  isSelected?: boolean;
 }) => {
   const [showAnswer, setShowAnswer] = useState(false);
   const accuracy = card.timesReviewed > 0 ? (card.correctAnswers / card.timesReviewed) * 100 : 0;
@@ -640,33 +1025,38 @@ const FlashcardItem = ({ card, onEdit, onDelete, onStudy }: {
   };
 
   return (
-    <div className="bg-white/5 dark:bg-gray-800/5 backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-gray-600/20 hover:bg-white/10 dark:hover:bg-gray-800/10 hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-400/30 transition-all duration-300 relative overflow-hidden group">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="relative p-6">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(card.difficulty)}`}>
-              {card.difficulty}
-            </span>
-            {card.contentSource === 'ai_generated' && (
-              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            )}
-            {card.needsReview && (
-              <span className="px-2 py-1 bg-orange-500/20 text-orange-100 border border-orange-500/30 shadow-orange-500/20 shadow-sm rounded-full text-xs font-medium">
-                Review
-              </span>
-            )}
+    <div className={`bg-white/10 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/30 dark:border-gray-700/30 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}>
+      <div className="p-4">
+        {onToggleSelect && (
+          <div className="flex justify-end mb-2">
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={() => onToggleSelect(card.cardId)}
+              className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
           </div>
-          <div className="flex items-center space-x-1">
+        )}
+        
+        <div className="flex items-center justify-between mb-3">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${card.difficulty === 'beginner' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+            card.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+              'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+            }`}>
+            {card.difficulty}
+          </span>
+          <div className="flex gap-1">
             <button
               onClick={() => onEdit(card)}
-              className="p-1 text-gray-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors hover:bg-indigo-500/10 rounded-md"
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              title="Edit flashcard"
             >
               <Edit className="w-4 h-4" />
             </button>
             <button
               onClick={() => onDelete(card.cardId)}
-              className="p-1 text-gray-400 hover:text-rose-400 dark:hover:text-rose-300 transition-colors hover:bg-rose-500/10 rounded-md"
+              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+              title="Delete flashcard"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -719,11 +1109,13 @@ const FlashcardItem = ({ card, onEdit, onDelete, onStudy }: {
 };
 
 // Create Flashcard Form Component
-const CreateFlashcardForm = ({ form, setForm, onSubmit, onCancel }: {
-  form: any;
-  setForm: (form: any) => void;
+const CreateFlashcardForm = ({ form, setForm, onSubmit, onCancel, isCreating, decks }: {
+  form: CreateFlashcardForm;
+  setForm: (form: CreateFlashcardForm) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  isCreating: boolean;
+  decks: FlashcardDeck[];
 }) => {
   return (
     <div className="max-w-4xl mx-auto">
@@ -791,7 +1183,7 @@ const CreateFlashcardForm = ({ form, setForm, onSubmit, onCancel }: {
             </label>
             <select
               value={form.difficulty}
-              onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+              onChange={() => setForm({ ...form, difficulty: 'beginner' })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="beginner">Beginner</option>
@@ -800,18 +1192,38 @@ const CreateFlashcardForm = ({ form, setForm, onSubmit, onCancel }: {
             </select>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Deck
+            </label>
+            <select
+              value={form.deckId}
+              onChange={(e) => setForm({ ...form, deckId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">Select a deck</option>
+              {decks.map((deck) => (
+                <option key={deck.deckId} value={deck.deckId}>
+                  {deck.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex gap-4 pt-4">
             <Button
               onClick={onSubmit}
-              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300"
+              disabled={isCreating}
+              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 disabled:opacity-50"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create Flashcard
+              {isCreating ? 'Creating...' : 'Create Flashcard'}
             </Button>
             <Button
               onClick={onCancel}
               variant="outline"
               className="flex-1"
+              disabled={isCreating}
             >
               Cancel
             </Button>
@@ -824,8 +1236,8 @@ const CreateFlashcardForm = ({ form, setForm, onSubmit, onCancel }: {
 
 // AI Generate Form Component
 const AIGenerateForm = ({ form, setForm, onSubmit, onCancel, isGenerating }: {
-  form: any;
-  setForm: (form: any) => void;
+  form: AIGenerateForm;
+  setForm: (form: AIGenerateForm) => void;
   onSubmit: () => void;
   onCancel: () => void;
   isGenerating: boolean;
@@ -877,7 +1289,7 @@ const AIGenerateForm = ({ form, setForm, onSubmit, onCancel, isGenerating }: {
               </label>
               <select
                 value={form.difficulty}
-                onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+                onChange={() => setForm({ ...form, difficulty: 'beginner' })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="beginner">Beginner</option>
@@ -930,7 +1342,7 @@ const AIGenerateForm = ({ form, setForm, onSubmit, onCancel, isGenerating }: {
                 </>
               ) : (
                 <>
-                  <Brain className="w-4 h-4 mr-2" />
+                  <Wand2 className="w-4 h-4 mr-2" />
                   Generate Flashcards
                 </>
               )}
@@ -1178,7 +1590,7 @@ const EditFlashcardModal = ({ card, onSave, onCancel }: {
               </label>
               <select
                 value={form.difficulty}
-                onChange={(e) => setForm({ ...form, difficulty: e.target.value as any })}
+                onChange={(e) => setForm({ ...form, difficulty: e.target.value as 'beginner' | 'intermediate' | 'advanced' })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
                 <option value="beginner">Beginner</option>
@@ -1219,6 +1631,431 @@ const EditFlashcardModal = ({ card, onSave, onCancel }: {
               onClick={onCancel}
               variant="outline"
               className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Create Deck Modal Component
+const CreateDeckModal = ({ form, setForm, onSubmit, onCancel, isCreating }: {
+  form: CreateDeckForm;
+  setForm: (form: CreateDeckForm) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  isCreating: boolean;
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create New Deck</h2>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Deck Name *
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="e.g., 'JavaScript Basics', 'French Verbs'"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Brief description of the deck..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Deck Color
+            </label>
+            <input
+              type="color"
+              value={form.color}
+              onChange={(e) => setForm({ ...form, color: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="isPublic"
+              checked={form.isPublic}
+              onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+              className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-indigo-600"
+            />
+            <label htmlFor="isPublic" className="text-sm text-gray-700 dark:text-gray-300">
+              Make this deck public
+            </label>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <Button
+              onClick={onSubmit}
+              disabled={isCreating || !form.name.trim()}
+              className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 disabled:opacity-50"
+            >
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Deck
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={onCancel}
+              variant="outline"
+              className="flex-1"
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Deck Management View Component
+const DeckManagementView = ({ decks, onCreateDeck, onRefreshDecks, onDeleteDeck, onEditDeck }: {
+  decks: FlashcardDeck[];
+  onCreateDeck: () => void;
+  onRefreshDecks: () => void;
+  onDeleteDeck: (deckId: string, deckName: string) => void;
+  onEditDeck: (deck: FlashcardDeck) => void;
+}) => {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white/10 dark:bg-gray-800/10 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200/30 dark:border-gray-700/30 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Manage Decks</h2>
+          <Button
+            onClick={onCreateDeck}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Deck
+          </Button>
+        </div>
+
+        {decks.length === 0 ? (
+          <div className="text-center py-12">
+            <BookOpen className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No decks created yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Create your first deck to organize your flashcards
+            </p>
+            <Button
+              onClick={onCreateDeck}
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Your First Deck
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {decks.map((deck) => (
+              <div key={deck.deckId} className="bg-white/5 dark:bg-gray-800/5 backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-gray-600/20 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: deck.color }}
+                  />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{deck.name}</h3>
+                </div>
+                
+                {deck.description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{deck.description}</p>
+                )}
+                
+                <div className="flex items-center justify-between mb-4">
+                  <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm px-2 py-1 rounded-full">
+                    {deck.cardCount} cards
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(deck.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white"
+                  >
+                    <Play className="w-4 h-4 mr-1" />
+                    Study
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => onEditDeck(deck)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => onDeleteDeck(deck.deckId, deck.name)}
+                    size="sm"
+                    variant="outline"
+                    className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Move Cards Modal Component
+const MoveCardsModal = ({ cards, decks, selectedCards, onClose, onMoveCards, selectedDeck, setSelectedDeck, isMoving }: {
+  cards: Flashcard[];
+  decks: FlashcardDeck[];
+  selectedCards: Set<string>;
+  onClose: () => void;
+  onMoveCards: () => void;
+  selectedDeck: string;
+  setSelectedDeck: (deckId: string) => void;
+  isMoving: boolean;
+}) => {
+  const selectedCardData = cards.filter(card => selectedCards.has(card.cardId));
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Move {selectedCards.size} Cards
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Move to Deck
+            </label>
+            <select
+              value={selectedDeck}
+              onChange={(e) => setSelectedDeck(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">Ungrouped</option>
+              {decks.map((deck) => (
+                <option key={deck.deckId} value={deck.deckId}>
+                  {deck.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Selected Cards ({selectedCards.size})
+            </h3>
+            <div className="max-h-40 overflow-y-auto space-y-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              {selectedCardData.map((card) => (
+                <div key={card.cardId} className="flex items-center gap-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {card.question}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Currently in: {card.deckName || 'Ungrouped'}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    card.difficulty === 'beginner' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                    card.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                  }`}>
+                    {card.difficulty}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <Button
+              onClick={onMoveCards}
+              disabled={isMoving}
+              className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 disabled:opacity-50"
+            >
+              {isMoving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Moving...
+                </>
+              ) : (
+                <>
+                  <Target className="w-4 h-4 mr-2" />
+                  Move Cards
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1"
+              disabled={isMoving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Deck Modal Component
+const EditDeckModal = ({ deck, form, setForm, onSubmit, onCancel, isUpdating }: {
+  deck: FlashcardDeck;
+  form: CreateDeckForm;
+  setForm: (form: CreateDeckForm) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  isUpdating: boolean;
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl max-w-md w-full">
+        <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Edit Deck: {deck.name}
+            </h2>
+            <button
+              onClick={onCancel}
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Deck Name *
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Enter deck name"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              disabled={isUpdating}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Enter deck description (optional)"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              disabled={isUpdating}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Color
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={form.color}
+                onChange={(e) => setForm({ ...form, color: e.target.value })}
+                className="w-12 h-10 rounded-md border border-gray-300 dark:border-gray-600 cursor-pointer"
+                disabled={isUpdating}
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {form.color}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="editIsPublic"
+              checked={form.isPublic}
+              onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+              className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              disabled={isUpdating}
+            />
+            <label htmlFor="editIsPublic" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+              Make this deck public
+            </label>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <Button
+              onClick={onSubmit}
+              disabled={isUpdating || !form.name.trim()}
+              className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 disabled:opacity-50"
+            >
+              {isUpdating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Update Deck
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={onCancel}
+              variant="outline"
+              className="flex-1"
+              disabled={isUpdating}
             >
               Cancel
             </Button>

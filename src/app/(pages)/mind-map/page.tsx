@@ -426,7 +426,7 @@ export default function MindMapPage() {
     <>
       <PageHeader
         title="Study Mind Map"
-        description="Visualize your study journey and track your progress"
+        subtitle="Visualize your study journey and track your progress"
       />
 
       <div className="mb-8">

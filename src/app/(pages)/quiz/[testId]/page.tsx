@@ -12,23 +12,17 @@ import {
   CheckCircle,
   XCircle,
   Trophy,
-  Star,
   Target,
   Zap,
   Play,
   Pause,
-  RotateCcw,
   Send,
-  Award,
-  TrendingUp,
-  User,
   BookOpen,
   AlertCircle,
   Home,
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Question {
@@ -54,7 +48,11 @@ interface QuizData {
     creatorAvatarUrl: string;
   };
   questions: Question[];
-  userAttempts: any[];
+  userAttempts: Array<{
+    attemptId: string;
+    score: number;
+    timestamp: string;
+  }>;
   userBestScore: number;
   userBestScorePercent: number;
   canTakeQuiz: boolean;
@@ -84,7 +82,7 @@ interface QuizResults {
 export default function QuizGameplayPage() {
   const { testId } = useParams();
   const router = useRouter();
-  const { user } = useUser();
+  // Removed unused variable
 
   // Quiz data
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -118,11 +116,73 @@ export default function QuizGameplayPage() {
   };
 
   // Load quiz data
+  const fetchQuizData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/quiz/${testId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setQuizData(data);
+        setTimeLeft(data.quiz.timeLimit ? data.quiz.timeLimit * 60 : 0);
+        setGamePhase('ready');
+      } else {
+        setError(data.error || 'Failed to load quiz');
+      }
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      setError('Failed to load quiz');
+    } finally {
+      setLoading(false);
+    }
+  }, [testId]);
+
+  const handleSubmitQuiz = useCallback(async () => {
+    if (!quizData || submitting) return;
+
+    setSubmitting(true);
+    setIsActive(false);
+    setGamePhase('finished');
+
+    try {
+      // Convert answers to array format expected by API
+      const answersArray = quizData.questions.map(q => ({
+        questionId: q.questionId,
+        answer: answers[q.questionId] || '',
+        skipped: skippedQuestions.has(q.questionId)
+      }));
+
+      const response = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testId: testId,
+          answers: answersArray,
+          timeSpent: totalTimeSpent,
+          skippedCount: skippedQuestions.size,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResults(data.results);
+        setGamePhase('results');
+      } else {
+        setError(data.error || 'Failed to submit quiz');
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      setError('Failed to submit quiz');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [quizData, submitting, answers, skippedQuestions, testId, totalTimeSpent]);
+
   useEffect(() => {
     if (testId) {
       fetchQuizData();
     }
-  }, [testId]);
+  }, [testId, fetchQuizData]);
 
   // Timer logic
   useEffect(() => {
@@ -141,27 +201,7 @@ export default function QuizGameplayPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, gamePhase]);
-
-  const fetchQuizData = async () => {
-    try {
-      const response = await fetch(`/api/quiz/${testId}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setQuizData(data);
-        setTimeLeft(data.quiz.timeLimit ? data.quiz.timeLimit * 60 : 0);
-        setGamePhase('ready');
-      } else {
-        setError(data.error || 'Failed to load quiz');
-      }
-    } catch (error) {
-      console.error('Error fetching quiz:', error);
-      setError('Failed to load quiz');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isActive, timeLeft, gamePhase, handleSubmitQuiz]);
 
   const startQuiz = () => {
     setGamePhase('playing');
@@ -215,48 +255,6 @@ export default function QuizGameplayPage() {
       if (currentQuestionIndex < (quizData?.questions.length || 0) - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
       }
-    }
-  };
-
-  const handleSubmitQuiz = async () => {
-    if (!quizData || submitting) return;
-
-    setSubmitting(true);
-    setIsActive(false);
-    setGamePhase('finished');
-
-    try {
-      // Convert answers to array format expected by API
-      const answersArray = quizData.questions.map(q => ({
-        questionId: q.questionId,
-        answer: answers[q.questionId] || '',
-        skipped: skippedQuestions.has(q.questionId)
-      }));
-
-      const response = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          testId: testId,
-          answers: answersArray,
-          timeSpent: totalTimeSpent,
-          skippedCount: skippedQuestions.size,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setResults(data.results);
-        setGamePhase('results');
-      } else {
-        setError(data.error || 'Failed to submit quiz');
-      }
-    } catch (error) {
-      console.error('Error submitting quiz:', error);
-      setError('Failed to submit quiz');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -415,7 +413,7 @@ export default function QuizGameplayPage() {
           <Card className="p-8 text-center">
             <Pause className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Quiz Paused</h2>
-            <p className="text-gray-600 mb-6">Take a break. Click resume when you're ready to continue.</p>
+            <p className="text-gray-600 mb-6">Take a break. Click resume when you&apos;re ready to continue.</p>
 
             <div className="flex justify-center space-x-4">
               <Button

@@ -23,7 +23,7 @@ export async function POST(
     console.log("Vote request:", { threadId, optionIndex, userId: authResult.userId });
 
     // Get the user from the database
-    const userResult: any = await db.execute(
+    const userResult = await db.execute(
       sql`SELECT user_id FROM users WHERE clerk_id = ${authResult.userId}`
     );
 
@@ -32,11 +32,11 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const userId = userResult.rows[0].user_id;
+    const userId = userResult.rows[0].user_id as string;
     console.log("Found user ID:", userId);
 
     // Get the current thread with poll data
-    const threadResult: any = await db.execute(
+    const threadResult = await db.execute(
       sql`SELECT poll_votes, poll_options, post_type FROM threads WHERE thread_id = ${threadId}`
     );
 
@@ -45,7 +45,7 @@ export async function POST(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
-    const thread = threadResult.rows[0];
+    const thread = threadResult.rows[0] as Record<string, unknown>;
     console.log("Thread data:", {
       postType: thread.post_type,
       pollOptions: thread.poll_options,
@@ -67,7 +67,7 @@ export async function POST(
     }
 
     // Parse current votes
-    let pollVotes = pollVotesFromDb;
+    const pollVotes = { ...pollVotesFromDb };
     console.log("Current poll votes:", pollVotes);
 
     // Check if user has already voted
@@ -103,7 +103,7 @@ export async function POST(
   } catch (error) {
     console.error("Error voting on poll:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: error.message },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

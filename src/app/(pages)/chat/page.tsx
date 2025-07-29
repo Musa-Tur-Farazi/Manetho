@@ -218,6 +218,12 @@ export default function ChatPage() {
           console.log('📥 Call signal response:', data);
 
           if (data.hasCall && data.callSignal) {
+            // **FIX: Prevent callers from receiving their own call notifications**
+            if (data.callSignal.callerId === currentUserInternalId) {
+              console.log('🚫 Ignoring own call signal - this is the call I initiated');
+              return;
+            }
+
             console.log('📞 INCOMING CALL DETECTED:', data.callSignal);
             console.log('🎯 Setting incoming call state...');
             setIncomingCall(data.callSignal);
@@ -426,7 +432,12 @@ export default function ChatPage() {
       const messageData: {
         recipientId: string;
         content: string;
-        files?: FileUpload[];
+        files?: Array<{
+          fileUrl: string;
+          fileName: string;
+          fileType: string;
+          fileSize: number;
+        }>;
       } = {
         recipientId: selectedChat,
         content: newMessage || '',
@@ -434,7 +445,12 @@ export default function ChatPage() {
 
       // Add file information if files were uploaded
       if (uploadedFiles.length > 0) {
-        messageData.files = uploadedFiles;
+        messageData.files = uploadedFiles.map(file => ({
+          fileUrl: file.url,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        }));
       }
 
       const response = await fetch('/api/community/direct-messages', {
@@ -610,7 +626,12 @@ export default function ChatPage() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadFiles = async (): Promise<string[]> => {
+  const uploadFiles = async (): Promise<Array<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  }>> => {
     if (selectedFiles.length === 0) return [];
 
     setUploadingFiles(true);
@@ -719,12 +740,22 @@ export default function ChatPage() {
   const startVideoCall = async () => {
     if (!selectedUser || !currentUserInternalId) return;
 
+    // **FIX: Prevent calling yourself**
+    if (selectedUser.userId === currentUserInternalId) {
+      console.warn('🚫 Cannot call yourself');
+      alert('You cannot call yourself!');
+      return;
+    }
+
     const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
+    console.log('📹 Starting video call:');
+    console.log('   Caller:', currentUserInternalId);
+    console.log('   Recipient:', selectedUser.userId);
+    console.log('   Channel:', channelName);
 
     // Send call signal to recipient
     try {
-      await fetch('/api/call-signal', {
+      const response = await fetch('/api/call-signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -734,6 +765,14 @@ export default function ChatPage() {
           action: 'initiate'
         })
       });
+
+      if (response.ok) {
+        console.log('✅ Call signal sent successfully');
+      } else {
+        console.error('❌ Failed to send call signal:', response.status);
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      }
     } catch (error) {
       console.error('Failed to send call signal:', error);
     }
@@ -745,12 +784,22 @@ export default function ChatPage() {
   const startAudioCall = async () => {
     if (!selectedUser || !currentUserInternalId) return;
 
+    // **FIX: Prevent calling yourself**
+    if (selectedUser.userId === currentUserInternalId) {
+      console.warn('🚫 Cannot call yourself');
+      alert('You cannot call yourself!');
+      return;
+    }
+
     const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
+    console.log('🎵 Starting audio call:');
+    console.log('   Caller:', currentUserInternalId);
+    console.log('   Recipient:', selectedUser.userId);
+    console.log('   Channel:', channelName);
 
     // Send call signal to recipient
     try {
-      await fetch('/api/call-signal', {
+      const response = await fetch('/api/call-signal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -760,6 +809,14 @@ export default function ChatPage() {
           action: 'initiate'
         })
       });
+
+      if (response.ok) {
+        console.log('✅ Call signal sent successfully');
+      } else {
+        console.error('❌ Failed to send call signal:', response.status);
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      }
     } catch (error) {
       console.error('Failed to send call signal:', error);
     }

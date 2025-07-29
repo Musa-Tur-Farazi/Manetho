@@ -501,7 +501,7 @@ export default function SavedPostsPage() {
                                         src={post.images[0]}
                                         alt="Post image 1"
                                         className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
-                                        onClick={() => window.open(post.images[0], '_blank')}
+                                        onClick={() => window.open(post.images![0], '_blank')}
                                         onLoad={(e) => {
                                           const img = e.target as HTMLImageElement;
                                           const aspectRatio = img.naturalWidth / img.naturalHeight;
@@ -580,9 +580,9 @@ export default function SavedPostsPage() {
                               <div className="space-y-3">
                                 {post.pollOptions.map((option, index) => {
                                   const votes = post.pollVotes || {};
-                                  const optionVotes = votes[index] || 0;
+                                  const optionVotes = (votes[index] as number) || 0;
                                   const totalVotes = post.pollOptions!.reduce((sum, _, optionIndex) => {
-                                    return sum + (votes[optionIndex] || 0);
+                                    return sum + ((votes[optionIndex] as number) || 0);
                                   }, 0);
                                   const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
 
@@ -798,9 +798,9 @@ export default function SavedPostsPage() {
                       <div className="space-y-2">
                         {selectedPost.pollOptions.map((option, index) => {
                           const votes = selectedPost.pollVotes || {};
-                          const optionVotes = votes[index] || 0;
+                          const optionVotes = (votes[index] as number) || 0;
                           const totalVotes = selectedPost.pollOptions!.reduce((sum, _, optionIndex) => {
-                            return sum + (votes[optionIndex] || 0);
+                            return sum + ((votes[optionIndex] as number) || 0);
                           }, 0);
                           const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
 

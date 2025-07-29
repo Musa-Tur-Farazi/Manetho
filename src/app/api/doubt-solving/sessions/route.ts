@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
         subjectId: newSession.subject_id,
         topicId: newSession.topic_id,
         messageCount: 0,
-        lastMessageDate: new Date(newSession.last_message_at),
+        lastMessageDate: new Date(newSession.last_message_at as string),
         isArchived: newSession.is_archived,
         createdAt: newSession.created_at,
         updatedAt: newSession.updated_at,

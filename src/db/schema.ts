@@ -147,7 +147,7 @@ export const mindMapsTable = pgTable("mind_maps", {
 export const mindMapNodesTable = pgTable("mind_map_nodes", {
   nodeId: uuid("node_id").primaryKey().defaultRandom(),
   mindmapId: uuid("mindmap_id").references(() => mindMapsTable.mindmapId, { onDelete: 'cascade' }).notNull(),
-  parentNodeId: uuid("parent_node_id").references(() => mindMapNodesTable.nodeId, { onDelete: 'set null' }),
+  parentNodeId: uuid("parent_node_id"),
   text: text("text").notNull(),
   level: integer("level").default(0).notNull(), // 0 for root, 1 for main branches, etc.
   positionX: decimal("position_x", { precision: 10, scale: 2 }).default('0'),

@@ -5,9 +5,13 @@ import {
   userProfilesTable,
   userFollowsTable,
   threadsTable,
-  commentsTable
+  commentsTable,
+  flashcardDecksTable,
+  mindMapsTable,
+  studyGroupMembersTable,
+  practiceTestSubmissionsTable
 } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, count } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 
 export async function GET(
@@ -101,17 +105,53 @@ export async function GET(
         .where(eq(userFollowsTable.followerId, targetUserId)),
     ]);
 
+    // Get real user statistics
+    const [
+      flashcardDecksResult,
+      mindMapsResult,
+      joinedGroupsResult,
+      problemsSolvedResult
+    ] = await Promise.all([
+      // Flashcard decks count
+      db.select({
+        deckCount: count(),
+      })
+        .from(flashcardDecksTable)
+        .where(eq(flashcardDecksTable.userId, targetUserId)),
+
+      // Mind maps count
+      db.select({
+        mindMapCount: count(),
+      })
+        .from(mindMapsTable)
+        .where(eq(mindMapsTable.userId, targetUserId)),
+
+      // Joined study groups count
+      db.select({
+        joinedCount: count(),
+      })
+        .from(studyGroupMembersTable)
+        .where(eq(studyGroupMembersTable.userId, targetUserId)),
+
+      // Problems solved (quiz submissions count)
+      db.select({
+        totalSubmissions: count(),
+      })
+        .from(practiceTestSubmissionsTable)
+        .where(eq(practiceTestSubmissionsTable.userId, targetUserId)),
+    ]);
+
     const profileData = {
       ...userProfile[0],
       isFollowing,
-      followersCount: parseInt(followersResult[0].count as string) || 0,
-      followingCount: parseInt(followingResult[0].count as string) || 0,
-      // Mock stats for now - replace with real data later
-      totalStudyHours: Math.floor(Math.random() * 200) + 50,
-      groupsJoined: Math.floor(Math.random() * 15) + 1,
-      flashcardDecks: Math.floor(Math.random() * 25) + 5,
-      mindMapsSaved: Math.floor(Math.random() * 20) + 3,
-      problemsSolved: Math.floor(Math.random() * 150) + 25,
+      followersCount: Number(followersResult[0].count) || 0,
+      followingCount: Number(followingResult[0].count) || 0,
+      // Real stats from database
+      totalStudyHours: 0, // Removed as per previous requirement
+      groupsJoined: Number(joinedGroupsResult[0]?.joinedCount) || 0,
+      flashcardDecks: Number(flashcardDecksResult[0]?.deckCount) || 0,
+      mindMapsSaved: Number(mindMapsResult[0]?.mindMapCount) || 0,
+      problemsSolved: Number(problemsSolvedResult[0]?.totalSubmissions) || 0,
     };
 
     return NextResponse.json({ profile: profileData });

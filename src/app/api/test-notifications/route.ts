@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const testNotifications = [
       {
         userId: user.userId,
-        type: 'study_group_invitation',
+        type: 'study_group_invitation' as const,
         title: 'Study Group Invitation',
         message: 'You have been invited to join the "Advanced Mathematics" study group',
         data: { groupId: 'test-group-1', groupName: 'Advanced Mathematics' },
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       },
       {
         userId: user.userId,
-        type: 'achievement',
+        type: 'achievement' as const,
         title: 'Achievement Unlocked!',
         message: 'Congratulations! You have earned the "First Steps" achievement',
         data: { achievementId: 'test-achievement-1', achievementName: 'First Steps' },
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       },
       {
         userId: user.userId,
-        type: 'social',
+        type: 'social' as const,
         title: 'New Message',
         message: 'Sarah sent you a message in the study group',
         data: { senderId: 'test-sender-1', senderName: 'Sarah' },

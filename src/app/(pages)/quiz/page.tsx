@@ -244,7 +244,7 @@ export default function QuizArenaPage() {
                     </p>
                     <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        💡 <strong>Note:</strong> Full AI generation requires OpenRouter or OpenAI API key. Without it, you'll get sample questions based on your topic.
+                        💡 <strong>Note:</strong> Full AI generation requires OpenRouter or OpenAI API key. Without it, you&apos;ll get sample questions based on your topic.
                       </p>
                     </div>
                   </div>

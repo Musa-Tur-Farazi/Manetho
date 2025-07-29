@@ -21,7 +21,7 @@ export async function POST(
     const { threadId } = await params;
 
     // Get the user from the database
-    const userResult: any = await db.execute(sql`
+    const userResult = await db.execute(sql`
       SELECT "user_id" FROM users WHERE "clerk_id" = ${userId} LIMIT 1
     `);
 
@@ -32,8 +32,8 @@ export async function POST(
       );
     }
 
-    const user = userResult.rows[0];
-    const userDbId = user.user_id;
+    const user = userResult.rows[0] as Record<string, unknown>;
+    const _userDbId = user.user_id;
 
     // Get the current thread
     const threadResult = await db.execute(sql`
@@ -52,8 +52,8 @@ export async function POST(
     const { isLiked } = body; // true if user is liking, false if unliking
 
     const newLikeCount = isLiked
-      ? (thread.like_count || 0) + 1
-      : Math.max(0, (thread.like_count || 0) - 1);
+      ? ((thread.like_count as number) || 0) + 1
+      : Math.max(0, ((thread.like_count as number) || 0) - 1);
 
     // Update the thread's like count
     await db.execute(sql`

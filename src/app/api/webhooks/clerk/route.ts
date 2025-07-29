@@ -46,14 +46,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle the webhook
-    const { id } = evt.data;
-    const eventType = evt.type;
+    const { id } = (evt as any).data;
+    const eventType = (evt as any).type;
 
     console.log(`Webhook with an ID of ${id} and type of ${eventType}`);
     console.log('Webhook body:', body);
 
     if (eventType === 'user.created') {
-      const { id: clerkId, email_addresses, first_name, last_name, image_url, username } = evt.data;
+      const { id: clerkId, email_addresses, first_name, last_name, image_url, username } = (evt as any).data;
 
       try {
         // Check if user already exists by clerkId
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (eventType === 'user.updated') {
-      const { id: clerkId, email_addresses, first_name, last_name, image_url, username } = evt.data;
+      const { id: clerkId, email_addresses, first_name, last_name, image_url, username } = (evt as any).data;
 
       try {
         // Update user in database
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (eventType === 'user.deleted') {
-      const { id: clerkId } = evt.data;
+      const { id: clerkId } = (evt as any).data;
 
       try {
         // Delete user from database

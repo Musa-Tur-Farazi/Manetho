@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Client, Storage } from 'node-appwrite';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
@@ -11,7 +11,7 @@ const client = new Client()
 
 const storage = new Storage(client);
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting Appwrite permissions fix...');
 
@@ -73,15 +73,16 @@ export async function POST(request: NextRequest) {
         updatedCount++;
         console.log(`✓ Updated permissions for file: ${fileId}`);
 
-      } catch (error: any) {
-        errorCount++;
-        const errorMsg = `Failed to update file ${fileId}: ${error.message}`;
-        console.error(errorMsg);
-        errors.push(errorMsg);
+             } catch (error: unknown) {
+         errorCount++;
+         const err = error as { message: string };
+         const errorMsg = `Failed to update file ${fileId}: ${err.message}`;
+         console.error(errorMsg);
+         errors.push(errorMsg);
 
-        // Continue with other files even if one fails
-        continue;
-      }
+         // Continue with other files even if one fails
+         continue;
+       }
     }
 
     console.log(`Permissions fix completed. Updated: ${updatedCount}, Errors: ${errorCount}`);
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error fixing Appwrite permissions:', error);
     return NextResponse.json(
-      { error: 'Failed to fix permissions', details: error.message },
+      { error: 'Failed to fix permissions', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

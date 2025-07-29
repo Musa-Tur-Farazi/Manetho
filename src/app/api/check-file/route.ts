@@ -45,26 +45,28 @@ export async function GET(request: NextRequest) {
         }
       });
 
-    } catch (fileError: any) {
-      console.log('File not found or error:', fileError.message);
+    } catch (fileError: unknown) {
+      const error = fileError as { message: string; code?: string; type?: string };
+      console.log('File not found or error:', error.message);
 
       return NextResponse.json({
         success: true,
         exists: false,
-        error: fileError.message,
-        code: fileError.code,
-        type: fileError.type
+        error: error.message,
+        code: error.code,
+        type: error.type
       });
     }
 
-  } catch (error: any) {
-    console.error('Error checking file:', error);
+  } catch (error: unknown) {
+    const err = error as { message: string; code?: string; type?: string };
+    console.error('Error checking file:', err);
     return NextResponse.json(
       {
         error: 'Failed to check file',
-        details: error.message,
-        code: error.code,
-        type: error.type
+        details: err.message,
+        code: err.code,
+        type: err.type
       },
       { status: 500 }
     );

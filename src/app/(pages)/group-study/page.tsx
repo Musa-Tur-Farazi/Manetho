@@ -525,6 +525,12 @@ export default function GroupStudyPage() {
       {/* Tab Navigation */}
       <div className="flex space-x-4 mb-8">
         <Button
+          variant={activeTab === 'my-groups' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('my-groups')}
+        >
+          My Groups ({myGroups.length})
+        </Button>
+        <Button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2"
         >
@@ -532,25 +538,19 @@ export default function GroupStudyPage() {
           Create Group
         </Button>
         <Button
-          variant={activeTab === 'my-groups' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('my-groups')}
-        >
-          My Groups ({myGroups.length})
-        </Button>
-        <Button
           variant={activeTab === 'explore' ? 'default' : 'outline'}
           onClick={() => setActiveTab('explore')}
         >
           Explore Groups
         </Button>
-                 <Button
-           variant="outline"
-           onClick={() => setShowInviteModal(true)}
-           className="flex items-center gap-2"
-         >
-           <Users className="w-4 h-4" />
-           Invite Friend
-         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowInviteModal(true)}
+          className="flex items-center gap-2"
+        >
+          <Users className="w-4 h-4" />
+          Invite Friend
+        </Button>
       </div>
 
       {/* My Groups Tab */}
@@ -651,7 +651,7 @@ export default function GroupStudyPage() {
                           <Badge
                             variant="secondary"
                             className="mt-1"
-                            style={{ backgroundColor: group.subjectColor + '20', color: group.subjectColor }}
+                            style={{ backgroundColor: (group.subjectColor ?? "#000") + '20', color: group.subjectColor ?? "#000" }}
                           >
                             {group.subjectName}
                           </Badge>
@@ -754,7 +754,7 @@ export default function GroupStudyPage() {
                       {group.subjectName && (
                         <Badge
                           variant="secondary"
-                          style={{ backgroundColor: group.subjectColor + '20', color: group.subjectColor }}
+                          style={{ backgroundColor: (group.subjectColor ?? "#000") + '20', color: group.subjectColor ?? "#000" }}
                         >
                           {group.subjectName}
                         </Badge>

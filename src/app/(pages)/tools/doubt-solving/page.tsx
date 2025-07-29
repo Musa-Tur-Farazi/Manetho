@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Send, Image, Loader2, Plus, Bot, User, Trash2, Copy, Check, ArrowLeft, ExternalLink, Stars, Settings, LogOut, InfoIcon, FileText, RefreshCw, X } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import FileUpload from "@/components/ui/FileUpload";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Send, Image, Loader2, Plus, User, Trash2, Copy, Check, ArrowLeft, Stars, InfoIcon, FileText, RefreshCw, X } from "lucide-react";
+// Removed unused imports
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 
@@ -68,7 +67,7 @@ export default function DoubtSolvingPage() {
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
 
   // Function to scroll to the bottom of the chat
-  const scrollToBottom = (instant: boolean = false) => {
+  const scrollToBottom = useCallback((instant: boolean = false) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: instant ? 'auto' : 'smooth',
@@ -83,7 +82,7 @@ export default function DoubtSolvingPage() {
         behavior: instant ? 'auto' : 'smooth'
       });
     }
-  };
+  }, []);
 
   // Check if user has scrolled up and show scroll button if needed
   const handleScroll = () => {
@@ -98,14 +97,18 @@ export default function DoubtSolvingPage() {
   };
 
   // Load sessions from database
-  const loadSessions = async (preserveActiveSession = true) => {
+  const loadSessions = useCallback(async (preserveActiveSession = true) => {
     try {
       setIsLoadingSessions(true);
       const response = await fetch('/api/doubt-solving/sessions');
 
       if (response.ok) {
         const data = await response.json();
-        const dbSessions = data.sessions.map((session: any) => ({
+        const dbSessions = data.sessions.map((session: {
+          id: string;
+          title: string;
+          lastMessageDate: string;
+        }) => ({
           id: session.id,
           title: session.title,
           lastMessageDate: new Date(session.lastMessageDate),
@@ -155,17 +158,26 @@ export default function DoubtSolvingPage() {
     } finally {
       setIsLoadingSessions(false);
     }
-  };
+  }, [activeSessionId]);
 
   // Load messages for a specific session
-  const loadMessages = async (sessionId: string) => {
+  const loadMessages = useCallback(async (sessionId: string) => {
     try {
       setIsLoadingMessages(true);
       const response = await fetch(`/api/doubt-solving/sessions/${sessionId}/messages`);
 
       if (response.ok) {
         const data = await response.json();
-        const dbMessages = data.messages.map((msg: any) => ({
+        const dbMessages = data.messages.map((msg: {
+          id: string;
+          role: string;
+          content: string;
+          timestamp: string;
+          attachmentUrl?: string;
+          attachmentType?: string;
+          attachmentName?: string;
+          attachmentSize?: number;
+        }) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
@@ -195,7 +207,7 @@ export default function DoubtSolvingPage() {
     } finally {
       setIsLoadingMessages(false);
     }
-  };
+  }, []);
 
   // Create session in database
   const createSessionInDB = async (title: string) => {
@@ -722,7 +734,7 @@ export default function DoubtSolvingPage() {
       // Use setTimeout to ensure DOM has updated before scrolling
       setTimeout(() => scrollToBottom(true), 100);
     }
-  }, [currentChat]);
+  }, [currentChat.length]);
 
   // Scroll to bottom on initial render and after page refresh
   useEffect(() => {
@@ -764,7 +776,7 @@ export default function DoubtSolvingPage() {
     // Clear localStorage to ensure we start fresh with database data
     localStorage.removeItem('chatSessions');
     loadSessions(false); // Load from database first
-  }, []);
+  }, [loadSessions]);
 
   // Note: We now rely on database storage instead of localStorage
 
@@ -923,12 +935,7 @@ export default function DoubtSolvingPage() {
     }
   };
 
-  // Generate title for a new chat based on the first message
-  const generateChatTitle = (message: string): string => {
-    const maxLength = 30;
-    if (message.length <= maxLength) return message;
-    return message.substring(0, maxLength) + '...';
-  };
+
 
   // Update session with new messages
   const updateSessionMessages = (sessionId: string, messages: ChatMessage[]) => {
@@ -1190,7 +1197,7 @@ export default function DoubtSolvingPage() {
 
     // Also set up a MutationObserver to render LaTeX when DOM changes
     if (chatContainerRef.current) {
-      const observer = new MutationObserver((mutations) => {
+      const observer = new MutationObserver(() => {
         // If there are any changes to the DOM, re-render LaTeX
         setTimeout(renderLatexFormulas, 100);
       });
@@ -1500,7 +1507,7 @@ export default function DoubtSolvingPage() {
   // Load sessions on component mount
   useEffect(() => {
     loadSessions(false); // Don't preserve on initial load
-  }, []);
+  }, [loadSessions]);
 
   // Set up mutation observer to detect when messages are added to the DOM
   useEffect(() => {
@@ -1933,25 +1940,4 @@ export default function DoubtSolvingPage() {
   );
 }
 
-const subjects = [
-  {
-    name: "Mathematics",
-    description: "Algebra, calculus, geometry, statistics and probability",
-    icon: <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><path d="M4 7l16 0"></path><path d="M4 17l16 0"></path><path d="M4 12l16 0"></path></svg>,
-  },
-  {
-    name: "Physics",
-    description: "Mechanics, electromagnetism, thermodynamics, quantum mechanics",
-    icon: <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><path d="M21.17 8L12 12"></path><path d="M3.95 6.06L8.54 14"></path><path d="M10.88 21.94L15.46 14"></path></svg>,
-  },
-  {
-    name: "Chemistry",
-    description: "Organic chemistry, reactions, molecular structures",
-    icon: <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><path d="M9 3v18m0-18h6m-6 0H3m6 18H3m6 0h6m0-18v18m0 0h6M15 3h6"></path></svg>,
-  },
-  {
-    name: "Biology",
-    description: "Genetics, ecology, anatomy, cellular biology",
-    icon: <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" className="h-6 w-6" xmlns="http://www.w3.org/2000/svg"><path d="M9 7H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-4m-6 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M9 7h6"></path></svg>,
-  },
-]; 
+// Removed unused subjects array 

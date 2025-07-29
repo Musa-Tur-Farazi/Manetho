@@ -42,7 +42,18 @@ export async function GET(request: NextRequest) {
     const topicId = searchParams.get('topicId');
 
     // Get user quiz history stats
-    let statsQuery = db
+
+    // Build the where condition dynamically
+    const whereConditions = [eq(userQuizHistoryTable.userId, user.userId)];
+    
+    if (subjectId) {
+      whereConditions.push(eq(practiceTestsTable.subjectId, subjectId));
+    }
+    if (topicId) {
+      whereConditions.push(eq(practiceTestsTable.topicId, topicId));
+    }
+
+    const statsQuery = db
       .select({
         historyId: userQuizHistoryTable.historyId,
         testId: userQuizHistoryTable.testId,
@@ -64,15 +75,7 @@ export async function GET(request: NextRequest) {
       .leftJoin(practiceTestsTable, eq(userQuizHistoryTable.testId, practiceTestsTable.testId))
       .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
       .leftJoin(topicsTable, eq(practiceTestsTable.topicId, topicsTable.topicId))
-      .where(eq(userQuizHistoryTable.userId, user.userId));
-
-    // Add filters if specified
-    if (subjectId) {
-      statsQuery = statsQuery.where(eq(practiceTestsTable.subjectId, subjectId));
-    }
-    if (topicId) {
-      statsQuery = statsQuery.where(eq(practiceTestsTable.topicId, topicId));
-    }
+      .where(and(...whereConditions));
 
     const stats = await statsQuery.orderBy(desc(userQuizHistoryTable.completedAt));
 
@@ -145,7 +148,7 @@ export async function GET(request: NextRequest) {
         currentLevel: Math.floor(stat.score / 10) + 1, // Simple level calculation
         currentXp: stat.score,
         xpToNextLevel: 100,
-        correctAnswers: Math.floor((stat.accuracyRate || 0) * 10), // Estimate
+        correctAnswers: Math.floor((typeof stat.accuracyRate === 'number' ? stat.accuracyRate : parseFloat(stat.accuracyRate || '0')) * 10), // Estimate
         totalAnswers: 10, // Estimate
         accuracyRate: stat.accuracyRate,
         longestStreak: streakInfo?.longestStreak || 0,
@@ -226,7 +229,7 @@ export async function POST(request: NextRequest) {
       .leftJoin(subjectsTable, eq(practiceTestsTable.subjectId, subjectsTable.subjectId))
       .leftJoin(topicsTable, eq(practiceTestsTable.topicId, topicsTable.topicId))
       .where(eq(userQuizHistoryTable.userId, targetUserId))
-      .orderBy(desc(userQuizHistoryTable.totalPoints));
+      .orderBy(desc(userQuizHistoryTable.score));
 
     // Get target user's overall stats
     const targetOverallStats = await db
@@ -265,7 +268,7 @@ export async function POST(request: NextRequest) {
         currentLevel: Math.floor(stat.score / 10) + 1,
         currentXp: stat.score,
         xpToNextLevel: 100,
-        correctAnswers: Math.floor((stat.accuracyRate || 0) * 10),
+        correctAnswers: Math.floor((typeof stat.accuracyRate === 'number' ? stat.accuracyRate : parseFloat(stat.accuracyRate || '0')) * 10),
         totalAnswers: 10,
         accuracyRate: stat.accuracyRate,
         longestStreak: targetStreakInfo?.longestStreak || 0,

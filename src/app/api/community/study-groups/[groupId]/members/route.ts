@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import {
   studyGroupMembersTable,
-  studyGroupsTable,
   usersTable
 } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -80,7 +79,7 @@ export async function GET(
     // Add online status to members
     const membersWithStatus = members.map(member => ({
       ...member,
-      isOnline: isUserOnline(member.lastActiveAt),
+      isOnline: isUserOnline(member.lastActiveAt ? member.lastActiveAt.toISOString() : null),
       isCurrentUser: member.userId === currentUserId,
     }));
 

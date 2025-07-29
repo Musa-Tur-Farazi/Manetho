@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
-import { ZoomIn, ZoomOut, RotateCcw, Edit, Plus, Trash2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Edit, Plus, Trash2 } from 'lucide-react';
 
 interface Node {
   nodeId: string;
@@ -468,20 +468,12 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button
-          onClick={handleResetView}
-          size="sm"
-          variant="outline"
-          className="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-white/30 dark:border-gray-600/30 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white shadow-lg"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Info Panel */}
       <div className="absolute top-4 right-4 bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg border border-white/30 dark:border-gray-600/30 p-3 z-10 shadow-lg">
         <div className="text-sm text-gray-700 dark:text-gray-300">
-          <div>Zoom: {(zoom * 100).toFixed(0)}%</div>
+          <div>Zoom: {(zoom * 50).toFixed(0)}%</div>
           <div>Nodes: {nodes.length}</div>
           <div>Connections: {connections.length}</div>
         </div>
@@ -547,7 +539,7 @@ export default function MindMapVisualization({ mindMap, onUpdateMindMap }: MindM
         <div>• Double-click node to edit text</div>
         <div>• Click node to select</div>
         <div>• Drag nodes to move them</div>
-        <div>• Drag canvas to pan</div>
+        {/* <div>• Drag canvas to pan</div> */}
         <div>• Use zoom controls to scale</div>
       </div>
     </div>

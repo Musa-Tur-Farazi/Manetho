@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { notificationsTable, studyGroupMembersTable, studyGroupsTable } from '@/db/schema';
+import { notificationsTable, studyGroupMembersTable, studyGroupsTable, usersTable } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // First, get the internal userId from the usersTable using clerkId
+    const user = await db
+      .select({ userId: usersTable.userId })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (user.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userId = user[0].userId;
 
     const body = await request.json();
     const { notificationId } = body;
