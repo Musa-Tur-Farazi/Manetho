@@ -745,16 +745,16 @@ export default function ChatPage() {
       'application/x-zip-compressed'
     ];
 
-      if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type)) {
       console.log('❌ File type not allowed:', file.type);
-        alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+      alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
       return;
-      }
+    }
 
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       console.log('❌ File too large:', file.size);
-        alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+      alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
       return;
     }
 
@@ -762,15 +762,15 @@ export default function ChatPage() {
     try {
       console.log('📤 Starting upload for:', file.name);
 
-        const formData = new FormData();
+      const formData = new FormData();
       formData.append('file', file);
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-          const data = await response.json();
+      const data = await response.json();
       console.log('📤 Upload response:', {
         status: response.status,
         success: data.success,
@@ -780,7 +780,7 @@ export default function ChatPage() {
       if (response.ok && data.success) {
         // Store the uploaded file for manual sending
         const uploadedFileData = {
-            url: data.file.url,
+          url: data.file.url,
           name: data.file.name,
           type: data.file.type,
           size: data.file.size,
@@ -1142,7 +1142,7 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                  <button
+                    <button
                       onClick={() => {
                         const isOpening = !showMeetingOptions;
                         setShowMeetingOptions(isOpening);
@@ -1175,7 +1175,7 @@ export default function ChatPage() {
                           </svg>
                         </>
                       )}
-                  </button>
+                    </button>
 
                     {/* Meeting Options Dropdown */}
                     {showMeetingOptions && (
@@ -1193,7 +1193,7 @@ export default function ChatPage() {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                  <button
+                              <button
                                 onClick={() => {
                                   console.log('🔄 Manual refresh of meeting links');
                                   fetchMeetingLinks();
@@ -1204,13 +1204,13 @@ export default function ChatPage() {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
-                  </button>
+                              </button>
                               <button
                                 onClick={() => setShowMeetingOptions(false)}
                                 className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors"
                               >
                                 <X className="w-4 h-4" />
-                  </button>
+                              </button>
                             </div>
                           </div>
 
@@ -1505,34 +1505,34 @@ export default function ChatPage() {
                 {uploadedFile && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     <div className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         {(uploadedFile as any).preview ? (
                           <img src={(uploadedFile as any).preview} alt="" className="w-10 h-10 rounded object-cover" />
-                          ) : (
+                        ) : (
                           <div className={`w-10 h-10 rounded flex items-center justify-center ${uploadedFile.type === 'application/pdf'
-                              ? 'bg-red-100 dark:bg-red-900/30'
-                              : 'bg-gray-200 dark:bg-slate-700'
-                              }`}>
+                            ? 'bg-red-100 dark:bg-red-900/30'
+                            : 'bg-gray-200 dark:bg-slate-700'
+                            }`}>
                             {getFileIcon(uploadedFile.type)}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                            {uploadedFile.type === 'application/pdf' ? '📄 ' : ''}{uploadedFile.name}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-slate-400">
-                            {uploadedFile.type === 'application/pdf' && 'PDF • '}{formatFileSize(uploadedFile.size)}
-                            </p>
                           </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                            {uploadedFile.type === 'application/pdf' ? '📄 ' : ''}{uploadedFile.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
+                            {uploadedFile.type === 'application/pdf' && 'PDF • '}{formatFileSize(uploadedFile.size)}
+                          </p>
                         </div>
-                        <button
-                        onClick={() => setUploadedFile(null)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        title="Remove file"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
                       </div>
+                      <button
+                        onClick={() => setUploadedFile(null)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1556,7 +1556,7 @@ export default function ChatPage() {
                     {uploading ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-600 border-t-transparent"></div>
                     ) : (
-                    <Paperclip className="w-5 h-5" />
+                      <Paperclip className="w-5 h-5" />
                     )}
                   </button>
 

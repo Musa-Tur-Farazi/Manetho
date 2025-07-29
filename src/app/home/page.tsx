@@ -139,7 +139,7 @@ const HomePage = () => {
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-  
+
                 </div>
 
                 {/* Main Navigation */}
