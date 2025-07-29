@@ -18,7 +18,8 @@ import {
   Link,
   Trash2,
   CheckCircle,
-  MessageSquare
+  MessageSquare,
+  XCircle
 } from 'lucide-react';
 import { pusherClient } from '@/lib/pusher-client';
 import { getGroupChatChannel } from '@/lib/chat';
@@ -144,9 +145,53 @@ export default function GroupStudyChatPage() {
   const [showMeetingOptions, setShowMeetingOptions] = useState(false);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle file downloads
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      console.log('📥 Starting download:', filename);
+      
+      // Fetch the file
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+      
+      // Get the blob
+      const blob = await response.blob();
+      
+      // Create download URL
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('✅ Download completed:', filename);
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(url, '_blank');
+    }
+  };
 
   useEffect(() => {
     if (groupId && userId) {
@@ -260,33 +305,71 @@ export default function GroupStudyChatPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
-    if (!messageInput.trim()) return;
+    // Prevent double submission
+    if (sending) {
+      console.log('🚫 Already sending, ignoring duplicate submission');
+      return;
+    }
+
+    if (!messageInput.trim() && !uploadedFile) return;
 
     const messageText = messageInput.trim();
+    const fileToSend = uploadedFile;
+    
+    // Set sending state and clear inputs immediately
+    setSending(true);
     setMessageInput('');
+    setUploadedFile(null);
+
+    console.log('📤 Sending message:', { text: messageText, hasFile: !!fileToSend });
 
     try {
+      const requestBody: any = {
+        groupId,
+        content: messageText,
+      };
+
+      // Add file if present
+      if (fileToSend) {
+        requestBody.files = [{
+          url: fileToSend.url,
+          name: fileToSend.name,
+          type: fileToSend.type,
+          size: fileToSend.size,
+        }];
+        console.log('📎 Including file in message:', fileToSend.name);
+      }
+
       const response = await fetch('/api/community/study-groups/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          groupId,
-          content: messageText,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+      console.log('📬 Message API response:', { ok: response.ok, data });
 
       if (!response.ok) {
-        console.error('Error sending message:', data.error);
-        setMessageInput(messageText); // Restore message if failed
+        console.error('❌ Error sending message:', data.error);
+        // Restore message and file if failed
+        setMessageInput(messageText);
+        if (fileToSend) setUploadedFile(fileToSend);
+        alert('Failed to send message. Please try again.');
+      } else {
+        console.log('✅ Message sent successfully');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      setMessageInput(messageText); // Restore message if failed
+      console.error('💥 Error sending message:', error);
+      // Restore message and file if failed
+      setMessageInput(messageText);
+      if (fileToSend) setUploadedFile(fileToSend);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -294,44 +377,62 @@ export default function GroupStudyChatPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Simple file upload simulation - in a real app, you'd upload to a storage service
-    const formData = new FormData();
-    formData.append('file', file);
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'application/pdf',
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed'
+    ];
 
+    if (!allowedTypes.includes(file.type)) {
+      alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+      return;
+    }
+
+    setUploading(true);
     try {
+      console.log('📁 Uploading file:', file.name);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
       const uploadData = await uploadResponse.json();
+      console.log('📤 Upload response:', uploadData);
 
-      if (uploadResponse.ok) {
-        const response = await fetch('/api/community/study-groups/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            groupId,
-            content: '',
-            files: [{
-              url: uploadData.url,
-              name: file.name,
-              type: file.type,
-              size: file.size,
-            }],
-          }),
+      if (uploadResponse.ok && uploadData.success) {
+        // Store the uploaded file for manual sending
+        setUploadedFile({
+          url: uploadData.file.url,
+          name: uploadData.file.name,
+          type: uploadData.file.type,
+          size: uploadData.file.size,
         });
-
-        if (!response.ok) {
-          console.error('Error sending file message');
-        }
+        setShowUploadOptions(false);
+        console.log('✅ File uploaded and ready to send:', uploadData.file.name);
       } else {
         console.error('Error uploading file:', uploadData.error);
+        alert(`Upload failed: ${uploadData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
     }
 
     // Clear file input
@@ -759,7 +860,7 @@ export default function GroupStudyChatPage() {
               const showDate = index === 0 || formatMessageDate(messages[index - 1]?.timestamp) !== formatMessageDate(message.timestamp);
 
               return (
-                <div key={message.messageId} className="w-full">
+                <div key={`${message.messageId}-${index}`} className="w-full">
                   {/* Date separator */}
                   {showDate && (
                     <div className="flex justify-center my-6">
@@ -815,6 +916,30 @@ export default function GroupStudyChatPage() {
                             ? 'bg-blue-500 text-white rounded-br-md'
                             : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-md shadow-sm border border-gray-100 dark:border-gray-700'
                             }`}>
+                            {/* Show image preview for image files */}
+                            {message.fileType?.startsWith('image/') && (
+                              <div className="mb-3 relative group">
+                                <img
+                                  src={message.fileUrl}
+                                  alt={message.fileName || 'Uploaded image'}
+                                  className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                  style={{ maxHeight: '300px' }}
+                                  onClick={() => window.open(message.fileUrl!, '_blank')}
+                                  title="Click to view full size"
+                                />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    downloadFile(message.fileUrl!, message.fileName || 'image');
+                                  }}
+                                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Download image"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            
                             <div className={`flex items-center gap-3 p-3 rounded-lg ${isOwn
                               ? 'bg-blue-400/20'
                               : 'bg-gray-100 dark:bg-gray-700'
@@ -837,11 +962,12 @@ export default function GroupStudyChatPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => window.open(message.fileUrl!, '_blank')}
+                                onClick={() => downloadFile(message.fileUrl!, message.fileName || 'download')}
                                 className={`flex-shrink-0 ${isOwn
                                   ? 'bg-white/20 border-white/30 text-white hover:bg-white/30'
                                   : 'bg-gray-100 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600'
                                   }`}
+                                title="Download file"
                               >
                                 <Download className="w-4 h-4" />
                               </Button>
@@ -859,6 +985,43 @@ export default function GroupStudyChatPage() {
 
           {/* Message Input */}
           <div className="p-4 bg-white/95 dark:bg-gray-800/95 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            {/* File preview area */}
+            {uploadedFile && (
+              <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {uploadedFile.type.startsWith('image/') && (
+                      <img
+                        src={uploadedFile.url}
+                        alt={uploadedFile.name}
+                        className="w-12 h-12 object-cover rounded border"
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-600 dark:text-gray-300">
+                        {getFileIcon(uploadedFile.type)}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {uploadedFile.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {Math.round(uploadedFile.size / 1024)} KB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setUploadedFile(null)}
+                    className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+                    title="Remove file"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSendMessage} className="flex items-center gap-3">
               <input
                 type="file"
@@ -866,6 +1029,7 @@ export default function GroupStudyChatPage() {
                 onChange={handleFileUpload}
                 className="hidden"
                 accept="image/*,.pdf,.doc,.docx,.txt"
+                disabled={uploading}
               />
               <div className="relative">
                 <button
@@ -873,8 +1037,13 @@ export default function GroupStudyChatPage() {
                   onClick={() => setShowUploadOptions(!showUploadOptions)}
                   className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   title="Upload file"
+                  disabled={uploading}
                 >
-                  <Plus className="w-5 h-5" />
+                  {uploading ? (
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
                 </button>
 
                 {showUploadOptions && (
@@ -888,10 +1057,11 @@ export default function GroupStudyChatPage() {
                             fileInputRef.current?.click();
                             setShowUploadOptions(false);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                          disabled={uploading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors disabled:opacity-50"
                         >
                           <MessageSquare className="w-4 h-4" />
-                          Upload File
+                          {uploading ? 'Uploading...' : 'Upload File'}
                         </button>
                       </div>
                     </div>
@@ -902,15 +1072,19 @@ export default function GroupStudyChatPage() {
                 type="text"
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                placeholder="Type your message..."
+                placeholder={uploadedFile ? "Add a message (optional)..." : "Type your message..."}
                 className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
               <button
                 type="submit"
-                disabled={!messageInput.trim()}
-                className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white rounded-full transition-colors"
+                disabled={(!messageInput.trim() && !uploadedFile) || sending}
+                className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full transition-colors"
               >
-                <Send className="w-5 h-5" />
+                {sending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
               </button>
             </form>
           </div>

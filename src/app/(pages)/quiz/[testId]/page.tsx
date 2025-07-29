@@ -480,9 +480,9 @@ export default function QuizGameplayPage() {
                       {currentQuestion.options.map((option, index) => (
                         <label
                           key={index}
-                          className={`block p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${currentAnswer === option
-                            ? 'border-blue-500 bg-blue-50 text-gray-900 dark:text-gray-100'
-                            : 'border-gray-200 text-gray-700 dark:text-gray-200'
+                          className={`block p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 ${currentAnswer === option
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100'
+                            : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
                             }`}
                         >
                           <input
@@ -493,7 +493,7 @@ export default function QuizGameplayPage() {
                             onChange={(e) => handleAnswerChange(currentQuestion.questionId, e.target.value)}
                             className="sr-only"
                           />
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{option}</span>
+                          <span className="text-sm font-medium">{option}</span>
                         </label>
                       ))}
                     </div>
