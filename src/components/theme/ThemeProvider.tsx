@@ -24,7 +24,7 @@ const ThemeContext = createContext<ThemeContextType>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "dark",
   storageKey = "manetho-theme",
   ...props
 }: ThemeProviderProps) {
