@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
@@ -23,12 +23,12 @@ import {
   Target,
   Flame,
   BookMarked,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import AuthenticatedNavbar from "@/components/homepage/AuthenticatedNavbar";
-import Footer from "@/components/landingpage/section/Footer";
 
 
 const HomePage = () => {
@@ -36,6 +36,10 @@ const HomePage = () => {
   const { theme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Start open by default
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (w-64 = 256px)
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
   const firstName = user?.firstName || user?.username?.split(' ')[0] || "there";
   const [syncChecked, setSyncChecked] = useState(false);
 
@@ -55,6 +59,46 @@ const HomePage = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizing && sidebarRef.current) {
+        e.preventDefault(); // Prevent default behavior
+        const newWidth = e.clientX;
+        if (newWidth >= 200 && newWidth <= 400) {
+          setSidebarWidth(newWidth);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      // Prevent text selection during resize
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Restore text selection
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing]);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent text selection
+    setIsResizing(true);
+  };
 
   // Auto-sync user on page load
   useEffect(() => {
@@ -95,7 +139,6 @@ const HomePage = () => {
 
       <AuthenticatedNavbar
         isScrolled={isScrolled}
-        onDashboardClick={() => { }}
       />
 
 
@@ -103,7 +146,7 @@ const HomePage = () => {
       {/* Sidebar toggle button - now only shows menu icon for opening */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+        className="fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer"
         aria-label="Toggle sidebar"
         style={{ display: sidebarOpen ? 'none' : 'block' }}
       >
@@ -123,12 +166,23 @@ const HomePage = () => {
             />
 
             <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              initial={{ x: "-280px" }}
+              animate={{ x: "0px" }}
+              exit={{ x: "-280px" }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="fixed left-0 top-0 pt-20 pb-4 h-full w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
+              className="fixed left-0 top-0 pt-20 pb-4 h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
+              style={{ width: `${sidebarWidth}px` }}
+              ref={sidebarRef}
             >
+              {/* Resize Handle */}
+              <div
+                ref={resizeRef}
+                onMouseDown={handleResizeStart}
+                className={`homepage-resize-handle ${isResizing ? 'resizing' : ''}`}
+              >
+                {/* Arrows are added via CSS ::after pseudo-element */}
+              </div>
+
               <div className="p-4">
                 {/* Close button positioned to the left of Manetho logo */}
                 <div className="flex items-center justify-between mb-4">
@@ -230,7 +284,7 @@ const HomePage = () => {
         )}
       </AnimatePresence>
 
-      <main className={`relative pt-24 pb-16 transition-all duration-300 ${sidebarOpen ? "md:ml-64" : ""}`}>
+      <main className={`relative pt-24 pb-16 transition-all duration-300`} style={{ marginLeft: sidebarOpen ? `${sidebarWidth}px` : '0px' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Welcome Section */}
           <section className="mb-12">
@@ -245,12 +299,20 @@ const HomePage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* AI Doubt Solver Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
                 transition={{ duration: 0.3 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/90 dark:from-gray-800/90 dark:via-blue-900/20 dark:to-indigo-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100/50 dark:border-blue-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -260,7 +322,7 @@ const HomePage = () => {
                   Get instant help with your academic questions using our advanced AI assistant.
                 </p>
                 <Link href="/tools/doubt-solving">
-                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Start Solving
                   </Button>
                 </Link>
@@ -268,12 +330,20 @@ const HomePage = () => {
 
               {/* Community Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
                 transition={{ duration: 0.3, delay: 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-green-50/80 to-teal-50/90 dark:from-gray-800/90 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100/50 dark:border-green-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -283,7 +353,7 @@ const HomePage = () => {
                   Connect with fellow learners, share knowledge, and get help from the community.
                 </p>
                 <Link href="/community">
-                  <Button className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Join Community
                   </Button>
                 </Link>
@@ -291,12 +361,20 @@ const HomePage = () => {
 
               {/* Flashcards Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
                 transition={{ duration: 0.3, delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-emerald-50/80 to-cyan-50/90 dark:from-gray-800/90 dark:via-emerald-900/20 dark:to-cyan-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-100/50 dark:border-emerald-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <BookMarked className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -306,7 +384,7 @@ const HomePage = () => {
                   Create flashcards manually or generate them with AI for efficient study sessions.
                 </p>
                 <Link href="/tools/flashcards">
-                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Study Now
                   </Button>
                 </Link>
@@ -314,12 +392,20 @@ const HomePage = () => {
 
               {/* Mind Maps Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
                 transition={{ duration: 0.3, delay: 0.3 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-purple-50/80 to-pink-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-pink-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -329,7 +415,7 @@ const HomePage = () => {
                   Visualize your thoughts and ideas with AI-powered mind mapping tools.
                 </p>
                 <Link href="/tools/mind-maps">
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Create Mind Map
                   </Button>
                 </Link>
@@ -343,10 +429,18 @@ const HomePage = () => {
           {/* AI Quiz Generator */}
           <section className="mb-12">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: "20px" }}
+              animate={{ opacity: 1, y: "0px" }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8"
+              whileHover={{
+                scale: 1.02,
+                rotateY: "2deg",
+                rotateX: "1deg",
+                z: 10,
+                transition: { duration: 0.2 }
+              }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gradient-to-br from-white/90 via-purple-50/80 to-blue-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-blue-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -359,9 +453,9 @@ const HomePage = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-lg">
+                <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-900/30 dark:to-blue-900/30 p-4 rounded-lg border border-purple-100/50 dark:border-purple-800/30">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shadow-sm">
                       <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
@@ -394,7 +488,7 @@ const HomePage = () => {
                   </div>
 
                   <Link href="/quiz">
-                    <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white">
+                    <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                       <Brain className="w-4 h-4 mr-2" />
                       Generate Quiz
                     </Button>
@@ -406,9 +500,7 @@ const HomePage = () => {
         </div>
       </main>
 
-      <footer className={`relative transition-all duration-300 ${sidebarOpen ? "md:ml-64" : ""}`}>
-        <Footer />
-      </footer>
+
     </div>
   );
 };

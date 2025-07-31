@@ -1538,7 +1538,7 @@ export default function DoubtSolvingPage() {
         <div className="flex items-center gap-4">
           <a
             href="/home"
-            className="p-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
+            className="p-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200 transform hover:scale-105 card-3d"
           >
             <ArrowLeft className="h-5 w-5" />
           </a>
@@ -1550,7 +1550,7 @@ export default function DoubtSolvingPage() {
           <div className="relative">
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 button-3d"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
@@ -1588,7 +1588,7 @@ export default function DoubtSolvingPage() {
           <div className="p-3">
             <button
               onClick={createNewSession}
-              className="flex items-center gap-3 w-full rounded-lg py-3 px-4 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+              className="flex items-center gap-3 w-full rounded-lg py-3 px-4 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium button-3d"
             >
               <Plus className="h-5 w-5 text-white" />
               <span className="text-white">New Chat</span>

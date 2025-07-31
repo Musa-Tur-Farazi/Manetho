@@ -5,16 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SignOutButton, useUser } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
-import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, BookOpen, BookMarked, Network } from "lucide-react";
+import { Moon, Sun, User, LogOut, ChevronDown, Menu, X, Network } from "lucide-react";
 import { useTheme } from "../theme/ThemeProvider";
-import { Button } from "../ui/Button";
+import Logo from "../ui/Logo";
 
 interface AuthenticatedNavbarProps {
   isScrolled: boolean;
-  onDashboardClick?: () => void;
 }
 
-const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavbarProps) => {
+const AuthenticatedNavbar = ({ isScrolled }: AuthenticatedNavbarProps) => {
   const router = useRouter();
   const { user } = useUser();
   const { theme, setTheme } = useTheme();
@@ -54,33 +53,17 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
         {/* Left section: Logo */}
         <div className="flex items-center">
           <Link href="/home" className="flex items-center">
-            <span
-              className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
-            >
-              Manetho
-            </span>
+            <Logo size="md" variant="gradient" />
           </Link>
         </div>
 
         {/* Right-side buttons */}
         <div className="flex items-center gap-2">
-          {/* Theme toggle */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={`p-2 rounded-lg ${isScrolled
-              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
-              }`}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-
           {/* User menu */}
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${isScrolled
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer ${isScrolled
                 ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
                 }`}
@@ -122,7 +105,7 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
                     </Link>
                     <div className="border-t border-gray-200 dark:border-gray-700"></div>
                     <SignOutButton>
-                      <button className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <button className="w-full text-left block px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                         <div className="flex items-center gap-2">
                           <LogOut className="w-4 h-4" />
                           Sign out
@@ -138,12 +121,24 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`md:hidden p-2 rounded-lg ${isScrolled
+            className={`md:hidden p-2 rounded-lg cursor-pointer ${isScrolled
               ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
               : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
               }`}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
+          {/* Theme toggle - moved to rightmost position */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className={`p-2 rounded-lg cursor-pointer ${isScrolled
+              ? "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              : "text-gray-800 hover:bg-white/20 dark:text-white dark:hover:bg-gray-800/20"
+              }`}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
       </div>
@@ -161,16 +156,15 @@ const AuthenticatedNavbar = ({ isScrolled, onDashboardClick }: AuthenticatedNavb
             <div className="px-2 pt-2 pb-3 space-y-1">
               <button
                 onClick={() => scrollToSection('learning-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
               >
-                My Learning
+                Learning Tools
               </button>
-
               <button
                 onClick={() => scrollToSection('tools-section')}
-                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
               >
-                Tools
+                Study Tools
               </button>
               <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
               <Link

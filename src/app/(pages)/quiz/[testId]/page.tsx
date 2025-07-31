@@ -460,9 +460,9 @@ export default function QuizGameplayPage() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentQuestion.questionId}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
+                  initial={{ opacity: 0, x: "50px" }}
+                  animate={{ opacity: 1, x: "0px" }}
+                  exit={{ opacity: 0, x: "-50px" }}
                   transition={{ duration: 0.3 }}
                 >
                   {skippedQuestions.has(currentQuestion.questionId) && (

@@ -1,14 +1,13 @@
 "use client";
 
 import { Button } from "../../ui/Button";
-import { Menu, X, ArrowRight, Moon, Sun, Plus } from "lucide-react";
+import { Menu, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useTheme } from "../../theme/ThemeProvider";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
-import AuthProtectedLink from "../AuthProtectedLink";
 import ThemeToggle from "../../theme/ThemeToggle";
+import Logo from "../../ui/Logo";
 // NotificationBell import removed
 
 interface NavbarProps {
@@ -17,7 +16,6 @@ interface NavbarProps {
 
 export default function Navbar({ isScrolled = false }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme } = useTheme();
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   const router = useRouter();
@@ -60,12 +58,10 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
       <div className={`${isCommunityPage || isFlashcardsPage || isMindMapsPage ? 'w-full px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto'} flex items-center justify-between`}>
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center">
-                        <h1 className={`text-2xl font-bold transition-all duration-300 ${isCommunityPage || isFlashcardsPage || isMindMapsPage
-                ? "bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400"
-                : "text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
-              }`}>
-              Manetho
-            </h1>
+            <Logo
+              size="md"
+              variant={isCommunityPage || isFlashcardsPage || isMindMapsPage ? "gradient" : "default"}
+            />
           </Link>
 
           <div className="hidden md:flex items-center gap-4">
@@ -101,7 +97,6 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
                 Log in
               </Button>
             )}
-            <ThemeToggle />
           </div>
 
           <Button
@@ -117,6 +112,9 @@ export default function Navbar({ isScrolled = false }: NavbarProps) {
               <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             )}
           </Button>
+
+          {/* Theme toggle - moved to rightmost position */}
+          <ThemeToggle />
         </div>
       </div>
 

@@ -172,8 +172,8 @@ export default function QuizArenaPage() {
 
         {/* Generate Quiz Tab */}
         {activeTab === 'generate' && (
-          <div className="max-w-2xl mx-auto">
-            <Card className="p-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/90 dark:from-gray-800/90 dark:via-blue-900/20 dark:to-indigo-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100/50 dark:border-blue-800/30 p-8 backdrop-blur-sm">
               <h2 className="text-2xl font-bold text-center mb-8 text-gray-800 dark:text-white">
                 Generate New Quiz
               </h2>
@@ -189,7 +189,7 @@ export default function QuizArenaPage() {
                     required
                     value={quizForm.topic}
                     onChange={(e) => setQuizForm(prev => ({ ...prev, topic: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white"
                     placeholder="e.g., JavaScript, World History, Biology..."
                   />
                 </div>
@@ -205,7 +205,7 @@ export default function QuizArenaPage() {
                         key={level}
                         className={`flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${quizForm.difficulty === level
                           ? `${difficultyColors[level]} border-current`
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm'
                           }`}
                       >
                         <input
@@ -233,7 +233,7 @@ export default function QuizArenaPage() {
                   <select
                     value={quizForm.questionCount}
                     onChange={(e) => setQuizForm(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white"
                   >
                     <option value={5}>5 Questions</option>
                     <option value={10}>10 Questions</option>
@@ -252,8 +252,8 @@ export default function QuizArenaPage() {
                       <label
                         key={option.value}
                         className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${quizForm.questionType === option.value
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                          ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-900/30 backdrop-blur-sm'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm'
                           }`}
                       >
                         <input
@@ -281,7 +281,7 @@ export default function QuizArenaPage() {
                   <textarea
                     value={quizForm.additionalContext}
                     onChange={(e) => setQuizForm(prev => ({ ...prev, additionalContext: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white resize-none"
                     rows={3}
                     placeholder="Provide any specific context, learning objectives, or areas to emphasize..."
                   />
@@ -291,7 +291,7 @@ export default function QuizArenaPage() {
                 <Button
                   type="submit"
                   disabled={generateLoading || !quizForm.topic.trim()}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 text-lg font-medium"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 text-lg font-medium transform hover:scale-105 transition-transform duration-200 shadow-lg"
                 >
                   {generateLoading ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -306,13 +306,13 @@ export default function QuizArenaPage() {
                   )}
                 </Button>
               </form>
-            </Card>
+            </div>
           </div>
         )}
 
         {/* Quiz History Tab */}
         {activeTab === 'history' && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {loading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -324,7 +324,7 @@ export default function QuizArenaPage() {
             ) : generatedQuizzes.length > 0 ? (
               <div className="space-y-4">
                 {generatedQuizzes.map((quiz) => (
-                  <Card key={quiz.testId} className="p-6 hover:shadow-lg transition-shadow">
+                  <div key={quiz.testId} className="bg-gradient-to-br from-white/90 via-green-50/80 to-teal-50/90 dark:from-gray-800/90 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100/50 dark:border-green-800/30 p-6 backdrop-blur-sm">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className={`px-3 py-1 rounded-full text-sm border ${difficultyColors[quiz.difficulty as keyof typeof difficultyColors]}`}>
@@ -338,7 +338,7 @@ export default function QuizArenaPage() {
                       <div className="flex items-center space-x-2">
                         <Button
                           onClick={() => router.push(`/quiz/${quiz.testId}`)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg"
                         >
                           <Play className="w-4 h-4 mr-1" />
                           Take Quiz
@@ -357,25 +357,27 @@ export default function QuizArenaPage() {
                       <span>Created: {new Date(quiz.createdAt).toLocaleDateString()}</span>
                       <span>Type: {quiz.questionType.replace('_', ' ')}</span>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-12">
-                <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No quizzes generated yet
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Start by generating your first AI-powered quiz!
-                </p>
-                <Button
-                  onClick={() => setActiveTab('generate')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Quiz
-                </Button>
+                <div className="bg-gradient-to-br from-white/90 via-purple-50/80 to-pink-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-pink-900/30 rounded-xl shadow-lg border border-purple-100/50 dark:border-purple-800/30 p-8 backdrop-blur-sm">
+                  <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    No quizzes generated yet
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    Start by generating your first AI-powered quiz!
+                  </p>
+                  <Button
+                    onClick={() => setActiveTab('generate')}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Quiz
+                  </Button>
+                </div>
               </div>
             )}
           </div>

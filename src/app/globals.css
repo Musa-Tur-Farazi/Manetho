@@ -3,6 +3,174 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 3D Effects and Perspective Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-visible {
+  backface-visibility: visible;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Enhanced 3D Card Effects */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-3d:hover {
+  transform: translateZ(20px) rotateY(5deg) rotateX(2deg);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* 3D Button Effects */
+.button-3d {
+  transform-style: preserve-3d;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-3d:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.button-3d:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Resizable Sidebar Styles */
+.resize-handle {
+  position: absolute;
+  right: -1px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.3), transparent);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.resize-handle:hover {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.6), transparent);
+  width: 6px;
+}
+
+.resize-handle.resizing {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.8), transparent);
+  width: 6px;
+}
+
+/* Enhanced Resize Handle for Homepage Sidebar */
+.homepage-resize-handle {
+  position: absolute;
+  right: -12px;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  cursor: col-resize;
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.2), transparent);
+  transition: all 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.homepage-resize-handle:hover {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.4), transparent);
+  width: 32px;
+}
+
+.homepage-resize-handle.resizing {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.6), transparent);
+  width: 32px;
+}
+
+.homepage-resize-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 30px;
+  background: rgba(156, 163, 175, 0.6);
+  border-radius: 2px;
+}
+
+.homepage-resize-handle:hover::before {
+  background: rgba(59, 130, 246, 0.9);
+  width: 6px;
+  height: 40px;
+}
+
+/* Arrow indicators for resize handle - always visible */
+.homepage-resize-handle::after {
+  content: '⟷';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: rgba(156, 163, 175, 0.8);
+  font-weight: bold;
+  opacity: 1;
+  transition: all 0.2s ease;
+}
+
+.homepage-resize-handle:hover::after {
+  opacity: 1;
+  color: rgba(59, 130, 246, 1);
+  font-size: 14px;
+}
+
+/* Enhanced Shadow Effects */
+.shadow-3d {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.shadow-3d-hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Dark mode 3D effects */
+.dark .shadow-3d {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.dark .shadow-3d-hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.4),
+    0 10px 10px -5px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

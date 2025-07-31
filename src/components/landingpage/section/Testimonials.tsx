@@ -92,9 +92,9 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
     <motion.div
       ref={cardRef}
       whileHover={{ scale: 1.03 }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: "20px" }}
+      animate={{ opacity: 1, y: "0px" }}
+      exit={{ opacity: 0, y: "-20px" }}
       transition={{ duration: 0.5 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -114,8 +114,8 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
       <motion.div
         className="absolute top-6 right-6 text-purple-200 dark:text-purple-800 opacity-50 z-10"
         animate={{
-          y: [0, -8, 0],
-          rotate: [0, 5, 0]
+          y: ["0px", "-8px", "0px"],
+          rotate: ["0deg", "5deg", "0deg"]
         }}
         transition={{
           duration: 6,
@@ -142,14 +142,14 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
                     src={testimonial.image}
                     alt={testimonial.name}
                     className="relative w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-md"
-                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    whileHover={{ scale: 1.1, rotate: "5deg" }}
                     transition={{ type: "spring", stiffness: 300 }}
                   />
                 </div>
                 <div>
                   <motion.h3
                     className="font-bold text-gray-900 dark:text-white"
-                    whileHover={{ x: 5 }}
+                    whileHover={{ x: "5px" }}
                     transition={{ type: "spring", stiffness: 700 }}
                   >
                     {testimonial.name}
@@ -163,8 +163,8 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
                 {Array.from({ length: 5 }).map((_, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: "10px" }}
+                    animate={{ opacity: 1, y: "0px" }}
                     transition={{ duration: 0.3, delay: i * 0.1 }}
                   >
                     <Star
@@ -253,7 +253,7 @@ const Testimonials = () => {
         <motion.div
           className="absolute top-20 right-[5%] w-64 h-64 bg-gradient-to-br from-purple-300/10 to-indigo-300/10 rounded-full filter blur-3xl"
           animate={{
-            scale: [1, 1.2, 1],
+            scale: ["1", "1.2", "1"],
             opacity: [0.5, 0.8, 0.5]
           }}
           transition={{
@@ -265,7 +265,7 @@ const Testimonials = () => {
         <motion.div
           className="absolute bottom-20 left-[5%] w-72 h-72 bg-gradient-to-tr from-indigo-300/10 to-purple-300/10 rounded-full filter blur-3xl"
           animate={{
-            scale: [1.2, 1, 1.2],
+            scale: ["1.2", "1", "1.2"],
             opacity: [0.5, 0.8, 0.5]
           }}
           transition={{
@@ -279,8 +279,8 @@ const Testimonials = () => {
 
       <div className="max-w-7xl mx-auto relative">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: "20px" }}
+          whileInView={{ opacity: 1, y: "0px" }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true, margin: "-100px" }}
           className="text-center mb-16"
@@ -331,9 +331,9 @@ const Testimonials = () => {
               {getVisibleTestimonials().map((testimonial, index) => (
                 <motion.div
                   key={testimonial.id}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
+                  initial={{ opacity: 0, x: "50px" }}
+                  animate={{ opacity: 1, x: "0px" }}
+                  exit={{ opacity: 0, x: "-50px" }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="w-full md:w-1/2 lg:w-1/3 flex-shrink-0"
                 >

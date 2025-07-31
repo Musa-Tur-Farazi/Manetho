@@ -102,7 +102,7 @@ export default function MindMapList({
 
               <button
                 onClick={(e) => handleDeleteClick(mindMap.mindmapId, e)}
-                className="ml-2 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                className="ml-2 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 rounded cursor-pointer"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

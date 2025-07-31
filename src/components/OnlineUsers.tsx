@@ -114,14 +114,14 @@ export default function OnlineUsers() {
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => startChat(user.userId)}
-              className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-900/20 rounded transition-colors"
+              className="p-1 text-slate-400 hover:text-blue-400 hover:bg-blue-900/20 rounded transition-colors cursor-pointer"
               title="Start chat"
             >
               <MessageCircle className="w-3 h-3" />
             </button>
             <button
               onClick={() => followUser(user.userId)}
-              className="p-1 text-slate-400 hover:text-emerald-400 hover:bg-emerald-900/20 rounded transition-colors"
+              className="p-1 text-slate-400 hover:text-emerald-400 hover:bg-emerald-900/20 rounded transition-colors cursor-pointer"
               title="Follow user"
             >
               <Plus className="w-3 h-3" />
@@ -132,7 +132,7 @@ export default function OnlineUsers() {
 
       {onlineUsers.length >= 10 && (
         <div className="pt-3 border-t border-slate-700/30">
-          <button className="w-full text-center text-sm text-purple-400 hover:text-purple-300 font-medium transition-colors">
+          <button className="w-full text-center text-sm text-purple-400 hover:text-purple-300 font-medium transition-colors cursor-pointer">
             View All Online ({onlineUsers.length + 5}+)
           </button>
         </div>
