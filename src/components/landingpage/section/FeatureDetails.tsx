@@ -61,9 +61,10 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
 
           <AuthProtectedLink href={learnMoreLink}>
             <div className={`inline-flex items-center text-sm font-medium transition-all duration-300 rounded-lg px-4 py-2 
-            ${color.replace('bg-', 'bg-opacity-50 hover:bg-opacity-100 text-')} 
-            ${color.replace('bg-', '').split('/')[0].replace('-100', '-600')} 
-            ${color.includes('dark:') ? color.replace('dark:bg-', 'dark:hover:bg-').replace('/40', '') : ''}
+            ${color.includes('cyan') ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : ''}
+            ${color.includes('emerald') ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''}
+            ${color.includes('purple') ? 'bg-purple-500 hover:bg-purple-600 text-white' : ''}
+            ${color.includes('amber') ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}
             hover:shadow-md transform hover:-translate-y-1`}>
               Explore Now
               <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
