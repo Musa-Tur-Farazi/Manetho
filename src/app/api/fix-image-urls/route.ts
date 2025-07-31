@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting image URL fix (preview -> view)...');
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error fixing image URLs:', error);
     return NextResponse.json(
-      { error: 'Failed to fix image URLs', details: error.message },
+      { error: 'Failed to fix image URLs', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

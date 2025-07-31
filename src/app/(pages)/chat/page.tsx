@@ -4,25 +4,33 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Send,
   Search,
+  MoreVertical,
   Phone,
   Video,
-  MoreVertical,
+  User,
+  Users,
+  ChevronRight,
   ChevronLeft,
+  Loader2,
+  Download,
+  FileText,
+  X,
   MessageCircle,
   Check,
   CheckCheck,
   Paperclip,
-  X,
-  FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ExternalLink,
+  Copy,
+  CheckCircle,
+  Trash2,
+  Plus,
+  Send
 } from 'lucide-react';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { downloadFile } from '@/lib/utils';
-import VideoCall from '@/components/chat/VideoCall';
-import AudioCall from '@/components/chat/AudioCall';
-import IncomingCallNotification from '@/components/chat/IncomingCallNotification';
+import { Button } from '@/components/ui/Button';
 import { pusherClient } from '@/lib/pusher-client';
 import { getChatChannel } from '@/lib/chat';
 
@@ -60,6 +68,43 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle file downloads
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      console.log('📥 Starting download:', filename);
+
+      // Fetch the file
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      // Get the blob
+      const blob = await response.blob();
+
+      // Create download URL
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      console.log('✅ Download completed:', filename);
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(url, '_blank');
+    }
+  };
 
   // Get chat parameter from URL
   const chatUserId = searchParams.get('with');
@@ -77,32 +122,39 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<FileUpload[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [currentUserInternalId, setCurrentUserInternalId] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(320); // Default 320px (w-80)
   const [isResizing, setIsResizing] = useState(false);
   const [lastActiveUpdate, setLastActiveUpdate] = useState(Date.now());
 
-  // Call states
-  const [isVideoCallActive, setIsVideoCallActive] = useState(false);
-  const [isAudioCallActive, setIsAudioCallActive] = useState(false);
-  const [callChannelName, setCallChannelName] = useState<string>('');
+  // Meeting functionality - no call states needed
 
-  // Incoming call notification states
-  const [incomingCall, setIncomingCall] = useState<{
-    callerId: string;
-    callerName: string;
-    callerAvatar: string;
-    channelName: string;
-    isVideoCall: boolean;
-    timestamp: number;
-  } | null>(null);
-  const [showIncomingCall, setShowIncomingCall] = useState(false);
+  // Meeting links state (similar to group chat)
+  const [meetingLinks, setMeetingLinks] = useState<Array<{
+    linkId: string;
+    platform: string;
+    url: string;
+    createdAt: string;
+    isActive: boolean;
+    createdBy: string;
+    creatorName: string;
+    creatorAvatar: string;
+  }>>([]);
+  const [showMeetingOptions, setShowMeetingOptions] = useState(false);
+  const [meetingLinkInput, setMeetingLinkInput] = useState('');
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [isLoadingMeetingLinks, setIsLoadingMeetingLinks] = useState(false);
 
-  // Agora configuration (you'll need to add these to your environment variables)
-  const AGORA_APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+  // Meeting functionality - no incoming call states needed
+
+  // Google Meet integration - no configuration needed
 
   // Pusher subscription for real-time messages
   useEffect(() => {
@@ -126,20 +178,130 @@ export default function ChatPage() {
     };
   }, [currentUserInternalId, selectedChat]);
 
-  // Helper function to generate valid Agora channel names
-  const generateChannelName = (userId1: string, userId2: string): string => {
-    // Remove hyphens and take first 8 characters of each UUID
-    const user1Short = userId1.replace(/-/g, '').substring(0, 8);
-    const user2Short = userId2.replace(/-/g, '').substring(0, 8);
+  // Google Meet integration - no channel name generation needed
 
-    // Sort to ensure consistent channel name regardless of who starts the call
-    const sortedUsers = [user1Short, user2Short].sort();
+  // Meeting Links Functions (similar to group chat)
+  const fetchMeetingLinks = async () => {
+    if (!selectedUser?.userId) {
+      console.log('⚠️ Cannot fetch meeting links: selectedUser not available');
+      return;
+    }
 
-    // Create a short timestamp (last 6 digits)
-    const shortTimestamp = Date.now().toString().slice(-6);
+    try {
+      setIsLoadingMeetingLinks(true);
+      console.log('📞 Fetching meeting links for user:', selectedUser.fullName, selectedUser.userId);
 
-    // Format: user1_user2_timestamp (should be well under 64 bytes)
-    return `${sortedUsers[0]}_${sortedUsers[1]}_${shortTimestamp}`;
+      const response = await fetch(`/api/direct-chat/meeting-links?otherUserId=${selectedUser.userId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const previousCount = meetingLinks.length;
+        const newCount = data.meetingLinks?.length || 0;
+
+        setMeetingLinks(data.meetingLinks || []);
+
+        if (newCount !== previousCount) {
+          console.log('🔄 Meeting links updated:', previousCount, '→', newCount);
+        }
+
+        console.log('✅ Meeting links synced:', newCount, 'active meetings');
+      } else {
+        console.error('❌ Error fetching meeting links:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Network error fetching meeting links:', error);
+    } finally {
+      setIsLoadingMeetingLinks(false);
+    }
+  };
+
+  const generateMeetingLink = async (platform: 'google' | 'zoom') => {
+    try {
+      if (platform === 'google') {
+        // Open Google Meet in a new tab for manual creation
+        window.open('https://meet.google.com/new', '_blank');
+        return;
+      } else if (platform === 'zoom') {
+        // Open Zoom in a new tab for manual creation
+        window.open('https://zoom.us/start/webmeeting', '_blank');
+        return;
+      }
+    } catch (error) {
+      console.error('Error opening meeting platform:', error);
+    }
+  };
+
+  const createMeetingLink = async (platform: string, url: string) => {
+    if (!selectedUser?.userId) return;
+
+    try {
+      const response = await fetch('/api/direct-chat/meeting-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          otherUserId: selectedUser.userId,
+          platform,
+          url,
+        }),
+      });
+
+      if (response.ok) {
+        const linkData = await response.json();
+        console.log('✅ Meeting link created successfully:', linkData);
+
+        // Immediately fetch updated meeting links
+        await fetchMeetingLinks();
+        setShowMeetingOptions(false);
+        setMeetingLinkInput('');
+
+        // Show success feedback
+        console.log(`🎉 Google Meet link created and shared with ${selectedUser.fullName}`);
+        console.log('🔄 Other user should see this meeting within 2 seconds via polling');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to create meeting link:', errorData.error);
+        alert('Failed to create meeting link: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error('Error creating meeting link:', error);
+      alert('Failed to create meeting link. Please try again.');
+    }
+  };
+
+  const deleteMeetingLink = async (linkId: string) => {
+    try {
+      const response = await fetch('/api/direct-chat/meeting-links', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          linkId,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('🗑️ Meeting link deleted successfully');
+        await fetchMeetingLinks();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to delete meeting link:', errorData.error);
+      }
+    } catch (error) {
+      console.error('Error deleting meeting link:', error);
+    }
+  };
+
+  const copyMeetingLink = (url: string, linkId: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkId(linkId);
+    setTimeout(() => setCopiedLinkId(null), 2000);
+  };
+
+  const getPlatformName = (platform: string) => {
+    return 'Google Meet';
   };
 
   // Auto-scroll to bottom when new messages arrive
@@ -205,40 +367,7 @@ export default function ChatPage() {
     return () => clearInterval(refreshInterval);
   }, []);
 
-  // Poll for incoming calls
-  useEffect(() => {
-    if (!user || !currentUserInternalId) return;
-
-    const pollForIncomingCalls = async () => {
-      try {
-        console.log('🔄 Polling for incoming calls...');
-        const response = await fetch('/api/call-signal');
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📥 Call signal response:', data);
-
-          if (data.hasCall && data.callSignal) {
-            console.log('📞 INCOMING CALL DETECTED:', data.callSignal);
-            console.log('🎯 Setting incoming call state...');
-            setIncomingCall(data.callSignal);
-            setShowIncomingCall(true);
-            console.log('✅ Incoming call notification should show now');
-          } else {
-            console.log('❌ No incoming calls');
-          }
-        } else {
-          console.log('❌ Call signal response not ok:', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to check for incoming calls:', error);
-      }
-    };
-
-    // Poll every 2 seconds for incoming calls
-    const callInterval = setInterval(pollForIncomingCalls, 2000);
-
-    return () => clearInterval(callInterval);
-  }, [user, currentUserInternalId]);
+  // Meeting functionality - no call signal polling needed
 
   // Handle mouse events for resizing
   useEffect(() => {
@@ -306,8 +435,26 @@ export default function ChatPage() {
     if (selectedChat) {
       fetchMessages(selectedChat);
       fetchUserInfo(selectedChat);
+      fetchMeetingLinks(); // Fetch meeting links when a chat is selected
     }
   }, [selectedChat]);
+
+  // Periodic polling for meeting links to keep them in sync between users
+  useEffect(() => {
+    if (!selectedUser?.userId) return;
+
+    console.log('🔄 Starting meeting links polling for user:', selectedUser.fullName);
+
+    const pollMeetingLinks = setInterval(() => {
+      console.log('📡 Polling meeting links...');
+      fetchMeetingLinks();
+    }, 2000); // Poll every 2 seconds for faster real-time sync
+
+    return () => {
+      console.log('⏹️ Stopping meeting links polling');
+      clearInterval(pollMeetingLinks);
+    };
+  }, [selectedUser?.userId]);
 
   // Search functionality
   useEffect(() => {
@@ -415,27 +562,55 @@ export default function ChatPage() {
   }, [searchQuery]);
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && selectedFiles.length === 0) || !selectedChat || sendingMessage) return;
+    console.log('🚀 sendMessage called', {
+      newMessage: newMessage.trim(),
+      uploadedFile: !!uploadedFile,
+      selectedChat,
+      sendingMessage
+    });
+
+    if ((!newMessage.trim() && uploadedFile === null) || !selectedChat || sendingMessage) {
+      console.log('❌ sendMessage blocked:', {
+        hasMessage: !!newMessage.trim(),
+        hasFile: !!uploadedFile,
+        hasSelectedChat: !!selectedChat,
+        isSending: sendingMessage
+      });
+      return;
+    }
 
     setSendingMessage(true);
     try {
-      // Upload files first if any
-      const uploadedFiles = await uploadFiles();
+      // Upload file if any
+      const uploadedFileData = uploadedFile ? await uploadFile(uploadedFile) : null;
+      console.log('📤 File data prepared:', uploadedFileData);
 
-      // Send message with files
+      // Send message with file
       const messageData: {
         recipientId: string;
         content: string;
-        files?: any[];
+        files?: Array<{
+          url: string;
+          name: string;
+          type: string;
+          size: number;
+        }>;
       } = {
         recipientId: selectedChat,
         content: newMessage || '',
       };
 
-      // Add file information if files were uploaded
-      if (uploadedFiles.length > 0) {
-        messageData.files = uploadedFiles;
+      // Add file information if file was uploaded
+      if (uploadedFileData) {
+        messageData.files = [{
+          url: uploadedFileData.url,
+          name: uploadedFileData.name,
+          type: uploadedFileData.type,
+          size: uploadedFileData.size,
+        }];
       }
+
+      console.log('📨 Sending message data:', messageData);
 
       const response = await fetch('/api/community/direct-messages', {
         method: 'POST',
@@ -445,12 +620,15 @@ export default function ChatPage() {
         body: JSON.stringify(messageData),
       });
 
+      console.log('📨 Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Message sent successfully:', data);
 
         // Add all created messages to the UI
         if (data.messages && data.messages.length > 0) {
-          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; files?: any[] }) => ({
+          const newMessages = data.messages.map((msg: { id: string; content: string; senderId: string; recipientId: string; timestamp: string; fileUrl?: string; fileName?: string; fileType?: string; fileSize?: number }) => ({
             ...msg,
             senderName: data.sender.fullName,
             senderAvatar: data.sender.avatarUrl,
@@ -467,15 +645,18 @@ export default function ChatPage() {
         }
 
         setNewMessage('');
-        setSelectedFiles([]);
+        setUploadedFile(null);
         setShouldAutoScroll(true);
 
         // Update recent chats
         fetchRecentChats();
         fetchUnknownUsers();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Message send failed:', response.status, errorData);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('💥 Error sending message:', error);
     } finally {
       setSendingMessage(false);
     }
@@ -500,10 +681,8 @@ export default function ChatPage() {
 
   const isUserOnline = (lastActiveAt?: string) => {
     if (!lastActiveAt) return false;
-    const now = new Date();
-    const lastActive = new Date(lastActiveAt);
-    const diffInMinutes = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60));
-    return diffInMinutes < 2; // Consider online if active within 2 minutes (more real-time)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastActiveAt) > fiveMinutesAgo; // Consider online if active within 5 minutes (consistent with profile)
   };
 
   const getLastActiveText = (lastActiveAt?: string) => {
@@ -513,8 +692,7 @@ export default function ChatPage() {
     const lastActive = new Date(lastActiveAt);
     const diffInMinutes = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60));
 
-    if (diffInMinutes < 2) return 'Active now';
-    if (diffInMinutes < 5) return 'Just now';
+    if (diffInMinutes < 5) return 'Active now';
     if (diffInMinutes < 60) return `Active ${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `Active ${Math.floor(diffInMinutes / 60)}h ago`;
     return `Active ${Math.floor(diffInMinutes / 1440)}d ago`;
@@ -543,11 +721,20 @@ export default function ChatPage() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.log('❌ No file selected');
+      return;
+    }
 
-    const newFiles: FileUpload[] = [];
+    console.log('📁 File selected:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    // Validate file type
     const allowedTypes = [
       'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
       'application/pdf',
@@ -558,95 +745,85 @@ export default function ChatPage() {
       'application/x-zip-compressed'
     ];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    if (!allowedTypes.includes(file.type)) {
+      console.log('❌ File type not allowed:', file.type);
+      alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
+      return;
+    }
 
-      // Validate file type
-      if (!allowedTypes.includes(file.type)) {
-        alert(`File "${file.name}" is not supported. Allowed types: Images, PDF, Word documents, Text files, and ZIP archives.`);
-        continue;
-      }
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      console.log('❌ File too large:', file.size);
+      alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+      return;
+    }
 
-      // Validate file size
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
-        continue;
-      }
+    setUploading(true);
+    try {
+      console.log('📤 Starting upload for:', file.name);
 
-      const fileUpload: FileUpload = { file };
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Create preview for images only
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          fileUpload.preview = e.target?.result as string;
-          setSelectedFiles(prev => [...prev]);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log('📤 Upload response:', {
+        status: response.status,
+        success: data.success,
+        file: data.file
+      });
+
+      if (response.ok && data.success) {
+        // Store the uploaded file for manual sending
+        const uploadedFileData = {
+          url: data.file.url,
+          name: data.file.name,
+          type: data.file.type,
+          size: data.file.size,
         };
-        reader.readAsDataURL(file);
-      }
 
-      newFiles.push(fileUpload);
+        // Add preview for images
+        if (file.type.startsWith('image/')) {
+          try {
+            const preview = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            (uploadedFileData as any).preview = preview;
+            console.log('✅ Image preview created');
+          } catch (error) {
+            console.error('❌ Error creating preview:', error);
+          }
+        }
+
+        setUploadedFile(uploadedFileData);
+        console.log('✅ File uploaded and ready to send:', uploadedFileData.name);
+      } else {
+        console.error('❌ Upload failed:', data.error);
+        alert(`Upload failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('💥 Upload error:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
     }
 
-    if (newFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...newFiles]);
-
-      // Show success message for PDFs and documents
-      const pdfCount = newFiles.filter(f => f.file.type === 'application/pdf').length;
-      const docCount = newFiles.filter(f => f.file.type.includes('document') || f.file.type.includes('msword')).length;
-
-      if (pdfCount > 0 || docCount > 0) {
-        console.log(`📄 Successfully selected ${pdfCount} PDF(s) and ${docCount} document(s) for upload`);
-      }
-    }
-
-    // Reset input
+    // Clear file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadFiles = async (): Promise<string[]> => {
-    if (selectedFiles.length === 0) return [];
-
-    setUploadingFiles(true);
-    const uploadedFiles: any[] = [];
-
-    try {
-      for (const fileUpload of selectedFiles) {
-        const formData = new FormData();
-        formData.append('file', fileUpload.file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          uploadedFiles.push({
-            url: data.file.url,
-            name: fileUpload.file.name,
-            type: fileUpload.file.type,
-            size: fileUpload.file.size,
-          });
-        } else {
-          throw new Error(`Failed to upload ${fileUpload.file.name}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Failed to upload files. Please try again.');
-      setUploadingFiles(false);
-      return [];
-    }
-
-    setUploadingFiles(false);
-    return uploadedFiles;
+  const uploadFile = async (fileData: { url: string; name: string; type: string; size: number }) => {
+    // File is already uploaded, just return the data
+    return fileData;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -662,39 +839,7 @@ export default function ChatPage() {
       return <ImageIcon className="w-4 h-4" />;
     }
     if (fileType === 'application/pdf') {
-      return (
-        <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z" />
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M8.597 11.085h.906v2.189h-.906v-2.189zm4.045 0h.906v2.189h-.906v-2.189z" />
-        </svg>
-      );
-    }
-    if (fileType === 'application/msword' || fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return (
-        <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M10.5 12.5L9.5 16l-1-3.5L7.5 16l-1-3.5h1.25l.5 2 .5-2h.5l.5 2 .5-2h1.25z" />
-        </svg>
-      );
-    }
-    if (fileType === 'text/plain') {
-      return (
-        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      );
-    }
-    if (fileType === 'application/zip' || fileType === 'application/x-zip-compressed') {
-      return (
-        <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-          <path d="M14 2v6h6" />
-          <path d="M10 11h1v1h-1v-1zm1 1h1v1h-1v-1zm-1 1h1v1h-1v-1zm1 1h1v1h-1v-1z" />
-        </svg>
-      );
+      return <FileText className="w-4 h-4 text-red-500" />;
     }
     return <FileText className="w-4 h-4" />;
   };
@@ -710,120 +855,7 @@ export default function ChatPage() {
     }
   };
 
-  // Call functions
-  const startVideoCall = async () => {
-    if (!selectedUser || !currentUserInternalId) return;
-
-    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
-
-    // Send call signal to recipient
-    try {
-      await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: selectedUser.userId,
-          channelName,
-          isVideoCall: true,
-          action: 'initiate'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to send call signal:', error);
-    }
-
-    setCallChannelName(channelName);
-    setIsVideoCallActive(true);
-  };
-
-  const startAudioCall = async () => {
-    if (!selectedUser || !currentUserInternalId) return;
-
-    const channelName = generateChannelName(currentUserInternalId, selectedUser.userId);
-    console.log('Generated channel name:', channelName, 'Length:', channelName.length);
-
-    // Send call signal to recipient
-    try {
-      await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: selectedUser.userId,
-          channelName,
-          isVideoCall: false,
-          action: 'initiate'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to send call signal:', error);
-    }
-
-    setCallChannelName(channelName);
-    setIsAudioCallActive(true);
-  };
-
-  const endCall = async () => {
-    // Cancel call signal if active
-    if (selectedUser && (isVideoCallActive || isAudioCallActive)) {
-      try {
-        await fetch('/api/call-signal', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipientId: selectedUser.userId,
-            channelName: callChannelName,
-            isVideoCall: isVideoCallActive,
-            action: 'cancel'
-          })
-        });
-      } catch (error) {
-        console.error('Failed to cancel call signal:', error);
-      }
-    }
-
-    setIsVideoCallActive(false);
-    setIsAudioCallActive(false);
-    setCallChannelName('');
-  };
-
-  // Incoming call handlers
-  const acceptIncomingCall = () => {
-    if (!incomingCall) return;
-
-    setCallChannelName(incomingCall.channelName);
-    if (incomingCall.isVideoCall) {
-      setIsVideoCallActive(true);
-    } else {
-      setIsAudioCallActive(true);
-    }
-
-    setShowIncomingCall(false);
-    setIncomingCall(null);
-  };
-
-  const declineIncomingCall = async () => {
-    if (!incomingCall) return;
-
-    // Send decline signal
-    try {
-      await fetch('/api/call-signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientId: incomingCall.callerId,
-          channelName: incomingCall.channelName,
-          isVideoCall: incomingCall.isVideoCall,
-          action: 'decline'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to send decline signal:', error);
-    }
-
-    setShowIncomingCall(false);
-    setIncomingCall(null);
-  };
+  // Meeting functionality replaces old call functions - no call handlers needed
 
   if (loading) {
     return (
@@ -836,29 +868,7 @@ export default function ChatPage() {
     );
   }
 
-  // Render call components
-  if (isVideoCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
-    return (
-      <VideoCall
-        channelName={callChannelName}
-        userId={currentUserInternalId}
-        onCallEnd={endCall}
-        appId={AGORA_APP_ID}
-      />
-    );
-  }
-
-  if (isAudioCallActive && selectedUser && currentUserInternalId && AGORA_APP_ID) {
-    return (
-      <AudioCall
-        channelName={callChannelName}
-        userId={currentUserInternalId}
-        onCallEnd={endCall}
-        appId={AGORA_APP_ID}
-        recipientName={selectedUser.fullName}
-      />
-    );
-  }
+  // Meeting functionality - no call component rendering needed
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -874,7 +884,7 @@ export default function ChatPage() {
             </button>
             <button
               onClick={() => router.push('/home')}
-              className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+              className="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </button>
@@ -1035,100 +1045,8 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Following Users */}
-            {!searchQuery && followingUsers.length > 0 && (
-              <div className="p-3">
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Learning Partners</h3>
-                {followingUsers.map((user) => (
-                  <div
-                    key={user.userId}
-                    onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
-                      }`}
-                  >
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="hover:scale-110 transition-transform duration-300"
-                      >
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        {isUserOnline(user.lastActiveAt) && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                      >
-                        {user.fullName}
-                      </button>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Unknown Users */}
-            {!searchQuery && unknownUsers.length > 0 && (
-              <div className="p-3">
-                <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Unknown person message</h3>
-                {unknownUsers.map((user) => (
-                  <div
-                    key={user.userId}
-                    onClick={() => handleChatSelect(user.userId)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${selectedChat === user.userId ? 'bg-blue-500/10 dark:bg-blue-500/20' : ''
-                      }`}
-                  >
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="hover:scale-110 transition-transform duration-300"
-                      >
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        {isUserOnline(user.lastActiveAt) && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleProfileClick(user.userId, user.fullName);
-                        }}
-                        className="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                      >
-                        {user.fullName}
-                      </button>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">{getLastActiveText(user.lastActiveAt)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Empty State */}
-            {!searchQuery && recentChats.length === 0 && followingUsers.length === 0 && unknownUsers.length === 0 && (
+            {!searchQuery && recentChats.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
                 <MessageCircle className="w-16 h-16 text-gray-300 dark:text-slate-600 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No conversations yet</h3>
@@ -1173,7 +1091,7 @@ export default function ChatPage() {
                         alt={selectedUser.fullName}
                         className="w-12 h-12 rounded-full object-cover"
                       />
-                      {selectedUser.isOnline && (
+                      {isUserOnline(selectedUser.lastActiveAt) && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
                       )}
                     </button>
@@ -1190,25 +1108,220 @@ export default function ChatPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={startAudioCall}
-                    disabled={!AGORA_APP_ID}
-                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={!AGORA_APP_ID ? 'Audio calls not configured' : 'Start audio call'}
-                  >
-                    <Phone className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={startVideoCall}
-                    disabled={!AGORA_APP_ID}
-                    className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={!AGORA_APP_ID ? 'Video calls not configured' : 'Start video call'}
-                  >
-                    <Video className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                  {/* Meeting Links Section */}
+                  <div className="relative">
+                    {meetingLinks.length > 0 && (
+                      <div className="flex items-center gap-1 mr-2">
+                        {meetingLinks.slice(0, 1).map((link) => (
+                          <div key={link.linkId} className="flex items-center gap-1">
+                            <Button
+                              onClick={() => window.open(link.url, '_blank')}
+                              className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 h-7 text-xs"
+                              size="sm"
+                              title={`Join ${getPlatformName(link.platform)}`}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              <span className="hidden sm:inline">Join {getPlatformName(link.platform)}</span>
+                              <span className="sm:hidden">Join</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => copyMeetingLink(link.url, link.linkId)}
+                              size="sm"
+                              title="Copy link"
+                              className="px-1 py-1 h-7"
+                            >
+                              {copiedLinkId === link.linkId ? (
+                                <CheckCircle className="w-3 h-3 text-green-500" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        const isOpening = !showMeetingOptions;
+                        setShowMeetingOptions(isOpening);
+                        // Refresh meeting links when opening the dropdown
+                        if (isOpening) {
+                          console.log('🔄 Refreshing meeting links (dropdown opened)');
+                          fetchMeetingLinks();
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${meetingLinks.length === 0
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50'
+                        }`}
+                      title={meetingLinks.length === 0 ? "Start a new meeting" : "Manage meetings"}
+                    >
+                      {meetingLinks.length === 0 ? (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span>Start Meeting</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span>Meeting</span>
+                          <div className="w-5 h-5 bg-green-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                            {meetingLinks.length}
+                          </div>
+                          <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${showMeetingOptions ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Meeting Options Dropdown */}
+                    {showMeetingOptions && (
+                      <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg z-50">
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {meetingLinks.length === 0 ? 'Start Meeting' : 'Active Meetings'}
+                              </h4>
+                              {meetingLinks.length > 0 && (
+                                <div className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">
+                                  {meetingLinks.length} Live
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  console.log('🔄 Manual refresh of meeting links');
+                                  fetchMeetingLinks();
+                                }}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded text-gray-500 dark:text-gray-400 transition-colors"
+                                title="Refresh meetings"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setShowMeetingOptions(false)}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Existing Meeting Links */}
+                          <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
+                            {meetingLinks.map((link) => (
+                              <div key={link.linkId} className="flex items-center justify-between bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                      {getPlatformName(link.platform)} Meeting
+                                    </span>
+                                    <div className="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">
+                                      LIVE
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    Started by {link.creatorName}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    onClick={() => window.open(link.url, '_blank')}
+                                    className="h-8 px-3 bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md transition-all duration-200 font-medium text-xs"
+                                    title="Join meeting"
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    Join
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => copyMeetingLink(link.url, link.linkId)}
+                                    className="h-8 px-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                                    title="Copy link"
+                                  >
+                                    {copiedLinkId === link.linkId ? (
+                                      <CheckCircle className="w-3 h-3 text-green-500" />
+                                    ) : (
+                                      <Copy className="w-3 h-3 text-gray-500" />
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => deleteMeetingLink(link.linkId)}
+                                    className="h-8 px-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    title="End meeting"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            {meetingLinks.length === 0 && (
+                              <div className="text-center py-6">
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                                  <Video className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">No active meetings</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500">Start a meeting to connect instantly</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Start Google Meet Section */}
+                          <div className={`${meetingLinks.length > 0 ? 'border-t pt-4' : ''}`}>
+                            <Button
+                              onClick={() => generateMeetingLink('google')}
+                              className="w-full justify-center bg-[#1a73e8] hover:bg-[#1557b0] text-white shadow-sm hover:shadow-md transition-all duration-200 h-12 text-base font-medium mb-4"
+                            >
+                              <Plus className="w-5 h-5 mr-2" />
+                              {meetingLinks.length > 0 ? 'Start New Google Meet' : 'Start Google Meet'}
+                            </Button>
+
+                            {/* Custom Link Input */}
+                            <div className="space-y-2">
+                              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <span>Or paste existing Google Meet link</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="url"
+                                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                                  value={meetingLinkInput}
+                                  onChange={(e) => setMeetingLinkInput(e.target.value)}
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                />
+                                <Button
+                                  onClick={() => {
+                                    if (meetingLinkInput.trim()) {
+                                      createMeetingLink('google', meetingLinkInput.trim());
+                                    }
+                                  }}
+                                  disabled={!meetingLinkInput.trim()}
+                                  className={`h-10 px-4 transition-all duration-200 ${meetingLinkInput.trim()
+                                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm hover:shadow-md'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                                    }`}
+                                >
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Add
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               </div>
 
@@ -1219,7 +1332,7 @@ export default function ChatPage() {
                   const showDate = index === 0 || formatMessageDate(messages[index - 1]?.timestamp) !== formatMessageDate(message.timestamp);
 
                   return (
-                    <div key={message.messageId}>
+                    <div key={`${message.messageId}-${index}`}>
                       {/* Date separator */}
                       {showDate && (
                         <div className="flex justify-center my-4">
@@ -1261,13 +1374,23 @@ export default function ChatPage() {
                               {message.fileUrl && (
                                 <div className="mb-2">
                                   {message.fileType?.startsWith('image/') ? (
-                                    <div className="relative">
+                                    <div className="relative group">
                                       <img
                                         src={message.fileUrl}
                                         alt={message.fileName}
-                                        className="max-w-sm max-h-80 rounded-lg object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                                        onClick={() => window.open(message.fileUrl, '_blank')}
+                                        className="max-w-sm max-h-80 rounded-lg object-cover"
+                                        title="Image preview"
                                       />
+                                      {/* Download button overlay */}
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                        <button
+                                          onClick={() => downloadFile(message.fileUrl!, message.fileName || 'image')}
+                                          className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                                          title="Download image"
+                                        >
+                                          <Download className="w-5 h-5" />
+                                        </button>
+                                      </div>
                                     </div>
                                   ) : message.fileType === 'application/pdf' ? (
                                     <div className={`p-3 rounded-lg border-2 border-dashed ${isOwn
@@ -1295,7 +1418,7 @@ export default function ChatPage() {
                                               ? 'bg-white/20 text-white hover:bg-white/30'
                                               : 'bg-red-500 text-white hover:bg-red-600'
                                               }`}
-                                            title="Open in new tab"
+                                            title="Open PDF in new tab"
                                           >
                                             Preview
                                           </button>
@@ -1305,7 +1428,7 @@ export default function ChatPage() {
                                               ? 'bg-white/20 text-white hover:bg-white/30'
                                               : 'bg-gray-500 text-white hover:bg-gray-600'
                                               }`}
-                                            title="Download file"
+                                            title="Download PDF"
                                           >
                                             Download
                                           </button>
@@ -1379,47 +1502,45 @@ export default function ChatPage() {
               {/* Message Input */}
               <div className="p-4 bg-white/95 dark:bg-slate-900/95 border-t border-gray-200/30 dark:border-slate-700/30">
                 {/* File Previews */}
-                {selectedFiles.length > 0 && (
+                {uploadedFile && (
                   <div className="mb-3 flex flex-wrap gap-2">
-                    {selectedFiles.map((fileUpload, index) => (
-                      <div key={index} className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {fileUpload.preview ? (
-                            <img src={fileUpload.preview} alt="" className="w-10 h-10 rounded object-cover" />
-                          ) : (
-                            <div className={`w-10 h-10 rounded flex items-center justify-center ${fileUpload.file.type === 'application/pdf'
-                              ? 'bg-red-100 dark:bg-red-900/30'
-                              : 'bg-gray-200 dark:bg-slate-700'
-                              }`}>
-                              {getFileIcon(fileUpload.file.type)}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                              {fileUpload.file.type === 'application/pdf' ? '📄 ' : ''}{fileUpload.file.name}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-slate-400">
-                              {fileUpload.file.type === 'application/pdf' && 'PDF • '}{formatFileSize(fileUpload.file.size)}
-                            </p>
+                    <div className="relative bg-gray-100 dark:bg-slate-800 rounded-lg p-3 flex items-center gap-3 max-w-xs">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {(uploadedFile as any).preview ? (
+                          <img src={(uploadedFile as any).preview} alt="" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className={`w-10 h-10 rounded flex items-center justify-center ${uploadedFile.type === 'application/pdf'
+                            ? 'bg-red-100 dark:bg-red-900/30'
+                            : 'bg-gray-200 dark:bg-slate-700'
+                            }`}>
+                            {getFileIcon(uploadedFile.type)}
                           </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                            {uploadedFile.type === 'application/pdf' ? '📄 ' : ''}{uploadedFile.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">
+                            {uploadedFile.type === 'application/pdf' && 'PDF • '}{formatFileSize(uploadedFile.size)}
+                          </p>
                         </div>
-                        <button
-                          onClick={() => removeFile(index)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
                       </div>
-                    ))}
+                      <button
+                        onClick={() => setUploadedFile(null)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  {/* File Input */}
+                {/* Message Input */}
+                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex items-center gap-3 bg-gray-100 dark:bg-slate-800/80 rounded-2xl">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                     accept="image/*,.pdf,.doc,.docx,.txt,.zip"
@@ -1427,41 +1548,39 @@ export default function ChatPage() {
 
                   {/* File Button */}
                   <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingFiles || sendingMessage}
+                    disabled={uploading || sendingMessage}
                     className="p-3 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Paperclip className="w-5 h-5" />
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-600 border-t-transparent"></div>
+                    ) : (
+                      <Paperclip className="w-5 h-5" />
+                    )}
                   </button>
 
                   <div className="flex-1 relative">
-                    <textarea
+                    <input
+                      type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder={`Message ${selectedUser.fullName}...`}
-                      className="w-full px-4 py-3 bg-gray-100 dark:bg-slate-800/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 resize-none max-h-32"
-                      rows={1}
-                      style={{ height: 'auto', minHeight: '2.75rem' }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
-                      }}
+                      placeholder={uploadedFile ? "Add a message (optional)..." : "Type a message..."}
+                      className="flex-1 px-4 py-3 bg-transparent border-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 text-sm w-full"
                     />
                   </div>
                   <button
-                    onClick={sendMessage}
-                    disabled={(!newMessage.trim() && selectedFiles.length === 0) || sendingMessage || uploadingFiles}
+                    type="submit"
+                    disabled={(!newMessage.trim() && uploadedFile === null) || sendingMessage || uploading}
                     className="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex items-center justify-center min-w-[3rem]"
                   >
-                    {(sendingMessage || uploadingFiles) ? (
+                    {(sendingMessage || uploading) ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     ) : (
                       <Send className="w-5 h-5" />
                     )}
                   </button>
-                </div>
+                </form>
               </div>
             </>
           ) : (
@@ -1479,16 +1598,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Incoming Call Notification */}
-      {showIncomingCall && incomingCall && (
-        <IncomingCallNotification
-          callerName={incomingCall.callerName}
-          callerAvatar={incomingCall.callerAvatar}
-          isVideoCall={incomingCall.isVideoCall}
-          onAccept={acceptIncomingCall}
-          onDecline={declineIncomingCall}
-        />
-      )}
+      {/* Meeting functionality - no incoming call notification needed */}
     </div>
   );
 } 

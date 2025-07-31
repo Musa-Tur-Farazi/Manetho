@@ -21,7 +21,7 @@ export async function DELETE(
     const { threadId } = await params;
 
     // Get the user from the database
-    const userResult: any = await db.execute(
+    const userResult = await db.execute(
       sql`SELECT * FROM users WHERE "clerk_id" = ${userId} LIMIT 1`
     );
 
@@ -32,10 +32,10 @@ export async function DELETE(
       );
     }
 
-    const user = userResult.rows[0];
+    const user = userResult.rows[0] as Record<string, unknown>;
 
     // Get the thread to check ownership
-    const threadResult: any = await db.execute(
+    const threadResult = await db.execute(
       sql`SELECT * FROM threads WHERE thread_id = ${threadId} LIMIT 1`
     );
 
@@ -46,7 +46,7 @@ export async function DELETE(
       );
     }
 
-    const thread = threadResult.rows[0];
+    const thread = threadResult.rows[0] as Record<string, unknown>;
 
     // Check if user is the author or an admin
     const isAuthor = thread.created_by === user.user_id;

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Client, Storage } from 'node-appwrite';
 
 // Initialize Appwrite client
@@ -9,7 +9,7 @@ const client = new Client()
 
 const storage = new Storage(client);
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Debugging Appwrite connection...');
 
@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     // Try to list files in the bucket
     const files = await storage.listFiles(bucketId);
 
-    console.log(`Found ${files.documents.length} files in bucket`);
+    console.log(`Found ${files.files.length} files in bucket`);
 
     // Get details for each file
-    const fileDetails = files.documents.map(file => ({
+    const fileDetails = files.files.map(file => ({
       id: file.$id,
       name: file.name,
       size: file.sizeOriginal,
@@ -41,18 +41,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       bucketId,
-      totalFiles: files.documents.length,
+      totalFiles: files.files.length,
       files: fileDetails
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error debugging Appwrite:', error);
     return NextResponse.json(
       {
         error: 'Failed to debug Appwrite',
-        details: error.message,
-        code: error.code,
-        type: error.type
+        details: error instanceof Error ? error.message : String(error),
+        code: (error as any)?.code,
+        type: (error as any)?.type
       },
       { status: 500 }
     );

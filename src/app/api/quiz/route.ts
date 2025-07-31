@@ -33,10 +33,40 @@ export async function GET(request: NextRequest) {
     const subjectId = searchParams.get('subjectId');
     const topicId = searchParams.get('topicId');
     const difficulty = searchParams.get('difficulty');
+    const type = searchParams.get('type');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Build query conditions
+    // Handle different query types
+    if (type === 'generated') {
+      // Return user's generated quizzes
+      const generatedQuizzes = await db
+        .select({
+          testId: practiceTestsTable.testId,
+          title: practiceTestsTable.title,
+          description: practiceTestsTable.description,
+          topic: practiceTestsTable.title, // Extract topic from title for now
+          difficulty: practiceTestsTable.difficulty,
+          questionType: sql<string>`'multiple_choice'`, // Default question type
+          totalQuestions: practiceTestsTable.totalQuestions,
+          timeLimit: practiceTestsTable.timeLimit,
+          aiGenerated: practiceTestsTable.aiGenerated,
+          createdAt: practiceTestsTable.createdAt,
+        })
+        .from(practiceTestsTable)
+        .where(and(
+          eq(practiceTestsTable.userId, user.userId),
+          eq(practiceTestsTable.aiGenerated, true)
+        ))
+        .orderBy(desc(practiceTestsTable.createdAt))
+        .limit(limit);
+
+      return NextResponse.json({
+        quizzes: generatedQuizzes,
+      });
+    }
+
+    // Build query conditions for public quizzes
     let whereConditions = [eq(practiceTestsTable.isPublic, true)];
 
     if (subjectId) {

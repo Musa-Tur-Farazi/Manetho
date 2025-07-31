@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Manetho",
   description: "AI-powered learning platform",
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -42,7 +47,7 @@ export default function RootLayout({
           colorWarning: '#f59e0b', // amber-500
         },
         layout: {
-          socialButtonsVariant: "iconAndText",
+          socialButtonsVariant: "iconButton",
           socialButtonsPlacement: "bottom",
           showOptionalFields: true,
           logoPlacement: "inside",
@@ -50,7 +55,6 @@ export default function RootLayout({
           helpPageUrl: "",
           privacyPageUrl: "",
           termsPageUrl: "",
-          showDevModeWarning: false
         },
         elements: {
           // Card and containers
@@ -112,19 +116,6 @@ export default function RootLayout({
       signUpUrl="/custom-auth/sign-up"
       afterSignInUrl="/home"
       afterSignUpUrl="/home"
-      // Configure bot protection to use invisible CAPTCHA for all auth flows
-      options={{
-        signUp: {
-          captcha: {
-            mode: "invisible"
-          }
-        },
-        signIn: {
-          captcha: {
-            mode: "invisible"
-          }
-        }
-      }}
     >
       <html lang="en" className="h-full">
         <body

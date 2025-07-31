@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Smile, Bookmark, Send, Bell, Users, BarChart3, Moon, Sun, Move, ExternalLink, ChevronDown, UserPlus, Search } from "lucide-react";
+import { Heart, MessageCircle, User, Share, Clock, Trash2, Plus, X, Image as ImageIcon, Bookmark, Send, Users, BarChart3, Moon, Sun, Move, ExternalLink, ChevronDown, UserPlus, Search } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import ChatSidebar from "@/components/ChatSidebar";
 import { useRouter } from "next/navigation";
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useTheme } from '@/components/theme/ThemeProvider';
+// NotificationBell import removed
 
 interface Comment {
   id: string;
@@ -44,49 +45,33 @@ export default function CommunityPage() {
   const { user } = useUser();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
+
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [postType, setPostType] = useState<"text" | "photo" | "poll">("text");
+  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
+
 
   // File upload hook for Appwrite integration
   const { uploadFile, uploading, error: uploadError } = useFileUpload();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
-  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [isCreatingPost, setIsCreatingPost] = useState(false);
-  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
-
-  // Image handling - now with Appwrite integration
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [uploadingFileIndex, setUploadingFileIndex] = useState(0);
-
-  // Image positioning state - for adjusting crop focus
   const [imagePositions, setImagePositions] = useState<Record<number, { x: number; y: number }>>({});
   const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
-
-  // Poll creation states
-  const [postType, setPostType] = useState<'text' | 'poll'>('text');
-  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
   const [pollQuestion, setPollQuestion] = useState('');
-
-  const [sortBy, setSortBy] = useState("recent");
   const [shareDropdownOpen, setShareDropdownOpen] = useState<string | null>(null);
-
-  // Track saved posts state
   const [savedPostIds, setSavedPostIds] = useState<Set<string>>(new Set());
-
-  // Invite friends modal state
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteLink, setInviteLink] = useState<string>('');
-  const [generatingInvite, setGeneratingInvite] = useState(false);
-
-  // Full post modal state
   const [showFullPostModal, setShowFullPostModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<CommunityPost | null>(null);
-
-  // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
@@ -106,7 +91,7 @@ export default function CommunityPage() {
       }
 
       const data = await response.json();
-      setCommunityPosts(data.threads || []);
+      setPosts(data.threads || []);
       setError(null);
     } catch (err) {
       console.error('Error fetching posts:', err);
@@ -146,7 +131,7 @@ export default function CommunityPage() {
       const response = await fetch('/api/community/saved-posts');
       if (response.ok) {
         const data = await response.json();
-        const savedIds = new Set(data.savedPosts.map((post: any) => post.threadId));
+        const savedIds = new Set(data.savedPosts.map((post: { threadId: string }) => post.threadId as string)) as Set<string>;
         setSavedPostIds(savedIds);
       }
     } catch (error) {
@@ -207,42 +192,7 @@ export default function CommunityPage() {
     }
   };
 
-  // Handle generating invite link
-  const handleGenerateInvite = async () => {
-    try {
-      setGeneratingInvite(true);
-      const response = await fetch('/api/community/invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'generate' }),
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setInviteLink(data.inviteLink);
-        setShowInviteModal(true);
-      } else {
-        throw new Error('Failed to generate invite');
-      }
-    } catch (error) {
-      console.error('Error generating invite:', error);
-      setError('Failed to generate invite link. Please try again.');
-    } finally {
-      setGeneratingInvite(false);
-    }
-  };
-
-  const copyInviteLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      alert('Invite link copied to clipboard!');
-    } catch (error) {
-      console.error('Error copying invite link:', error);
-      alert('Failed to copy link. Please copy it manually.');
-    }
-  };
 
   // Handle escape key to close modal
   const resetModalState = useCallback(() => {
@@ -272,7 +222,7 @@ export default function CommunityPage() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [handleEscapeKey]);
 
-  // Close share dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -290,11 +240,11 @@ export default function CommunityPage() {
   // Handle starring a post with animation
   const handleStarPost = async (postId: string) => {
     try {
-      const post = communityPosts.find(p => p.id === postId);
+      const post = posts.find(p => p.id === postId);
       if (!post) return;
 
       // Optimistic update for better UX
-      setCommunityPosts(communityPosts.map(p => {
+      setPosts(posts.map(p => {
         if (p.id === postId) {
           return {
             ...p,
@@ -317,7 +267,7 @@ export default function CommunityPage() {
 
       if (!response.ok) {
         // Revert optimistic update if failed
-        setCommunityPosts(communityPosts.map(p => {
+        setPosts(posts.map(p => {
           if (p.id === postId) {
             return {
               ...p,
@@ -333,7 +283,7 @@ export default function CommunityPage() {
       const data = await response.json();
 
       // Update with actual server response
-      setCommunityPosts(communityPosts.map(p => {
+      setPosts(posts.map(p => {
         if (p.id === postId) {
           return {
             ...p,
@@ -442,7 +392,7 @@ export default function CommunityPage() {
       }
 
       const newPost = await response.json();
-      setCommunityPosts([newPost, ...communityPosts]);
+      setPosts([newPost, ...posts]);
       setShowCreatePostModal(false);
       resetModalState();
     } catch (error) {
@@ -539,7 +489,7 @@ export default function CommunityPage() {
 
       const newComment = await response.json();
 
-      setCommunityPosts(communityPosts.map(post => {
+      setPosts(posts.map(post => {
         if (post.id === postId) {
           return {
             ...post,
@@ -569,7 +519,7 @@ export default function CommunityPage() {
         throw new Error('Failed to delete post');
       }
 
-      setCommunityPosts(communityPosts.filter(post => post.id !== postId));
+      setPosts(posts.filter(post => post.id !== postId));
 
       // Close modal and reset state
       setShowDeleteModal(false);
@@ -616,12 +566,12 @@ export default function CommunityPage() {
   const handleVotePoll = async (postId: string, optionIndex: number) => {
     try {
       // Optimistic update - immediately update UI
-      setCommunityPosts(prevPosts => prevPosts.map(post => {
+      setPosts(prevPosts => prevPosts.map(post => {
         if (post.id === postId && post.pollVotes) {
           const updatedVotes = { ...post.pollVotes };
 
           // Increment vote count for selected option
-          updatedVotes[optionIndex] = (updatedVotes[optionIndex] || 0) + 1;
+          updatedVotes[optionIndex] = ((updatedVotes[optionIndex] as number) || 0) + 1;
 
           // Mark user as voted
           if (!updatedVotes.userVotes) updatedVotes.userVotes = {};
@@ -653,7 +603,7 @@ export default function CommunityPage() {
       const data = await response.json();
 
       // Update with actual server response
-      setCommunityPosts(prevPosts => prevPosts.map(post => {
+      setPosts(prevPosts => prevPosts.map(post => {
         if (post.id === postId) {
           return {
             ...post,
@@ -728,46 +678,28 @@ export default function CommunityPage() {
             </button>
             <button
               onClick={() => router.push('/home')}
-              className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </button>
           </div>
 
-          {/* Right: Search + Controls + User */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative">
+          {/* Center: Search */}
+          <div className="flex-1 flex justify-center">
+            <div className="relative w-96">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400" />
               <input
                 type="search"
-                className="w-64 pl-10 pr-4 py-2 bg-white dark:bg-slate-800/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 text-sm border border-gray-300 dark:border-slate-700/30"
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 text-sm border border-gray-300 dark:border-slate-700/30"
                 placeholder="Search posts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+          </div>
 
-            {/* Sort */}
-            <select
-              className="px-3 py-2 bg-white dark:bg-slate-800/60 rounded-lg text-gray-900 dark:text-slate-300 text-sm border border-gray-300 dark:border-slate-700/30"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="recent">Recent</option>
-              <option value="popular">Popular</option>
-              <option value="mostComments">Discussed</option>
-            </select>
-
-            {/* Create Post */}
-            <button
-              onClick={() => setShowCreatePostModal(true)}
-              className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Post</span>
-            </button>
-
+          {/* Right: Controls + User */}
+          <div className="flex items-center gap-3">
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -781,11 +713,7 @@ export default function CommunityPage() {
               )}
             </button>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <Bell className="w-4 h-4" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </button>
+            {/* Notifications - Removed */}
 
             {/* User Avatar Dropdown */}
             <div className="relative group">
@@ -806,12 +734,7 @@ export default function CommunityPage() {
                   >
                     Profile
                   </button>
-                  <button
-                    onClick={() => router.push('/dashboard')}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
-                  >
-                    Dashboard
-                  </button>
+
                   <button className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
                     Settings
                   </button>
@@ -839,22 +762,22 @@ export default function CommunityPage() {
                   <span className="font-medium">Feed</span>
                 </button>
 
-                {/* Create Post */}
+                {/* Create Group */}
                 <button
-                  onClick={() => setShowCreatePostModal(true)}
+                  onClick={() => router.push('/group-study?create=true')}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-all duration-200"
                 >
                   <Plus className="w-5 h-5" />
-                  <span className="font-medium">Create Post</span>
+                  <span className="font-medium">Create Group</span>
                 </button>
 
-                {/* Study Groups */}
+                {/* My Groups */}
                 <button
                   onClick={() => router.push('/group-study')}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-all duration-200"
                 >
                   <Users className="w-5 h-5" />
-                  <span className="font-medium">Study Groups</span>
+                  <span className="font-medium">My Groups</span>
                 </button>
 
                 {/* Saved Posts */}
@@ -884,31 +807,6 @@ export default function CommunityPage() {
                   <span className="font-medium">Recent</span>
                 </button>
               </nav>
-
-              {/* Quick Actions */}
-              <div className="mt-6 pt-4 border-t border-gray-200/30 dark:border-slate-700/30">
-                <h4 className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-3">Quick Actions</h4>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      setPostType('poll');
-                      setShowCreatePostModal(true);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/30 rounded-lg transition-all duration-200 text-sm"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                    <span>Create Poll</span>
-                  </button>
-                  <button
-                    onClick={handleGenerateInvite}
-                    disabled={generatingInvite}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700/30 rounded-lg transition-all duration-200 text-sm disabled:opacity-50"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span>{generatingInvite ? 'Generating...' : 'Invite Friends'}</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -930,7 +828,7 @@ export default function CommunityPage() {
                     onClick={() => setShowCreatePostModal(true)}
                     className="flex-1 text-left px-4 py-3 bg-gray-100 dark:bg-slate-800/40 hover:bg-gray-200 dark:hover:bg-slate-700/50 rounded-xl text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-300 transition-all duration-300 border border-gray-300 dark:border-slate-700/30 hover:border-gray-400 dark:hover:border-slate-600/50 text-sm"
                   >
-                    What's on your mind, {user?.firstName || 'there'}?
+                    What&apos;s on your mind, {user?.firstName || 'there'}?
                   </button>
                 </div>
 
@@ -991,8 +889,8 @@ export default function CommunityPage() {
                     </button>
                   </div>
                 </div>
-              ) : communityPosts.length > 0 ? (
-                communityPosts.map((post) => (
+              ) : posts.length > 0 ? (
+                posts.map((post) => (
                   <article key={post.id} className="group bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl overflow-hidden transition-all duration-300 hover:bg-gray-200/60 dark:hover:bg-slate-800/50 border border-gray-200/30 dark:border-slate-700/30">
                     <div className="p-4">
                       {/* Post Header */}
@@ -1172,10 +1070,10 @@ export default function CommunityPage() {
                                   {/* Main image - larger */}
                                   <div className="relative group overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-800/50 row-span-2">
                                     <img
-                                      src={post.images[0]}
+                                      src={post.images![0]}
                                       alt="Post image 1"
                                       className="w-full h-full object-cover transition-all duration-500 cursor-pointer group-hover:scale-105 group-hover:brightness-110"
-                                      onClick={() => window.open(post.images[0], '_blank')}
+                                      onClick={() => window.open(post.images![0], '_blank')}
                                       onLoad={(e) => {
                                         const img = e.target as HTMLImageElement;
                                         const aspectRatio = img.naturalWidth / img.naturalHeight;
@@ -1274,11 +1172,11 @@ export default function CommunityPage() {
                             <div className="space-y-3">
                               {post.pollOptions.map((option, index) => {
                                 const votes = post.pollVotes || {};
-                                const optionVotes = votes[index] || 0;
+                                const optionVotes = (votes[index] as number) || 0;
 
                                 // Calculate total votes by only counting numeric option votes (0, 1, 2, etc.)
-                                const totalVotes = post.pollOptions.reduce((sum, _, optionIndex) => {
-                                  return sum + (votes[optionIndex] || 0);
+                                const totalVotes = post.pollOptions!.reduce((sum, _, optionIndex) => {
+                                  return sum + ((votes[optionIndex] as number) || 0);
                                 }, 0);
 
                                 const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
@@ -1339,7 +1237,7 @@ export default function CommunityPage() {
                             <div className="mt-4 pt-3 border-t border-gray-200/30 dark:border-slate-700/30 flex items-center justify-between text-sm text-gray-600 dark:text-slate-500 mb-4 pb-4 border-b border-gray-200/30 dark:border-slate-700/30">
                               <span>
                                 {post.pollOptions.reduce((sum, _, optionIndex) => {
-                                  return sum + ((post.pollVotes || {})[optionIndex] || 0);
+                                  return sum + (((post.pollVotes || {})[optionIndex] as number) || 0);
                                 }, 0)} total votes
                               </span>
                               <div className="flex items-center gap-1">
@@ -1374,7 +1272,7 @@ export default function CommunityPage() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                         <button
                           onClick={() => handleStarPost(post.id)}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${post.userStarred
@@ -1383,7 +1281,7 @@ export default function CommunityPage() {
                             }`}
                         >
                           <Heart className={`w-4 h-4 ${post.userStarred ? "fill-current" : ""}`} />
-                          <span>{post.userStarred ? 'Loved' : 'Love'}</span>
+                          <span>Love</span>
                         </button>
 
                         <button
@@ -1397,7 +1295,7 @@ export default function CommunityPage() {
                         <div className="relative">
                           <button
                             onClick={() => setShareDropdownOpen(shareDropdownOpen === post.id ? null : post.id)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300 whitespace-nowrap"
                           >
                             <Share className="w-4 h-4" />
                             <span>Share</span>
@@ -1406,20 +1304,20 @@ export default function CommunityPage() {
 
                           {/* Share Dropdown */}
                           {shareDropdownOpen === post.id && (
-                            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-10">
+                            <div className="absolute bottom-full left-0 mb-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-20">
                               <div className="p-2">
                                 <button
                                   onClick={() => handleShareToTimeline(post.id)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left whitespace-nowrap"
                                 >
-                                  <UserPlus className="w-4 h-4" />
+                                  <UserPlus className="w-4 h-4 flex-shrink-0" />
                                   <span>Share to Timeline</span>
                                 </button>
                                 <button
                                   onClick={() => handleCopyLink(post.id)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-left whitespace-nowrap"
                                 >
-                                  <ExternalLink className="w-4 h-4" />
+                                  <ExternalLink className="w-4 h-4 flex-shrink-0" />
                                   <span>Copy Link</span>
                                 </button>
                               </div>
@@ -1919,9 +1817,6 @@ export default function CommunityPage() {
                       >
                         <ImageIcon className="w-5 h-5" />
                       </label>
-                      <button className="p-2 text-gray-500 dark:text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-xl transition-all duration-200">
-                        <Smile className="w-5 h-5" />
-                      </button>
                       {imagePreviewUrls.length > 0 && (
                         <span className="text-xs text-gray-500 dark:text-slate-500 ml-2">
                           {imagePreviewUrls.length}/4
@@ -1985,13 +1880,12 @@ export default function CommunityPage() {
       )}
 
       {/* Invite Friends Modal */}
-      {showInviteModal && (
+      {false && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowInviteModal(false);
-              setInviteLink('');
+              // Modal functionality removed
             }
           }}
         >
@@ -2006,8 +1900,7 @@ export default function CommunityPage() {
               </div>
               <button
                 onClick={() => {
-                  setShowInviteModal(false);
-                  setInviteLink('');
+                  // Modal functionality removed
                 }}
                 className="p-2 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
@@ -2029,7 +1922,7 @@ export default function CommunityPage() {
                 </p>
               </div>
 
-              {inviteLink && (
+              {false && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Share this link:
@@ -2037,12 +1930,12 @@ export default function CommunityPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={inviteLink}
+                      value=""
                       readOnly
                       className="flex-1 px-3 py-2 bg-gray-100 dark:bg-slate-800/60 border border-gray-300 dark:border-slate-700/30 rounded-lg text-sm text-gray-900 dark:text-white"
                     />
                     <button
-                      onClick={copyInviteLink}
+                      onClick={() => { }}
                       className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
                     >
                       Copy
@@ -2092,20 +1985,19 @@ export default function CommunityPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    setShowInviteModal(false);
-                    setInviteLink('');
+                    // Modal functionality removed
                   }}
                   className="flex-1 px-4 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700/50 rounded-lg font-medium transition-all duration-200"
                 >
                   Close
                 </button>
-                {!inviteLink && (
+                {false && (
                   <button
-                    onClick={handleGenerateInvite}
-                    disabled={generatingInvite}
+                    onClick={() => { }}
+                    disabled={false}
                     className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
                   >
-                    {generatingInvite ? (
+                    {false ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                         <span>Generating...</span>
@@ -2211,9 +2103,9 @@ export default function CommunityPage() {
                       <div className="space-y-2">
                         {selectedPost.pollOptions.map((option, index) => {
                           const votes = selectedPost.pollVotes || {};
-                          const optionVotes = votes[index] || 0;
+                          const optionVotes = (votes[index] as number) || 0;
                           const totalVotes = selectedPost.pollOptions!.reduce((sum, _, optionIndex) => {
-                            return sum + (votes[optionIndex] || 0);
+                            return sum + ((votes[optionIndex] as number) || 0);
                           }, 0);
                           const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
 

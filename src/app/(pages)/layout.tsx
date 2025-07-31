@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/landingpage/layout/Navbar";
-import Footer from "@/components/landingpage/section/Footer";
 import AuthCheck from "@/components/auth/AuthCheck";
 import { usePathname } from "next/navigation";
 
@@ -12,10 +11,9 @@ export default function PagesLayout({
   children: React.ReactNode;
 }>) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
 
-  // Check if the current path is the doubt-solving page
+
   const isDoubtSolvingPage = pathname?.includes('/tools/doubt-solving');
 
   // Check if the current path is the community page
@@ -33,25 +31,19 @@ export default function PagesLayout({
   // Check if the current path is the flashcards page
   const isFlashcardsPage = pathname?.includes('/tools/flashcards');
 
-  // Check if the current path is the mind maps page
-  const isMindMapsPage = pathname?.includes('/tools/mind-maps');
+
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+
 
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-    handleResize(); // Set initial value
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -94,7 +86,6 @@ export default function PagesLayout({
             </div>
           )}
         </main>
-        <Footer />
       </div>
     </AuthCheck>
   );

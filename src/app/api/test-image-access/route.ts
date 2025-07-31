@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     console.error('Error testing image access:', error);
     return NextResponse.json({
       accessible: false,
-      error: `Network error: ${error.message}`,
+      error: `Network error: ${error instanceof Error ? error.message : String(error)}`,
       imageUrl: request.nextUrl.searchParams.get('url')
     }, { status: 500 });
   }

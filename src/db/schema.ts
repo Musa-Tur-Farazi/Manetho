@@ -23,7 +23,7 @@ export const paymentMethodEnum = pgEnum('payment_method', ['card', 'bkash', 'nag
 export const reportStatusEnum = pgEnum('report_status', ['pending', 'resolved', 'dismissed']);
 export const reportTypeEnum = pgEnum('report_type', ['thread', 'comment', 'user']);
 export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'expired', 'trial']);
-export const notificationTypeEnum = pgEnum('notification_type', ['achievement', 'reminder', 'social', 'system']);
+export const notificationTypeEnum = pgEnum('notification_type', ['achievement', 'reminder', 'social', 'system', 'study_group_invitation']);
 export const difficultyEnum = pgEnum('difficulty', ['beginner', 'intermediate', 'advanced']);
 export const contentSourceEnum = pgEnum('content_source', ['user_created', 'ai_generated', 'ai_assisted', 'imported']);
 export const generationStatusEnum = pgEnum('generation_status', ['pending', 'generating', 'completed', 'failed', 'needs_review']);
@@ -147,7 +147,7 @@ export const mindMapsTable = pgTable("mind_maps", {
 export const mindMapNodesTable = pgTable("mind_map_nodes", {
   nodeId: uuid("node_id").primaryKey().defaultRandom(),
   mindmapId: uuid("mindmap_id").references(() => mindMapsTable.mindmapId, { onDelete: 'cascade' }).notNull(),
-  parentNodeId: uuid("parent_node_id").references(() => mindMapNodesTable.nodeId, { onDelete: 'set null' }),
+  parentNodeId: uuid("parent_node_id"),
   text: text("text").notNull(),
   level: integer("level").default(0).notNull(), // 0 for root, 1 for main branches, etc.
   positionX: decimal("position_x", { precision: 10, scale: 2 }).default('0'),
@@ -369,6 +369,17 @@ export const studyGroupMembersTable = pgTable("study_group_members", {
 export const meetingLinksTable = pgTable("meeting_links", {
   linkId: uuid("link_id").primaryKey().defaultRandom(),
   groupId: uuid("group_id").references(() => studyGroupsTable.groupId, { onDelete: 'cascade' }).notNull(),
+  platform: varchar("platform", { length: 50 }).notNull(), // 'google', 'zoom', 'custom'
+  url: text("url").notNull(),
+  createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const directChatMeetingLinksTable = pgTable("direct_chat_meeting_links", {
+  linkId: uuid("link_id").primaryKey().defaultRandom(),
+  user1Id: uuid("user1_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
+  user2Id: uuid("user2_id").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
   platform: varchar("platform", { length: 50 }).notNull(), // 'google', 'zoom', 'custom'
   url: text("url").notNull(),
   createdBy: uuid("created_by").references(() => usersTable.userId, { onDelete: 'cascade' }).notNull(),
@@ -1018,6 +1029,17 @@ export const sharedResourcesRelations = relations(sharedResourcesTable, ({ one }
   }),
   uploader: one(usersTable, {
     fields: [sharedResourcesTable.uploadedBy],
+    references: [usersTable.userId],
+  }),
+}));
+
+export const directChatMeetingLinksRelations = relations(directChatMeetingLinksTable, ({ one }) => ({
+  user1: one(usersTable, {
+    fields: [directChatMeetingLinksTable.user1Id],
+    references: [usersTable.userId],
+  }),
+  user2: one(usersTable, {
+    fields: [directChatMeetingLinksTable.user2Id],
     references: [usersTable.userId],
   }),
 }));

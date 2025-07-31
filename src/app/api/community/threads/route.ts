@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || 'All';
+    const _category = searchParams.get('category') || 'All';
     const sortBy = searchParams.get('sortBy') || 'recent';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Query threads with search and sorting
-    let threads: any[] = [];
+    let threads: Record<string, unknown>[] = [];
     let totalCount = 0;
 
     try {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           SELECT COUNT(*) as count FROM threads 
           WHERE (title ILIKE ${searchPattern} OR body ILIKE ${searchPattern})
         `);
-        totalCount = parseInt(countResult.rows[0].count);
+        totalCount = parseInt(countResult.rows[0].count as string);
 
         if (totalCount > 0) {
           if (sortBy === 'popular') {
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       } else {
         // Query without search
         const countResult = await db.execute(sql`SELECT COUNT(*) as count FROM threads`);
-        totalCount = parseInt(countResult.rows[0].count);
+        totalCount = parseInt(countResult.rows[0].count as string);
 
         if (totalCount > 0) {
           if (sortBy === 'popular') {
@@ -119,20 +119,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user data for each thread (if any threads exist)
-    const users: any = {};
+    const users: Record<string, Record<string, unknown>> = {};
 
     if (threads.length > 0) {
-      const userIds = [...new Set(threads.map((t: any) => t.created_by).filter(Boolean))];
+      const userIds = [...new Set(threads.map((t: Record<string, unknown>) => t.created_by as string).filter(Boolean))];
 
       if (userIds.length > 0) {
         // Fetch users one by one to avoid complex query issues
         for (const userId of userIds) {
           try {
-            const userResult: any = await db.execute(
+            const userResult = await db.execute(
               sql`SELECT "user_id", "full_name", "avatar_url" FROM users WHERE "user_id" = ${userId} LIMIT 1`
             );
             if (userResult.rows && userResult.rows.length > 0) {
-              users[userId] = userResult.rows[0];
+              users[userId] = userResult.rows[0] as Record<string, unknown>;
             }
           } catch (error) {
             console.error(`Error fetching user ${userId}:`, error);
@@ -143,13 +143,13 @@ export async function GET(request: NextRequest) {
 
     // Fetch comments for each thread
     const threadsWithComments = await Promise.all(
-      threads.map(async (thread: any) => {
-        const user = users[thread.created_by];
-        const authorName = user ? (user.full_name || 'Anonymous') : 'Anonymous';
-        const authorImage = user?.avatar_url || 'https://i.pravatar.cc/150?img=12';
+      threads.map(async (thread: Record<string, unknown>) => {
+        const user = users[thread.created_by as string];
+        const authorName = user ? (user.full_name as string || 'Anonymous') : 'Anonymous';
+        const authorImage = user?.avatar_url as string || 'https://i.pravatar.cc/150?img=12';
 
         // Fetch comments for this thread
-        let commentsList: any[] = [];
+        let commentsList: Record<string, unknown>[] = [];
         try {
           const commentsResult = await db.execute(sql`
             SELECT 
@@ -169,16 +169,16 @@ export async function GET(request: NextRequest) {
           `);
 
           if (commentsResult.rows) {
-            commentsList = commentsResult.rows.map((comment: any) => {
-              const commentAuthorName = comment.full_name || 'Anonymous';
+            commentsList = commentsResult.rows.map((comment: Record<string, unknown>) => {
+              const commentAuthorName = comment.full_name as string || 'Anonymous';
               return {
                 id: comment.comment_id,
                 author: commentAuthorName,
                 authorId: comment.sender_id,
-                authorImage: comment.avatar_url || 'https://i.pravatar.cc/150?img=12',
+                authorImage: comment.avatar_url as string || 'https://i.pravatar.cc/150?img=12',
                 content: comment.content,
-                timeAgo: getTimeAgo(comment.timestamp),
-                likes: comment.like_count || 0,
+                timeAgo: getTimeAgo(comment.timestamp as string),
+                likes: comment.like_count as number || 0,
                 parentCommentId: comment.parent_comment_id,
               };
             });
@@ -194,33 +194,33 @@ export async function GET(request: NextRequest) {
           author: authorName,
           authorId: thread.created_by,
           authorImage: authorImage,
-          date: new Date(thread.created_at).toLocaleDateString('en-US', {
+          date: new Date(String(thread.created_at)).toLocaleDateString('en-US', {
             month: 'long',
             day: 'numeric',
             year: 'numeric'
           }),
-          timeAgo: getTimeAgo(thread.created_at),
-          stars: thread.like_count || 0,
-          comments: thread.comment_count || 0,
+          timeAgo: getTimeAgo(String(thread.created_at)),
+          stars: thread.like_count as number || 0,
+          comments: thread.comment_count as number || 0,
           userStarred: false, // We'll need to implement user likes tracking
           commentsList: commentsList,
-          isPinned: thread.is_pinned,
-          isLocked: thread.is_locked,
-          viewCount: thread.view_count,
+          isPinned: thread.is_pinned as boolean,
+          isLocked: thread.is_locked as boolean,
+          viewCount: thread.view_count as number,
           // New fields for media and polls
-          postType: thread.post_type || 'post',
+          postType: thread.post_type as string || 'post',
           images: thread.images ? (typeof thread.images === 'string' ? JSON.parse(thread.images) : thread.images) : [],
           pollOptions: thread.poll_options ? (typeof thread.poll_options === 'string' ? JSON.parse(thread.poll_options) : thread.poll_options) : null,
           pollVotes: (() => {
             if (!thread.poll_votes || thread.post_type !== 'poll') return null;
 
-            const votes = typeof thread.poll_votes === 'string' ? JSON.parse(thread.poll_votes) : thread.poll_votes;
+            const votes = typeof thread.poll_votes === 'string' ? JSON.parse(thread.poll_votes) : thread.poll_votes as Record<string, unknown>;
 
             // If user is logged in, check their vote status
-            if (currentUserId && votes.userVotes && votes.userVotes[currentUserId] !== undefined) {
+            if (currentUserId && votes.userVotes && (votes.userVotes as Record<string, unknown>)[String(currentUserId)] !== undefined) {
               return {
                 ...votes,
-                userVote: votes.userVotes[currentUserId]
+                userVote: (votes.userVotes as Record<string, unknown>)[String(currentUserId)]
               };
             }
 
@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching threads:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch threads', details: error },
+      { error: 'Failed to fetch threads', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
       author: user.full_name || 'Anonymous',
       authorId: newThread.created_by,
       authorImage: user.avatar_url || 'https://i.pravatar.cc/150?img=12',
-      date: new Date(newThread.created_at).toLocaleDateString('en-US', {
+      date: new Date(String(newThread.created_at)).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric'

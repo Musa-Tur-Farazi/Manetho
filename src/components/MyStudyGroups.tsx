@@ -94,7 +94,7 @@ export default function MyStudyGroups() {
         <p className="text-xs text-slate-500 mt-1">Join some groups to see them here</p>
         <button
           onClick={() => router.push('/group-study')}
-          className="mt-3 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
+          className="mt-3 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
         >
           Browse Groups
         </button>
@@ -122,7 +122,7 @@ export default function MyStudyGroups() {
                 </div>
                 <div className="flex items-center gap-1 text-slate-400 ml-2">
                   <div className={`w-2 h-2 rounded-full ${group.meetingType === 'online' ? 'bg-green-500' :
-                      group.meetingType === 'in-person' ? 'bg-blue-500' : 'bg-purple-500'
+                    group.meetingType === 'in-person' ? 'bg-blue-500' : 'bg-purple-500'
                     }`}></div>
                   <span className="text-xs capitalize">{group.meetingType}</span>
                 </div>
@@ -164,7 +164,7 @@ export default function MyStudyGroups() {
       <div className="pt-3 border-t border-slate-700/30">
         <button
           onClick={() => router.push('/group-study')}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 cursor-pointer"
         >
           <ExternalLink className="w-4 h-4" />
           Browse All Groups

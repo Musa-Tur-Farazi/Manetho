@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Client, Storage } from 'node-appwrite';
 
 // Initialize Appwrite client
@@ -9,7 +9,7 @@ const client = new Client()
 
 const storage = new Storage(client);
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const bucketId = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!;
 
@@ -36,14 +36,14 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error checking bucket:', error);
     return NextResponse.json(
       {
         error: 'Failed to check bucket',
-        details: error.message,
-        code: error.code,
-        type: error.type
+        details: error instanceof Error ? error.message : String(error),
+        code: (error as any)?.code,
+        type: (error as any)?.type
       },
       { status: 500 }
     );

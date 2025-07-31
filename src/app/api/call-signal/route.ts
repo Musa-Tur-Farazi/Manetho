@@ -10,7 +10,8 @@ const activeCallSignals = new Map<string, {
   callerId: string;
   callerName: string;
   callerAvatar: string;
-  channelName: string;
+  channelName?: string; // Keep for compatibility, but not used with Google Meet
+  meetingUrl: string;
   isVideoCall: boolean;
   timestamp: number;
 }>();
@@ -22,12 +23,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { recipientId, channelName, isVideoCall, action } = await request.json();
-    console.log('📞 POST Call Signal:', { recipientId, channelName, isVideoCall, action });
+    const { recipientId, isVideoCall, action } = await request.json();
+    console.log('📞 POST Call Signal:', { recipientId, isVideoCall, action });
 
-    if (!recipientId || !channelName || typeof isVideoCall !== 'boolean' || !action) {
+    if (!recipientId || typeof isVideoCall !== 'boolean' || !action) {
       return NextResponse.json({
-        error: 'Missing required fields: recipientId, channelName, isVideoCall, action'
+        error: 'Missing required fields: recipientId, isVideoCall, action'
       }, { status: 400 });
     }
 
@@ -50,25 +51,44 @@ export async function POST(request: NextRequest) {
     console.log('👤 Caller info:', callerInfo);
 
     if (action === 'initiate') {
-      // Store the call signal
+      // **FIX: Prevent users from calling themselves**
+      if (callerInfo.userId === recipientId) {
+        console.warn('🚫 User attempted to call themselves:', callerInfo.userId);
+        return NextResponse.json({
+          error: 'Cannot call yourself'
+        }, { status: 400 });
+      }
+
+      // Generate Google Meet URL
+      const timestamp = Date.now();
+      const roomName = `${callerInfo.userId.substring(0, 8)}-${recipientId.substring(0, 8)}-${timestamp}`;
+
+      // Create Google Meet link - in production, you'd use Google Meet API
+      const meetingUrl = `https://meet.google.com/new`;
+      const customMeetUrl = `https://meet.google.com/${roomName}`;
+
+      // Store the call signal with Google Meet URL
       const callSignal = {
         callerId: callerInfo.userId,
         callerName: callerInfo.fullName,
         callerAvatar: callerInfo.avatarUrl || '',
-        channelName,
+        channelName: roomName, // Keep for compatibility
+        meetingUrl: customMeetUrl,
         isVideoCall,
-        timestamp: Date.now()
+        timestamp
       };
 
       activeCallSignals.set(recipientId, callSignal);
-      console.log('💾 Stored call signal for recipient:', recipientId, callSignal);
-      console.log('📊 Active call signals:', Array.from(activeCallSignals.entries()));
+      console.log('💾 Stored call signal for recipient:', recipientId);
+      console.log('📊 Call signal details:', callSignal);
+      console.log('📊 All active signals:', Array.from(activeCallSignals.entries()));
 
-      // Clean up old signals (older than 5 minutes)
-      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      // Clean up old signals (older than 2 minutes)
+      const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
       for (const [key, signal] of activeCallSignals.entries()) {
-        if (signal.timestamp < fiveMinutesAgo) {
+        if (signal.timestamp < twoMinutesAgo) {
           activeCallSignals.delete(key);
+          console.log('🧹 Cleaned up expired signal for:', key);
         }
       }
 
@@ -76,18 +96,34 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Call signal sent',
         recipientId,
-        channelName
+        meetingUrl: customMeetUrl,
+        fallbackUrl: meetingUrl
       });
     }
 
     if (action === 'cancel' || action === 'decline') {
-      // Remove the call signal
+      // **FIX: Remove call signals more thoroughly**
+      console.log('🧹 Removing call signal for recipient:', recipientId);
+      console.log('   Action:', action);
+      console.log('   Caller info:', callerInfo.userId);
+      
+      // Remove signal for both the recipient and any reverse signals
       activeCallSignals.delete(recipientId);
-      console.log('🗑️ Removed call signal for:', recipientId);
+      
+      // **FIX: Also remove any signals where this user is the caller**
+      for (const [key, signal] of activeCallSignals.entries()) {
+        if (signal.callerId === callerInfo.userId) {
+          activeCallSignals.delete(key);
+          console.log('🗑️ Also removed reverse signal for:', key);
+        }
+      }
+      
+      console.log('📊 Remaining active signals after cleanup:', Array.from(activeCallSignals.entries()).length);
 
       return NextResponse.json({
         success: true,
-        message: 'Call signal removed'
+        message: 'Call signal removed',
+        action: action
       });
     }
 
@@ -103,7 +139,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -129,11 +165,15 @@ export async function GET(request: NextRequest) {
     console.log('📋 Found call signal:', callSignal);
 
     if (callSignal) {
-      // Check if signal is not too old (older than 1 minute)
-      const oneMinuteAgo = Date.now() - (60 * 1000);
-      if (callSignal.timestamp < oneMinuteAgo) {
+      // **FIX: Extend timeout from 1 minute to 3 minutes for video calls**
+      const timeoutDuration = callSignal.isVideoCall ? (3 * 60 * 1000) : (2 * 60 * 1000); // 3 min for video, 2 min for audio
+      const timeoutThreshold = Date.now() - timeoutDuration;
+      
+      if (callSignal.timestamp < timeoutThreshold) {
         activeCallSignals.delete(currentUserInternalId);
         console.log('⏰ Call signal expired for:', currentUserInternalId);
+        console.log('   Signal age:', Math.round((Date.now() - callSignal.timestamp) / 1000), 'seconds');
+        console.log('   Timeout threshold:', Math.round(timeoutDuration / 1000), 'seconds');
         return NextResponse.json({ hasCall: false });
       }
 

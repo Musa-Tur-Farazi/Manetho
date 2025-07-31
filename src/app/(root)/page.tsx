@@ -7,8 +7,6 @@ import Navbar from "@/components/landingpage/layout/Navbar";
 import FeatureDetails from "@/components/landingpage/section/FeatureDetails";
 import HeroSection from "@/components/landingpage/section/HeroSection";
 import Footer from "@/components/landingpage/section/Footer";
-import Testimonials from "@/components/landingpage/section/Testimonials";
-import StatisticsSection from "@/components/landingpage/section/StatisticsSection";
 import CTASection from "@/components/landingpage/section/CTASection";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
@@ -40,9 +38,7 @@ function Landingpage() {
         <Navbar isScrolled={isScrolled} />
         <main className="relative">
           <HeroSection />
-          <StatisticsSection />
           <FeatureDetails />
-          <Testimonials />
           <CTASection />
           <Footer />
         </main>

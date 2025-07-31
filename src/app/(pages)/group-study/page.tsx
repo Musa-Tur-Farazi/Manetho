@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
@@ -15,10 +15,10 @@ import {
   Video,
   Calendar,
   Search,
-  Filter,
   Trash2,
   AlertTriangle,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 
 interface StudyGroup {
@@ -42,8 +42,10 @@ interface StudyGroup {
 export default function GroupStudyPage() {
   const { userId } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [activeGroups, setActiveGroups] = useState<StudyGroup[]>([]);
+  const [friends, setFriends] = useState<Array<{ userId: string; fullName: string; avatarUrl: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'my-groups' | 'explore'>('my-groups');
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -75,8 +77,19 @@ export default function GroupStudyPage() {
     if (userId) {
       fetchMyGroups();
       fetchActiveGroups();
+      fetchFriends();
     }
   }, [userId]);
+
+  // Check for create parameter in URL
+  useEffect(() => {
+    const createParam = searchParams.get('create');
+    if (createParam === 'true') {
+      setShowCreateForm(true);
+      // Remove the create parameter from URL
+      router.replace('/group-study');
+    }
+  }, [searchParams, router]);
 
   const fetchMyGroups = async () => {
     try {
@@ -110,11 +123,31 @@ export default function GroupStudyPage() {
     }
   };
 
+  const fetchFriends = async () => {
+    try {
+      const response = await fetch('/api/community/users?type=following');
+      const data = await response.json();
+
+      if (response.ok) {
+        setFriends(data.users || []);
+      } else {
+        console.error('Error fetching friends:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    }
+  };
+
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!createForm.name.trim() || !createForm.description.trim()) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (!createForm.maxParticipants || createForm.maxParticipants < 2 || createForm.maxParticipants > 100) {
+      alert('Max participants must be between 2 and 100');
       return;
     }
 
@@ -332,7 +365,7 @@ export default function GroupStudyPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
         </div>
       </div>
     );
@@ -357,6 +390,13 @@ export default function GroupStudyPage() {
           My Groups ({myGroups.length})
         </Button>
         <Button
+          onClick={() => setShowCreateForm(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Create Group
+        </Button>
+        <Button
           variant={activeTab === 'explore' ? 'default' : 'outline'}
           onClick={() => setActiveTab('explore')}
         >
@@ -369,13 +409,6 @@ export default function GroupStudyPage() {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Study Groups</h2>
-            <Button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Create Group
-            </Button>
           </div>
 
           {/* Create Group Form */}
@@ -422,7 +455,7 @@ export default function GroupStudyPage() {
                     <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Meeting Type</label>
                     <select
                       value={createForm.meetingType}
-                      onChange={(e) => setCreateForm({ ...createForm, meetingType: e.target.value as any })}
+                      onChange={(e) => setCreateForm({ ...createForm, meetingType: e.target.value as 'online' | 'in-person' | 'hybrid' })}
                       className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                     >
                       <option value="online">Online</option>
@@ -434,11 +467,22 @@ export default function GroupStudyPage() {
                     <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-white">Max Participants</label>
                     <input
                       type="number"
-                      value={createForm.maxParticipants}
-                      onChange={(e) => setCreateForm({ ...createForm, maxParticipants: parseInt(e.target.value) })}
+                      value={createForm.maxParticipants || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setCreateForm({ ...createForm, maxParticipants: 0 });
+                        } else {
+                          const numValue = parseInt(value);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setCreateForm({ ...createForm, maxParticipants: numValue });
+                          }
+                        }
+                      }}
                       className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
                       min="2"
                       max="100"
+                      placeholder="10"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -469,7 +513,7 @@ export default function GroupStudyPage() {
                           <Badge
                             variant="secondary"
                             className="mt-1"
-                            style={{ backgroundColor: group.subjectColor + '20', color: group.subjectColor }}
+                            style={{ backgroundColor: (group.subjectColor ?? "#000") + '20', color: group.subjectColor ?? "#000" }}
                           >
                             {group.subjectName}
                           </Badge>
@@ -572,7 +616,7 @@ export default function GroupStudyPage() {
                       {group.subjectName && (
                         <Badge
                           variant="secondary"
-                          style={{ backgroundColor: group.subjectColor + '20', color: group.subjectColor }}
+                          style={{ backgroundColor: (group.subjectColor ?? "#000") + '20', color: group.subjectColor ?? "#000" }}
                         >
                           {group.subjectName}
                         </Badge>

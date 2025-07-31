@@ -12,23 +12,17 @@ import {
   CheckCircle,
   XCircle,
   Trophy,
-  Star,
   Target,
   Zap,
   Play,
   Pause,
-  RotateCcw,
   Send,
-  Award,
-  TrendingUp,
-  User,
   BookOpen,
   AlertCircle,
   Home,
   Eye,
   EyeOff,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Question {
@@ -54,7 +48,11 @@ interface QuizData {
     creatorAvatarUrl: string;
   };
   questions: Question[];
-  userAttempts: any[];
+  userAttempts: Array<{
+    attemptId: string;
+    score: number;
+    timestamp: string;
+  }>;
   userBestScore: number;
   userBestScorePercent: number;
   canTakeQuiz: boolean;
@@ -84,7 +82,7 @@ interface QuizResults {
 export default function QuizGameplayPage() {
   const { testId } = useParams();
   const router = useRouter();
-  const { user } = useUser();
+  // Removed unused variable
 
   // Quiz data
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -94,6 +92,7 @@ export default function QuizGameplayPage() {
   // Game state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set());
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [totalTimeSpent, setTotalTimeSpent] = useState(0);
@@ -105,9 +104,9 @@ export default function QuizGameplayPage() {
   const [showExplanations, setShowExplanations] = useState(false);
 
   const difficultyColors = {
-    beginner: 'bg-green-100 text-green-700 border-green-200',
-    intermediate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    advanced: 'bg-red-100 text-red-700 border-red-200',
+    beginner: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-700',
+    intermediate: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-700',
+    advanced: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-700',
   };
 
   const difficultyIcons = {
@@ -117,11 +116,73 @@ export default function QuizGameplayPage() {
   };
 
   // Load quiz data
+  const fetchQuizData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/quiz/${testId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setQuizData(data);
+        setTimeLeft(data.quiz.timeLimit ? data.quiz.timeLimit * 60 : 0);
+        setGamePhase('ready');
+      } else {
+        setError(data.error || 'Failed to load quiz');
+      }
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      setError('Failed to load quiz');
+    } finally {
+      setLoading(false);
+    }
+  }, [testId]);
+
+  const handleSubmitQuiz = useCallback(async () => {
+    if (!quizData || submitting) return;
+
+    setSubmitting(true);
+    setIsActive(false);
+    setGamePhase('finished');
+
+    try {
+      // Convert answers to array format expected by API
+      const answersArray = quizData.questions.map(q => ({
+        questionId: q.questionId,
+        answer: answers[q.questionId] || '',
+        skipped: skippedQuestions.has(q.questionId)
+      }));
+
+      const response = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testId: testId,
+          answers: answersArray,
+          timeSpent: totalTimeSpent,
+          skippedCount: skippedQuestions.size,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResults(data.results);
+        setGamePhase('results');
+      } else {
+        setError(data.error || 'Failed to submit quiz');
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      setError('Failed to submit quiz');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [quizData, submitting, answers, skippedQuestions, testId, totalTimeSpent]);
+
   useEffect(() => {
     if (testId) {
       fetchQuizData();
     }
-  }, [testId]);
+  }, [testId, fetchQuizData]);
 
   // Timer logic
   useEffect(() => {
@@ -140,27 +201,7 @@ export default function QuizGameplayPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft, gamePhase]);
-
-  const fetchQuizData = async () => {
-    try {
-      const response = await fetch(`/api/quiz/${testId}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setQuizData(data);
-        setTimeLeft(data.quiz.timeLimit ? data.quiz.timeLimit * 60 : 0);
-        setGamePhase('ready');
-      } else {
-        setError(data.error || 'Failed to load quiz');
-      }
-    } catch (error) {
-      console.error('Error fetching quiz:', error);
-      setError('Failed to load quiz');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isActive, timeLeft, gamePhase, handleSubmitQuiz]);
 
   const startQuiz = () => {
     setGamePhase('playing');
@@ -201,43 +242,19 @@ export default function QuizGameplayPage() {
     setCurrentQuestionIndex(index);
   };
 
-  const handleSubmitQuiz = async () => {
-    if (!quizData || submitting) return;
-
-    setSubmitting(true);
-    setIsActive(false);
-    setGamePhase('finished');
-
-    try {
-      // Convert answers to array format expected by API
-      const answersArray = quizData.questions.map(q => ({
-        questionId: q.questionId,
-        answer: answers[q.questionId] || ''
-      }));
-
-      const response = await fetch('/api/quiz/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          testId: testId,
-          answers: answersArray,
-          timeSpent: totalTimeSpent,
-        }),
+  const skipQuestion = () => {
+    if (currentQuestion) {
+      setSkippedQuestions(prev => new Set([...prev, currentQuestion.questionId]));
+      // Remove the answer if it exists
+      setAnswers(prev => {
+        const newAnswers = { ...prev };
+        delete newAnswers[currentQuestion.questionId];
+        return newAnswers;
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setResults(data.results);
-        setGamePhase('results');
-      } else {
-        setError(data.error || 'Failed to submit quiz');
+      // Move to next question if not the last one
+      if (currentQuestionIndex < (quizData?.questions.length || 0) - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
       }
-    } catch (error) {
-      console.error('Error submitting quiz:', error);
-      setError('Failed to submit quiz');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -250,7 +267,8 @@ export default function QuizGameplayPage() {
   const getProgressPercentage = () => {
     if (!quizData) return 0;
     const answered = Object.keys(answers).length;
-    return (answered / quizData.questions.length) * 100;
+    const skipped = skippedQuestions.size;
+    return ((answered + skipped) / quizData.questions.length) * 100;
   };
 
   const getScoreColor = (score: number) => {
@@ -395,7 +413,7 @@ export default function QuizGameplayPage() {
           <Card className="p-8 text-center">
             <Pause className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Quiz Paused</h2>
-            <p className="text-gray-600 mb-6">Take a break. Click resume when you're ready to continue.</p>
+            <p className="text-gray-600 mb-6">Take a break. Click resume when you&apos;re ready to continue.</p>
 
             <div className="flex justify-center space-x-4">
               <Button
@@ -433,7 +451,7 @@ export default function QuizGameplayPage() {
                 Question {currentQuestionIndex + 1} of {quizData.questions.length}
               </span>
               <span className="text-sm text-gray-600">
-                {Object.keys(answers).length} answered
+                {Object.keys(answers).length} answered, {skippedQuestions.size} skipped
               </span>
             </div>
 
@@ -442,11 +460,19 @@ export default function QuizGameplayPage() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentQuestion.questionId}
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
+                  initial={{ opacity: 0, x: "50px" }}
+                  animate={{ opacity: 1, x: "0px" }}
+                  exit={{ opacity: 0, x: "-50px" }}
                   transition={{ duration: 0.3 }}
                 >
+                  {skippedQuestions.has(currentQuestion.questionId) && (
+                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-orange-700 text-sm font-medium">
+                        ⚠️ This question was skipped. You can still answer it.
+                      </p>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-semibold mb-4">{currentQuestion.question}</h3>
 
                   {currentQuestion.options ? (
@@ -454,9 +480,9 @@ export default function QuizGameplayPage() {
                       {currentQuestion.options.map((option, index) => (
                         <label
                           key={index}
-                          className={`block p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${currentAnswer === option
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200'
+                          className={`block p-4 border rounded-lg cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 ${currentAnswer === option
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-gray-100'
+                            : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
                             }`}
                         >
                           <input
@@ -496,21 +522,34 @@ export default function QuizGameplayPage() {
                 <span>Previous</span>
               </Button>
 
-              <div className="flex items-center space-x-2">
-                {quizData.questions.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToQuestion(index)}
-                    className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentQuestionIndex
-                      ? 'bg-blue-500 text-white'
-                      : answers[quizData.questions[index].questionId]
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={skipQuestion}
+                  disabled={skippedQuestions.has(currentQuestion?.questionId || '')}
+                  className="flex items-center space-x-2 text-orange-600 border-orange-300 hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{skippedQuestions.has(currentQuestion?.questionId || '') ? 'Skipped' : 'Skip'}</span>
+                </Button>
+
+                <div className="flex items-center space-x-2">
+                  {quizData.questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentQuestionIndex
+                        ? 'bg-blue-500 text-white'
+                        : answers[quizData.questions[index].questionId]
+                          ? 'bg-green-500 text-white'
+                          : skippedQuestions.has(quizData.questions[index].questionId)
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {isLastQuestion ? (

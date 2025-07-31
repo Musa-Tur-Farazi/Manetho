@@ -24,13 +24,28 @@ interface SyncResult {
   userId?: string;
 }
 
+interface DebugInfo {
+  syncResult?: {
+    success: boolean;
+    message: string;
+    userId?: string;
+  };
+  databaseStatus?: {
+    success: boolean;
+    users: DatabaseUser[];
+    totalUsers: number;
+  };
+  timestamp?: string;
+  error?: string;
+}
+
 export default function SyncUsersPage() {
   const { user, isLoaded } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState<DatabaseUser[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
   useEffect(() => {
     fetchUsers();

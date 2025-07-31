@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import {
   usersTable,
   savedPostsTable,
-  threadsTable,
-  userProfilesTable
+  threadsTable
 } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
+import { NextRequest } from "next/server";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {

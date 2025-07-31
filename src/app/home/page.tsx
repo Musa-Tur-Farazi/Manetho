@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
   BookOpen,
   Calendar,
   Menu,
-  X,
+  ChevronLeft,
   Home,
-  Settings,
-  HelpCircle,
   User,
   Users,
   Brain,
@@ -19,41 +17,39 @@ import {
   BarChart3,
   Trophy,
   MessageCircle,
-<<<<<<< HEAD
-  Crown,
-  Medal,
-  Award,
-  Star,
+  CreditCard,
+  Network,
   TrendingUp,
   Target,
   Flame,
-=======
-  CreditCard,
-  Network,
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
+  BookMarked,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import AuthenticatedNavbar from "@/components/homepage/AuthenticatedNavbar";
-import Footer from "@/components/landingpage/section/Footer";
 
 
 const HomePage = () => {
   const { user, isLoaded } = useUser();
   const { theme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Start open by default
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (w-64 = 256px)
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
   const firstName = user?.firstName || user?.username?.split(' ')[0] || "there";
   const [syncChecked, setSyncChecked] = useState(false);
 
 
-  // Hide sidebar on mobile by default
-  useEffect(() => {
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
-    }
-  }, []);
+  // Hide sidebar on mobile by default - removed since we now start closed on all screens
+  // useEffect(() => {
+  //   if (window.innerWidth < 768) {
+  //     setSidebarOpen(false);
+  //   }
+  // }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,6 +59,46 @@ const HomePage = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizing && sidebarRef.current) {
+        e.preventDefault(); // Prevent default behavior
+        const newWidth = e.clientX;
+        if (newWidth >= 200 && newWidth <= 400) {
+          setSidebarWidth(newWidth);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      // Prevent text selection during resize
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Restore text selection
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+  }, [isResizing]);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent text selection
+    setIsResizing(true);
+  };
 
   // Auto-sync user on page load
   useEffect(() => {
@@ -103,155 +139,152 @@ const HomePage = () => {
 
       <AuthenticatedNavbar
         isScrolled={isScrolled}
-        onDashboardClick={() => { }}
       />
 
 
 
-      {/* Sidebar toggle button for mobile */}
+      {/* Sidebar toggle button - now only shows menu icon for opening */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300"
+        className="fixed left-0 top-20 z-40 p-2 m-4 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer"
         aria-label="Toggle sidebar"
+        style={{ display: sidebarOpen ? 'none' : 'block' }}
       >
-        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <Menu className="w-5 h-5" />
       </button>
 
-      {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.aside
-            initial={{ x: -280 }}
-            animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed left-0 top-0 pt-20 pb-4 h-full w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
-          >
-            <div className="p-4">
-              {/* Main Navigation */}
-              <div className="mb-8">
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/home"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
-                  >
-                    <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
-                    Home
-                  </Link>
-                  <Link
-                    href="/community"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Community
-                  </Link>
-                  <Link
-                    href="/group-study"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                    Group Study
-                  </Link>
-                  <Link
-                    href="/tools/doubt-solving"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    AI Doubt Solver
-                  </Link>
-                </nav>
+          <>
+            {/* Overlay for mobile screens when sidebar is open */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black/20 z-20 md:hidden"
+            />
+
+            <motion.aside
+              initial={{ x: "-280px" }}
+              animate={{ x: "0px" }}
+              exit={{ x: "-280px" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="fixed left-0 top-0 pt-20 pb-4 h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
+              style={{ width: `${sidebarWidth}px` }}
+              ref={sidebarRef}
+            >
+              {/* Resize Handle */}
+              <div
+                ref={resizeRef}
+                onMouseDown={handleResizeStart}
+                className={`homepage-resize-handle ${isResizing ? 'resizing' : ''}`}
+              >
+                {/* Arrows are added via CSS ::after pseudo-element */}
               </div>
 
-              {/* Study Tools Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Study Tools
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/tools/flashcards"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+              <div className="p-4">
+                {/* Close button positioned to the left of Manetho logo */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
+                    aria-label="Close sidebar"
                   >
-                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Flashcards
-                  </Link>
-                  <Link
-                    href="/tools/mind-maps"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-<<<<<<< HEAD
-                    <Brain className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                    Mind Maps
-                  </Link>
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
 
-                </nav>
+                </div>
+
+                {/* Main Navigation */}
+                <div className="mb-8">
+                  <nav className="space-y-1.5">
+                    <Link
+                      href="/home"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
+                    >
+                      <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
+                      Home
+                    </Link>
+                    <Link
+                      href="/community"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Community
+                    </Link>
+                    <Link
+                      href="/group-study"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
+                      Group Study
+                    </Link>
+                    <Link
+                      href="/tools/doubt-solving"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      AI Doubt Solver
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Study Tools Section */}
+                <div className="mb-8">
+                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                    Study Tools
+                  </h3>
+                  <nav className="space-y-1.5">
+                    <Link
+                      href="/tools/flashcards"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Flashcards
+                    </Link>
+                    <Link
+                      href="/tools/mind-maps"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Mind Maps
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Other Pages Section */}
+                <div className="mb-8">
+                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                    More
+                  </h3>
+                  <nav className="space-y-1.5">
+                    <Link
+                      href={user?.id ? `/profile/${user.id}` : '/profile'}
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                      Profile
+                    </Link>
+                    <Link
+                      href="/chat"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                    >
+                      <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
+                      Messages
+                    </Link>
+                  </nav>
+                </div>
+
+                {/* Account section removed as it was empty */}
+
               </div>
-
-
-=======
-                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Mind Maps
-                  </Link>
-                </nav>
-              </div>
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
-
-              {/* Other Pages Section */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  More
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href={user?.id ? `/profile/${user.id}` : '/profile'}
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/chat"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-                    Messages
-                  </Link>
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
-                </nav>
-              </div>
-
-              {/* Account Settings */}
-              <div className="mb-8">
-                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                  Account
-                </h3>
-                <nav className="space-y-1.5">
-                  <Link
-                    href="/settings"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <Settings className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Settings
-                  </Link>
-                  <Link
-                    href="/help"
-                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                  >
-                    <HelpCircle className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                    Help & Support
-                  </Link>
-                </nav>
-              </div>
-            </div>
-          </motion.aside>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
 
-      <main className={`relative pt-24 pb-16 transition-all duration-300 ${sidebarOpen ? "md:ml-64" : ""}`}>
+      <main className={`relative pt-24 pb-16 transition-all duration-300`} style={{ marginLeft: sidebarOpen ? `${sidebarWidth}px` : '0px' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Welcome Section */}
           <section className="mb-12">
@@ -259,25 +292,27 @@ const HomePage = () => {
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
                 Welcome back, {firstName}!
               </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-12">
-                Your learning journey starts here.
-              </p>
+
             </div>
 
             {/* Main Action Cards */}
-<<<<<<< HEAD
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-=======
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 max-w-3xl mx-auto">
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* AI Doubt Solver Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
                 transition={{ duration: 0.3 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/90 dark:from-gray-800/90 dark:via-blue-900/20 dark:to-indigo-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100/50 dark:border-blue-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Brain className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -287,66 +322,28 @@ const HomePage = () => {
                   Get instant help with your academic questions using our advanced AI assistant.
                 </p>
                 <Link href="/tools/doubt-solving">
-                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Start Solving
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Flashcards Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <BookMarked className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                  Smart Flashcards
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Create flashcards manually or generate them with AI for efficient study sessions.
-                </p>
-                <Link href="/tools/flashcards">
-                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white">
-                    Study Now
-                  </Button>
-                </Link>
-              </motion.div>
-
-              {/* Mind Maps Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Brain className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                  Mind Maps
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Visualize your thoughts and ideas with AI-powered mind mapping tools.
-                </p>
-                <Link href="/tools/mind-maps">
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white">
-                    Create Mind Map
                   </Button>
                 </Link>
               </motion.div>
 
               {/* Community Card */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-green-50/80 to-teal-50/90 dark:from-gray-800/90 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100/50 dark:border-green-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Users className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
@@ -356,190 +353,157 @@ const HomePage = () => {
                   Connect with fellow learners, share knowledge, and get help from the community.
                 </p>
                 <Link href="/community">
-                  <Button className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white">
+                  <Button className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
                     Join Community
                   </Button>
                 </Link>
               </motion.div>
 
-<<<<<<< HEAD
-            </div>
-          </section>
-
-          {/* Quick Stats */}
-          <section className="mb-12">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                Your Learning Journey
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Brain className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">AI-Powered Learning</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Get personalized help with our advanced AI assistant
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <BookMarked className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Smart Flashcards</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Create and study with AI-generated flashcards
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Community Support</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Learn together with peers and share knowledge
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Mind Mapping</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Visualize ideas with AI-powered mind mapping tools
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Quiz Arena & Leaderboard */}
-          <section className="mb-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Quiz Arena Card */}
+              {/* Flashcards Card */}
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 text-center group"
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-emerald-50/80 to-cyan-50/90 dark:from-gray-800/90 dark:via-emerald-900/20 dark:to-cyan-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-100/50 dark:border-emerald-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Trophy className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
+                  <BookMarked className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                  Quiz Arena
+                  Smart Flashcards
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Challenge yourself with interactive quizzes across various subjects. Compete with others and climb the leaderboard!
+                  Create flashcards manually or generate them with AI for efficient study sessions.
                 </p>
-                <div className="flex justify-center space-x-4 mb-6">
-                  <div className="text-center">
-                    <Target className="w-6 h-6 text-blue-500 mx-auto mb-1" />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Multiple Subjects</p>
-                  </div>
-                  <div className="text-center">
-                    <TrendingUp className="w-6 h-6 text-green-500 mx-auto mb-1" />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Global Rankings</p>
-                  </div>
-                  <div className="text-center">
-                    <Flame className="w-6 h-6 text-red-500 mx-auto mb-1" />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Study Streaks</p>
-                  </div>
-                </div>
-                <Link href="/quiz">
-                  <Button className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white">
-                    Start Quiz Challenge
+                <Link href="/tools/flashcards">
+                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
+                    Study Now
                   </Button>
                 </Link>
               </motion.div>
 
-              {/* AI Quiz Generator Promotion */}
+              {/* Mind Maps Card */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8"
+                initial={{ opacity: 0, y: "20px" }}
+                animate={{ opacity: 1, y: "0px" }}
+                transition={{ duration: 0.3, delay: 0.3 }}
+                whileHover={{
+                  scale: 1.05,
+                  rotateY: "5deg",
+                  rotateX: "2deg",
+                  z: 20,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-gradient-to-br from-white/90 via-purple-50/80 to-pink-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-pink-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                    <Brain className="w-5 h-5 mr-2 text-purple-500" />
-                    AI Quiz Generator
-                  </h3>
-                  <Link href="/quiz" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                    Try Now
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
+                  <Brain className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Mind Maps
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Visualize your thoughts and ideas with AI-powered mind mapping tools.
+                </p>
+                <Link href="/tools/mind-maps">
+                  <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
+                    Create Mind Map
+                  </Button>
+                </Link>
+              </motion.div>
+
+            </div>
+          </section>
+
+
+
+          {/* AI Quiz Generator */}
+          <section className="mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: "20px" }}
+              animate={{ opacity: 1, y: "0px" }}
+              transition={{ duration: 0.3 }}
+              whileHover={{
+                scale: 1.02,
+                rotateY: "2deg",
+                rotateX: "1deg",
+                z: 10,
+                transition: { duration: 0.2 }
+              }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gradient-to-br from-white/90 via-purple-50/80 to-blue-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-blue-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <Brain className="w-5 h-5 mr-2 text-purple-500" />
+                  AI Quiz Generator
+                </h3>
+                <Link href="/quiz" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  Try Now
+                </Link>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-50/80 to-blue-50/80 dark:from-purple-900/30 dark:to-blue-900/30 p-4 rounded-lg border border-purple-100/50 dark:border-purple-800/30">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shadow-sm">
+                      <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        Create Custom Quizzes
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Generate quizzes on any topic using AI
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Trophy className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700 dark:text-gray-300">Multiple choice</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <BookMarked className="w-4 h-4 text-blue-500" />
+                      <span className="text-gray-700 dark:text-gray-300">Save as flashcards</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Target className="w-4 h-4 text-orange-500" />
+                      <span className="text-gray-700 dark:text-gray-300">Custom difficulty</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Brain className="w-4 h-4 text-purple-500" />
+                      <span className="text-gray-700 dark:text-gray-300">AI-powered</span>
+                    </div>
+                  </div>
+
+                  <Link href="/quiz">
+                    <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white transform hover:scale-105 transition-transform duration-200 shadow-lg">
+                      <Brain className="w-4 h-4 mr-2" />
+                      Generate Quiz
+                    </Button>
                   </Link>
                 </div>
-
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-lg">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                        <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
-                          Create Custom Quizzes
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                          Generate quizzes on any topic using AI
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                      <div className="flex items-center space-x-2">
-                        <Trophy className="w-4 h-4 text-green-500" />
-                        <span className="text-gray-700 dark:text-gray-300">Multiple choice</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <BookMarked className="w-4 h-4 text-blue-500" />
-                        <span className="text-gray-700 dark:text-gray-300">Save as flashcards</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Target className="w-4 h-4 text-orange-500" />
-                        <span className="text-gray-700 dark:text-gray-300">Custom difficulty</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Brain className="w-4 h-4 text-purple-500" />
-                        <span className="text-gray-700 dark:text-gray-300">AI-powered</span>
-                      </div>
-                    </div>
-
-                    <Link href="/quiz">
-                      <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white">
-                        <Brain className="w-4 h-4 mr-2" />
-                        Generate Quiz
-                      </Button>
-                    </Link>
-                  </div>
-
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                      Create personalized quizzes on any topic you want to learn
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Convert quiz questions into flashcards for better studying
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
           </section>
-=======
-
-            </div>
-          </section>
-
-
->>>>>>> 708c8c56af1dbeacd172d286642eb215ed7e8059
         </div>
       </main>
 
-      <footer className={`relative transition-all duration-300 ${sidebarOpen ? "md:ml-64" : ""}`}>
-        <Footer />
-      </footer>
+
     </div>
   );
 };
 
 export default HomePage;
+

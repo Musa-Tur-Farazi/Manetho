@@ -8,7 +8,6 @@ import {
   Users,
   Check,
   ChevronRight,
-  LucideIcon,
   TrendingUp,
   BrainCircuit,
   Sigma,
@@ -121,18 +120,17 @@ export default function MathematicsPage() {
     <>
       <PageHeader
         title="Mathematics"
-        description="Explore the fascinating world of mathematics with our comprehensive learning resources"
-        backgroundImage="https://images.unsplash.com/photo-1509228468518-180dd4864904?q=80&w=2070&auto=format&fit=crop"
-      >
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <Button size="lg">
-            Get Started
-          </Button>
-          <Button variant="outline" size="lg">
-            View Curriculum
-          </Button>
-        </div>
-      </PageHeader>
+        subtitle="Explore the fascinating world of mathematics with our comprehensive learning resources"
+      />
+      
+      <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <Button size="lg">
+          Get Started
+        </Button>
+        <Button variant="outline" size="lg">
+          View Curriculum
+        </Button>
+      </div>
 
       <section className="mb-20">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">

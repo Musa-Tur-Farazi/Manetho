@@ -93,7 +93,7 @@ export default function BlogPage() {
     <>
       <PageHeader
         title="Manetho Blog"
-        description="Insights, tips, and resources to enhance your learning journey"
+        subtitle="Insights, tips, and resources to enhance your learning journey"
       />
 
       <div className="mb-12">

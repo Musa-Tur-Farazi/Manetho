@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       .returning({ testId: practiceTestsTable.testId });
 
     // Insert generated questions
-    const questionsToInsert = generatedQuestions.map((q, index) => ({
+    const questionsToInsert = generatedQuestions.map((q: any, index: number) => ({
       testId: practiceTest.testId,
       question: q.question,
       options: q.options ? JSON.stringify(q.options) : null,
@@ -307,8 +307,7 @@ export async function PUT(request: NextRequest) {
         name: deckName,
         description: `Flashcards generated from AI quiz`,
         isPublic: false,
-        totalCards: selectedQuestions ? selectedQuestions.length : questions.length,
-        tags: JSON.stringify(['ai-generated', 'quiz-derived'])
+        cardCount: selectedQuestions ? selectedQuestions.length : questions.length
       })
       .returning({ deckId: flashcardDecksTable.deckId });
 
@@ -318,9 +317,10 @@ export async function PUT(request: NextRequest) {
       : questions;
 
     const flashcardsToInsert = questionsToConvert.map((q, index) => ({
+      userId: user.userId,
       deckId: flashcardDeck.deckId,
-      front: q.question,
-      back: `${q.correctAnswer}${q.explanation ? '\n\nExplanation: ' + q.explanation : ''}`,
+      question: q.question,
+      answer: `${q.correctAnswer}${q.explanation ? '\n\nExplanation: ' + q.explanation : ''}`,
       orderIndex: index,
       aiGenerated: true
     }));

@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import {
-  User, MessageCircle, BookOpen, Calendar, Award, BarChart,
-  UserPlus, UserMinus, ChevronLeft, Star, GraduationCap, Users,
-  Heart, Share, Bookmark, MoreHorizontal, Clock, Image, BarChart3,
-  Target, TrendingUp, Zap, Flame, CheckCircle, Trophy, Brain,
-  Timer, Book, Lightbulb, Activity, Progress
+  User, MessageCircle, BookOpen, BarChart,
+  UserPlus, UserMinus, ChevronLeft, GraduationCap, Users,
+  Heart, Share, Bookmark, MoreHorizontal, Clock, BarChart3
 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -55,13 +53,13 @@ interface UserPost {
   images?: string[];
   postType?: string;
   pollOptions?: string[];
-  pollVotes?: Record<string, any>;
+  pollVotes?: Record<string, number>;
 }
 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { user: currentUser } = useUser();
+  const currentUser = useUser().user;
   const { theme, setTheme } = useTheme();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -79,6 +77,7 @@ export default function UserProfilePage() {
     if (userId) {
       fetchUserProfile();
       fetchUserPosts();
+      fetchUserStats();
     }
     if (currentUser) {
       fetchCurrentUserInternalId();
@@ -129,6 +128,16 @@ export default function UserProfilePage() {
     }
   };
 
+  const fetchUserStats = async () => {
+    try {
+      const res = await fetch(`/api/profile/summary?userId=${userId}`);
+      if (res.ok) {
+        const stats = await res.json();
+        setUserStats(stats);
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const fetchUserPosts = async () => {
     try {
       setPostsLoading(true);
@@ -147,7 +156,7 @@ export default function UserProfilePage() {
 
       if (sharedResponse.ok) {
         const sharedData = await sharedResponse.json();
-        const sharedPosts = sharedData.posts.map((post: any) => ({
+        const sharedPosts = sharedData.posts.map((post: UserPost) => ({
           ...post,
           isShared: true
         }));
@@ -241,6 +250,13 @@ export default function UserProfilePage() {
     return `Active ${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
+  // Helper function to check if user is currently active (within last 5 minutes)
+  const isUserActive = (lastActiveAt?: string) => {
+    if (!lastActiveAt) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastActiveAt) > fiveMinutesAgo;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 w-full">
@@ -257,7 +273,7 @@ export default function UserProfilePage() {
               </button>
               <button
                 onClick={() => router.push('/home')}
-                className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+                className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
               >
                 Manetho
               </button>
@@ -320,7 +336,7 @@ export default function UserProfilePage() {
               </button>
               <button
                 onClick={() => router.push('/home')}
-                className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+                className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
               >
                 Manetho
               </button>
@@ -381,7 +397,7 @@ export default function UserProfilePage() {
             </button>
             <button
               onClick={() => router.push('/home')}
-              className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all"
+              className="text-lg font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent hover:from-indigo-400 hover:to-purple-400 transition-all"
             >
               Manetho
             </button>
@@ -455,8 +471,8 @@ export default function UserProfilePage() {
 
       {/* Main Content */}
       <div className="pt-16 pb-20">
-        <div className="max-w-4xl mx-auto px-6">
-          {/* Profile Card */}
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Profile Header Card */}
           <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur-sm rounded-2xl border border-gray-200/30 dark:border-slate-700/30 overflow-hidden mb-6 shadow-xl">
             <div className="p-6">
               <div className="flex flex-col md:flex-row items-start gap-6">
@@ -467,7 +483,9 @@ export default function UserProfilePage() {
                     alt={userProfile.fullName}
                     className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-lg"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800"></div>
+                  {isUserActive(userProfile.lastActiveAt) && (
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-slate-800"></div>
+                  )}
                 </div>
 
                 {/* User Info */}
@@ -533,326 +551,197 @@ export default function UserProfilePage() {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          {userStats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followersCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Learning Partners</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <User className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.followingCount}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Following</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BookOpen className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.totalStudyHours}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Study Hours</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Users className="w-6 h-6 text-orange-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.groupsJoined}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Groups Joined</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BookOpen className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.flashcardDecks}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Flashcard Decks</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <BarChart className="w-6 h-6 text-pink-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.mindMapsSaved}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Mind Maps</p>
-              </div>
-              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-4 text-center border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-                <Star className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{userStats.problemsSolved}</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">Problems Solved</p>
-              </div>
-            </div>
-          )}
-
-          {/* Enhanced Progress Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Learning Progress */}
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
-                Learning Progress
-              </h3>
-
-              <div className="space-y-4">
-                {/* Study Hours Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Timer className="w-4 h-4 text-purple-400" />
-                      Study Hours Goal
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.totalStudyHours || 0}/100h</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.totalStudyHours || 0) / 100 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Problems Solved Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-green-400" />
-                      Problems Solved
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.problemsSolved || 0}/200</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.problemsSolved || 0) / 200 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Flashcards Progress */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                      <Book className="w-4 h-4 text-orange-400" />
-                      Flashcard Decks
-                    </span>
-                    <span className="text-sm text-gray-600 dark:text-slate-400">{userStats?.flashcardDecks || 0}/50</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-slate-700/50 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((userStats?.flashcardDecks || 0) / 50 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Learning Streak & Activity */}
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <Flame className="w-5 h-5 text-red-400" />
-                Learning Streak
-              </h3>
-
-              <div className="text-center mb-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-red-500 to-orange-500 rounded-full mb-3">
-                  <Flame className="w-10 h-10 text-white" />
-                </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-slate-100">15</p>
-                <p className="text-sm text-gray-600 dark:text-slate-400">Days Streak</p>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="text-center">
-                    <p className="text-xs text-gray-600 dark:text-slate-400 mb-1">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'][i]}
-                    </p>
-                    <div className={`w-8 h-8 rounded-lg ${i < 5 ? 'bg-gradient-to-r from-green-400 to-blue-400' : 'bg-gray-200 dark:bg-slate-700/50'} flex items-center justify-center`}>
-                      {i < 5 && <CheckCircle className="w-4 h-4 text-white" />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-3 border border-blue-300/30 dark:border-blue-700/30">
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Keep it up! 🚀</p>
-                <p className="text-xs text-gray-600 dark:text-slate-400">You're on track to reach 30 days!</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Achievement Badges */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              Achievement Badges
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {/* Achievement Badge 1 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Star className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">First Problem</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">Solved!</p>
-              </div>
-
-              {/* Achievement Badge 2 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <BookOpen className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Study Master</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">50 Hours</p>
-              </div>
-
-              {/* Achievement Badge 3 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Flame className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Streak Legend</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">7 Days</p>
-              </div>
-
-              {/* Achievement Badge 4 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Users className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Social Butterfly</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">10 Friends</p>
-              </div>
-
-              {/* Achievement Badge 5 */}
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Brain className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-xs font-medium text-gray-700 dark:text-slate-300">Problem Solver</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">100 Problems</p>
-              </div>
-
-              {/* Achievement Badge 6 - Locked */}
-              <div className="text-center group opacity-50">
-                <div className="w-16 h-16 bg-gray-300 dark:bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                  <Target className="w-8 h-8 text-gray-500 dark:text-slate-400" />
-                </div>
-                <p className="text-xs font-medium text-gray-500 dark:text-slate-400">Goal Crusher</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500">Locked</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Weekly Activity Chart */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-400" />
-              Weekly Activity
-            </h3>
-
-            <div className="grid grid-cols-7 gap-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                const heights = [60, 80, 45, 90, 70, 30, 85]; // Sample data
-                return (
-                  <div key={day} className="text-center">
-                    <div className="h-20 flex items-end justify-center mb-2">
-                      <div
-                        className="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg transition-all duration-300 hover:from-blue-400 hover:to-purple-400"
-                        style={{ height: `${heights[index]}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-slate-400">{day}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-slate-400">This week: 24h 30m</span>
-              <span className="text-green-500 font-medium">+15% from last week</span>
-            </div>
-          </div>
-
-          {/* Tab Navigation */}
-          <div className="mb-6">
-            <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg overflow-hidden">
-              <div className="flex">
-                <button
-                  onClick={() => setActiveTab('posts')}
-                  className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'posts'
-                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  Posts ({userPosts.filter(p => !p.isShared).length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('shared')}
-                  className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'shared'
-                    ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                    : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  Shared ({userPosts.filter(p => p.isShared).length})
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Posts Section */}
-          <div className="space-y-4 mb-6">
-            {postsLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 animate-pulse shadow-lg">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-gray-300 dark:bg-slate-700 rounded-full"></div>
-                      <div>
-                        <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
-                        <div className="h-3 w-20 bg-gray-300 dark:bg-slate-700 rounded"></div>
+          {/* Main Layout with Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Left Sidebar */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Stats Overview */}
+              {userStats && (
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Profile Stats</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Learning Partners</span>
                       </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.followersCount}</span>
                     </div>
-                    <div className="h-6 w-3/4 bg-gray-300 dark:bg-slate-700 rounded mb-2"></div>
-                    <div className="h-4 w-full bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
-                    <div className="h-4 w-2/3 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Following</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.followingCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-purple-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Groups Joined</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.groupsJoined}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-orange-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Flashcard Decks</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.flashcardDecks}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-red-500" />
+                        <span className="text-sm text-gray-600 dark:text-slate-400">Mind Maps</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">{userStats.mindMapsSaved}</span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userPosts
-                  .filter(post => activeTab === 'posts' ? !post.isShared : post.isShared)
-                  .map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                </div>
+              )}
 
-                {userPosts.filter(post => activeTab === 'posts' ? !post.isShared : post.isShared).length === 0 && (
-                  <div className="text-center py-12">
-                    <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
-                      <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-2">
-                        No {activeTab} yet
-                      </h3>
-                      <p className="text-gray-600 dark:text-slate-400">
-                        {activeTab === 'posts'
-                          ? "This user hasn't created any posts yet."
-                          : "This user hasn't shared any posts yet."
-                        }
-                      </p>
+              {/* About Section */}
+              <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
+                  </div>
+                  {userProfile.lastActiveAt && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
                     </div>
+                  )}
+                  {userStats && (
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Study Hours</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-200">{userStats.totalStudyHours}h total</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Quick Actions</h3>
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleMessage}
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Send Message
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Invite to Group
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Study Together
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content */}
+            <div className="lg:col-span-3">
+              {/* Tab Navigation */}
+              <div className="mb-6">
+                <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg overflow-hidden">
+                  <div className="flex">
+                    <button
+                      onClick={() => setActiveTab('posts')}
+                      className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'posts'
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
+                        }`}
+                    >
+                      Posts ({userPosts.filter(p => !p.isShared).length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('shared')}
+                      className={`flex-1 px-6 py-4 font-medium transition-all duration-300 ${activeTab === 'shared'
+                        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                        : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100/50 dark:hover:bg-slate-800/30'
+                        }`}
+                    >
+                      Shared ({userPosts.filter(p => p.isShared).length})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Posts Section */}
+              <div className="space-y-4 mb-6">
+                {postsLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-xl p-6 border border-gray-200/30 dark:border-slate-700/30 animate-pulse shadow-lg">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-gray-300 dark:bg-slate-700 rounded-full"></div>
+                          <div>
+                            <div className="h-4 w-32 bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
+                            <div className="h-3 w-20 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="h-6 w-3/4 bg-gray-300 dark:bg-slate-700 rounded mb-2"></div>
+                        <div className="h-4 w-full bg-gray-300 dark:bg-slate-700 rounded mb-1"></div>
+                        <div className="h-4 w-2/3 bg-gray-300 dark:bg-slate-700 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userPosts
+                      .filter(post => activeTab === 'posts' ? !post.isShared : post.isShared)
+                      .map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+
+                    {userPosts.filter(post => activeTab === 'posts' ? !post.isShared : post.isShared).length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl border border-gray-200/30 dark:border-slate-700/30 shadow-lg p-8">
+                          <BookOpen className="w-16 h-16 text-gray-400 dark:text-slate-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-2">
+                            No {activeTab} yet
+                          </h3>
+                          <p className="text-gray-600 dark:text-slate-400 mb-6">
+                            {activeTab === 'posts'
+                              ? "This user hasn't created any posts yet."
+                              : "This user hasn't shared any posts yet."
+                            }
+                          </p>
+                          {currentUser && currentUserInternalId && userProfile.userId !== currentUserInternalId && (
+                            <div className="space-y-3">
+                              <p className="text-sm text-gray-500 dark:text-slate-500">Why not start a conversation?</p>
+                              <Button
+                                onClick={handleMessage}
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg"
+                              >
+                                <MessageCircle className="w-4 h-4 mr-2" />
+                                Send Message
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Additional Info */}
-          <div className="bg-gradient-to-br from-white/60 to-gray-100/60 dark:from-slate-900/40 dark:to-slate-800/40 backdrop-blur rounded-2xl p-6 border border-gray-200/30 dark:border-slate-700/30 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">About</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Joined Manetho</p>
-                <p className="text-gray-900 dark:text-slate-200">{formatDate(userProfile.joinedAt)}</p>
-              </div>
-              {userProfile.lastActiveAt && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Last Active</p>
-                  <p className="text-gray-900 dark:text-slate-200">{getLastActiveText(userProfile.lastActiveAt)}</p>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
@@ -863,12 +752,64 @@ export default function UserProfilePage() {
 
 // Post Card Component
 const PostCard = ({ post }: { post: UserPost }) => {
+  const [isLiked, setIsLiked] = useState(post.userStarred);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.stars);
+
   const handleLike = async () => {
-    // Like functionality
+    try {
+      const response = await fetch(`/api/community/threads/${post.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+      }
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
   };
 
   const handleShare = async () => {
-    // Share functionality
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: post.title,
+          text: post.content,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(`${post.title}\n\n${post.content}\n\n${window.location.href}`);
+        // You could add a toast notification here
+        alert('Post link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing post:', error);
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      const response = await fetch('/api/community/saved-posts', {
+        method: isBookmarked ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId: post.id }),
+      });
+
+      if (response.ok) {
+        setIsBookmarked(!isBookmarked);
+      }
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+    }
+  };
+
+  const handleComment = () => {
+    // Navigate to post detail page
+    window.location.href = `/community/thread/${post.id}`;
   };
 
   return (
@@ -1050,7 +991,7 @@ const PostCard = ({ post }: { post: UserPost }) => {
                 const optionVotes = votes[index] || 0;
 
                 // Calculate total votes by only counting numeric option votes (0, 1, 2, etc.)
-                const totalVotes = post.pollOptions.reduce((sum, _, optionIndex) => {
+                const totalVotes = post.pollOptions!.reduce((sum, _, optionIndex) => {
                   return sum + (votes[optionIndex] || 0);
                 }, 0);
 
@@ -1126,15 +1067,18 @@ const PostCard = ({ post }: { post: UserPost }) => {
           <div className="flex items-center gap-6">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${post.userStarred
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isLiked
                 ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
                 : "text-gray-600 dark:text-slate-400 hover:bg-red-500/10 hover:text-red-400"
                 }`}
             >
-              <Heart className={`w-4 h-4 ${post.userStarred ? "fill-current" : ""}`} />
-              <span>{post.stars}</span>
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+              <span>{likeCount}</span>
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300">
+            <button
+              onClick={handleComment}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-300"
+            >
               <MessageCircle className="w-4 h-4" />
               <span>{post.comments}</span>
             </button>
@@ -1143,11 +1087,19 @@ const PostCard = ({ post }: { post: UserPost }) => {
             <button
               onClick={handleShare}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-emerald-500/10 hover:text-emerald-400 transition-all duration-300"
+              title="Share post"
             >
               <Share className="w-4 h-4" />
             </button>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400 transition-all duration-300">
-              <Bookmark className="w-4 h-4" />
+            <button
+              onClick={handleBookmark}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${isBookmarked
+                ? "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                : "text-gray-600 dark:text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400"
+                }`}
+              title={isBookmarked ? "Remove bookmark" : "Bookmark post"}
+            >
+              <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-current" : ""}`} />
             </button>
           </div>
         </div>

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Debugging images in database...');
 
@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
       LIMIT 10
     `);
 
-    const threadsWithImages = result.rows.map((row: any) => {
+    const threadsWithImages = result.rows.map((row: Record<string, unknown>) => {
       let images;
       try {
         images = typeof row.images === 'string' ? JSON.parse(row.images) : row.images;
-      } catch (e) {
+      } catch {
         images = row.images;
       }
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error debugging images:', error);
     return NextResponse.json(
-      { error: 'Failed to debug images', details: error.message },
+      { error: 'Failed to debug images', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

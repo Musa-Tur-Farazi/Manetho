@@ -125,9 +125,9 @@ export async function POST(req: NextRequest) {
       .returning();
 
     // Save nodes if provided
-    let savedNodes = [];
+    let savedNodes: any[] = [];
     if (nodes.length > 0) {
-      savedNodes = await db
+      const result = await db
         .insert(mindMapNodesTable)
         .values(
           nodes.map((node: any, index: number) => ({
@@ -147,6 +147,7 @@ export async function POST(req: NextRequest) {
           }))
         )
         .returning();
+      savedNodes = Array.isArray(result) ? result : [];
     }
 
     // Save connections if provided
@@ -261,9 +262,9 @@ export async function PUT(req: NextRequest) {
       .delete(mindMapNodesTable)
       .where(eq(mindMapNodesTable.mindmapId, mindmapId));
 
-    let savedNodes = [];
+    let savedNodes: any[] = [];
     if (nodes.length > 0) {
-      savedNodes = await db
+      const result = await db
         .insert(mindMapNodesTable)
         .values(
           nodes.map((node: any, index: number) => ({
@@ -283,6 +284,7 @@ export async function PUT(req: NextRequest) {
           }))
         )
         .returning();
+      savedNodes = Array.isArray(result) ? result : [];
     }
 
     // Update connections - delete existing and insert new ones

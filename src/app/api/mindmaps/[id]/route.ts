@@ -7,7 +7,7 @@ import { eq, and } from "drizzle-orm";
 // GET - Get a specific mind map with its nodes and connections
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId: clerkUserId } = await auth();
@@ -27,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const mindmapId = params.id;
+    const { id: mindmapId } = await params;
 
     // Get mind map details
     const [mindMap] = await db
