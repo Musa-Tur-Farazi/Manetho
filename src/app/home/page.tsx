@@ -26,7 +26,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { motion, AnimatePresence } from "framer-motion";
+// Removed Framer Motion imports to fix React 19 compatibility
 import { useTheme } from "@/components/theme/ThemeProvider";
 import AuthenticatedNavbar from "@/components/homepage/AuthenticatedNavbar";
 
@@ -153,136 +153,127 @@ const HomePage = () => {
         <Menu className="w-5 h-5" />
       </button>
 
-      <AnimatePresence>
-        {sidebarOpen && (
-          <>
-            {/* Overlay for mobile screens when sidebar is open */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/20 z-20 md:hidden"
-            />
+      {sidebarOpen && (
+        <>
+          {/* Overlay for mobile screens when sidebar is open */}
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/20 z-20 md:hidden animate-fadeIn"
+          />
 
-            <motion.aside
-              initial={{ x: "-280px" }}
-              animate={{ x: "0px" }}
-              exit={{ x: "-280px" }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="fixed left-0 top-0 pt-20 pb-4 h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin"
-              style={{ width: `${sidebarWidth}px` }}
-              ref={sidebarRef}
+          <aside
+            className="fixed left-0 top-0 pt-20 pb-4 h-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg z-30 overflow-y-auto scrollbar-thin transition-transform duration-300 ease-in-out"
+            style={{ width: `${sidebarWidth}px` }}
+            ref={sidebarRef}
+          >
+            {/* Resize Handle */}
+            <div
+              ref={resizeRef}
+              onMouseDown={handleResizeStart}
+              className={`homepage-resize-handle ${isResizing ? 'resizing' : ''}`}
             >
-              {/* Resize Handle */}
-              <div
-                ref={resizeRef}
-                onMouseDown={handleResizeStart}
-                className={`homepage-resize-handle ${isResizing ? 'resizing' : ''}`}
-              >
-                {/* Arrows are added via CSS ::after pseudo-element */}
+              {/* Arrows are added via CSS ::after pseudo-element */}
+            </div>
+
+            <div className="p-4">
+              {/* Close button positioned to the left of Manetho logo */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
               </div>
 
-              <div className="p-4">
-                {/* Close button positioned to the left of Manetho logo */}
-                <div className="flex items-center justify-between mb-4">
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors"
-                    aria-label="Close sidebar"
+              {/* Main Navigation */}
+              <div className="mb-8">
+                <nav className="space-y-1.5">
+                  <Link
+                    href="/home"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
                   >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-
-                </div>
-
-                {/* Main Navigation */}
-                <div className="mb-8">
-                  <nav className="space-y-1.5">
-                    <Link
-                      href="/home"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700/60"
-                    >
-                      <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
-                      Home
-                    </Link>
-                    <Link
-                      href="/community"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                      Community
-                    </Link>
-                    <Link
-                      href="/group-study"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
-                      Group Study
-                    </Link>
-                    <Link
-                      href="/tools/doubt-solving"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                      AI Doubt Solver
-                    </Link>
-                  </nav>
-                </div>
-
-                {/* Study Tools Section */}
-                <div className="mb-8">
-                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                    Study Tools
-                  </h3>
-                  <nav className="space-y-1.5">
-                    <Link
-                      href="/tools/flashcards"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                      Flashcards
-                    </Link>
-                    <Link
-                      href="/tools/mind-maps"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                      Mind Maps
-                    </Link>
-                  </nav>
-                </div>
-
-                {/* Other Pages Section */}
-                <div className="mb-8">
-                  <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
-                    More
-                  </h3>
-                  <nav className="space-y-1.5">
-                    <Link
-                      href={user?.id ? `/profile/${user.id}` : '/profile'}
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
-                      Profile
-                    </Link>
-                    <Link
-                      href="/chat"
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
-                    >
-                      <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
-                      Messages
-                    </Link>
-                  </nav>
-                </div>
-
-                {/* Account section removed as it was empty */}
-
+                    <Home className="w-5 h-5 mr-3 text-cyan-600 dark:text-cyan-400" />
+                    Home
+                  </Link>
+                  <Link
+                    href="/community"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <Users className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Community
+                  </Link>
+                  <Link
+                    href="/group-study"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <BookOpen className="w-5 h-5 mr-3 text-purple-600 dark:text-purple-400" />
+                    Group Study
+                  </Link>
+                  <Link
+                    href="/tools/doubt-solving"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <Brain className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    AI Doubt Solver
+                  </Link>
+                </nav>
               </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+
+              {/* Study Tools Section */}
+              <div className="mb-8">
+                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                  Study Tools
+                </h3>
+                <nav className="space-y-1.5">
+                  <Link
+                    href="/tools/flashcards"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <CreditCard className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Flashcards
+                  </Link>
+                  <Link
+                    href="/tools/mind-maps"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <Network className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Mind Maps
+                  </Link>
+                </nav>
+              </div>
+
+              {/* Other Pages Section */}
+              <div className="mb-8">
+                <h3 className="text-gray-400 dark:text-gray-500 text-xs uppercase font-semibold tracking-wider mb-4 px-2">
+                  More
+                </h3>
+                <nav className="space-y-1.5">
+                  <Link
+                    href={user?.id ? `/profile/${user.id}` : '/profile'}
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <User className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
+                    Profile
+                  </Link>
+                  <Link
+                    href="/chat"
+                    className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60"
+                  >
+                    <MessageCircle className="w-5 h-5 mr-3 text-blue-600 dark:text-blue-400" />
+                    Messages
+                  </Link>
+                </nav>
+              </div>
+
+              {/* Account section removed as it was empty */}
+
+            </div>
+          </aside>
+        </>
+      )}
 
       <main className={`relative pt-24 pb-16 transition-all duration-300`} style={{ marginLeft: sidebarOpen ? `${sidebarWidth}px` : '0px' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -298,19 +289,8 @@ const HomePage = () => {
             {/* Main Action Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* AI Doubt Solver Card */}
-              <motion.div
-                initial={{ opacity: 0, y: "20px" }}
-                animate={{ opacity: 1, y: "0px" }}
-                transition={{ duration: 0.3 }}
-                whileHover={{
-                  scale: 1.05,
-                  rotateY: "5deg",
-                  rotateX: "2deg",
-                  z: 20,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/90 dark:from-gray-800/90 dark:via-blue-900/20 dark:to-indigo-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100/50 dark:border-blue-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+              <div
+                className="bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/90 dark:from-gray-800/90 dark:via-blue-900/20 dark:to-indigo-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100/50 dark:border-blue-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm hover:scale-105 hover:translate-z-8 animate-fadeIn"
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Brain className="w-8 h-8 text-white" />
@@ -326,22 +306,12 @@ const HomePage = () => {
                     Start Solving
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
 
               {/* Community Card */}
-              <motion.div
-                initial={{ opacity: 0, y: "20px" }}
-                animate={{ opacity: 1, y: "0px" }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                whileHover={{
-                  scale: 1.05,
-                  rotateY: "5deg",
-                  rotateX: "2deg",
-                  z: 20,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-br from-white/90 via-green-50/80 to-teal-50/90 dark:from-gray-800/90 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100/50 dark:border-green-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+              <div
+                className="bg-gradient-to-br from-white/90 via-green-50/80 to-teal-50/90 dark:from-gray-800/90 dark:via-green-900/20 dark:to-teal-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100/50 dark:border-green-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm hover:scale-105 hover:translate-z-8 animate-fadeIn"
+                style={{ animationDelay: '0.1s' }}
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Users className="w-8 h-8 text-white" />
@@ -357,22 +327,12 @@ const HomePage = () => {
                     Join Community
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
 
               {/* Flashcards Card */}
-              <motion.div
-                initial={{ opacity: 0, y: "20px" }}
-                animate={{ opacity: 1, y: "0px" }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                whileHover={{
-                  scale: 1.05,
-                  rotateY: "5deg",
-                  rotateX: "2deg",
-                  z: 20,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-br from-white/90 via-emerald-50/80 to-cyan-50/90 dark:from-gray-800/90 dark:via-emerald-900/20 dark:to-cyan-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-100/50 dark:border-emerald-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+              <div
+                className="bg-gradient-to-br from-white/90 via-emerald-50/80 to-cyan-50/90 dark:from-gray-800/90 dark:via-emerald-900/20 dark:to-cyan-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-emerald-100/50 dark:border-emerald-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm hover:scale-105 hover:translate-z-8 animate-fadeIn"
+                style={{ animationDelay: '0.2s' }}
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <BookMarked className="w-8 h-8 text-white" />
@@ -388,22 +348,12 @@ const HomePage = () => {
                     Study Now
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
 
               {/* Mind Maps Card */}
-              <motion.div
-                initial={{ opacity: 0, y: "20px" }}
-                animate={{ opacity: 1, y: "0px" }}
-                transition={{ duration: 0.3, delay: 0.3 }}
-                whileHover={{
-                  scale: 1.05,
-                  rotateY: "5deg",
-                  rotateX: "2deg",
-                  z: 20,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-br from-white/90 via-purple-50/80 to-pink-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-pink-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+              <div
+                className="bg-gradient-to-br from-white/90 via-purple-50/80 to-pink-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-pink-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 text-center group perspective-1000 transform-style-preserve-3d backdrop-blur-sm hover:scale-105 hover:translate-z-8 animate-fadeIn"
+                style={{ animationDelay: '0.3s' }}
               >
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 transform-style-preserve-3d shadow-lg">
                   <Brain className="w-8 h-8 text-white" />
@@ -419,7 +369,7 @@ const HomePage = () => {
                     Create Mind Map
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
 
             </div>
           </section>
@@ -428,19 +378,8 @@ const HomePage = () => {
 
           {/* AI Quiz Generator */}
           <section className="mb-12">
-            <motion.div
-              initial={{ opacity: 0, y: "20px" }}
-              animate={{ opacity: 1, y: "0px" }}
-              transition={{ duration: 0.3 }}
-              whileHover={{
-                scale: 1.02,
-                rotateY: "2deg",
-                rotateX: "1deg",
-                z: 10,
-                transition: { duration: 0.2 }
-              }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gradient-to-br from-white/90 via-purple-50/80 to-blue-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-blue-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 perspective-1000 transform-style-preserve-3d backdrop-blur-sm"
+            <div
+              className="bg-gradient-to-br from-white/90 via-purple-50/80 to-blue-50/90 dark:from-gray-800/90 dark:via-purple-900/20 dark:to-blue-900/30 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100/50 dark:border-purple-800/30 p-8 perspective-1000 transform-style-preserve-3d backdrop-blur-sm hover:scale-102 hover:translate-z-8 animate-fadeIn"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -495,7 +434,7 @@ const HomePage = () => {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </section>
         </div>
       </main>

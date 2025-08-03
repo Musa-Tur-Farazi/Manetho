@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "@radix-ui/react-slot";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 // Define common props that should be excluded from DOM elements
@@ -70,30 +69,23 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     if (href) {
       return (
-        <motion.a
+        <a
           href={href}
           target={target}
           className={cn(buttonVariants({ variant, size, className }))}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
         >
           {children}
-        </motion.a>
+        </a>
       );
     }
     return (
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...domProps}
       >
-        <Comp
-          className={cn(buttonVariants({ variant, size, className }))}
-          ref={ref}
-          {...domProps}
-        >
-          {children}
-        </Comp>
-      </motion.div>
+        {children}
+      </Comp>
     );
   }
 );

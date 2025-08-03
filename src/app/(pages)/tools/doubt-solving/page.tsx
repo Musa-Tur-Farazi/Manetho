@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Image, Loader2, Plus, User, Trash2, Copy, Check, ArrowLeft, Stars, InfoIcon, FileText, RefreshCw, X } from "lucide-react";
+import ThemeToggle from '../../../../components/theme/ThemeToggle';
 // Removed unused imports
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
@@ -289,8 +290,8 @@ export default function DoubtSolvingPage() {
       
       /* User bubble styling */
       .user-bubble {
-        background-color: #19c37d;
-        color: white;
+        background-color:rgb(210, 217, 228);
+        color: #1f2937;
         border-radius: 12px;
         padding: 10px 14px;
         max-width: 80%;
@@ -301,10 +302,15 @@ export default function DoubtSolvingPage() {
         hyphens: auto;
       }
       
+      .dark .user-bubble {
+        background-color: #19c37d;
+        color: white;
+      }
+      
       /* AI bubble styling */
       .ai-bubble {
         background-color: transparent;
-        color: #d1d5db;
+        color: #6b7280;
         border-radius: 0;
         padding: 0;
         max-width: 85%;
@@ -312,6 +318,19 @@ export default function DoubtSolvingPage() {
         word-wrap: break-word;
         overflow-wrap: break-word;
         hyphens: auto;
+      }
+      
+      .dark .ai-bubble {
+        color: #d1d5db;
+      }
+      
+      /* Message content styling */
+      .message-content {
+        color: #1f2937;
+      }
+      
+      .dark .message-content {
+        color: #f9fafb;
       }
       
       /* ChatGPT-specific message styling */
@@ -370,8 +389,8 @@ export default function DoubtSolvingPage() {
 
       /* Improved send button styles */
       .send-button {
-        background-color: #19c37d;
-        color: white;
+        background-color: #d1d5db;
+        color: #374151;
         border-radius: 6px;
         width: 32px;
         height: 32px;
@@ -382,6 +401,15 @@ export default function DoubtSolvingPage() {
       }
       
       .send-button:hover {
+        background-color: #9ca3af;
+      }
+      
+      .dark .send-button {
+        background-color: #19c37d;
+        color: white;
+      }
+      
+      .dark .send-button:hover {
         background-color: #2ea675;
       }
 
@@ -430,17 +458,16 @@ export default function DoubtSolvingPage() {
         display: flex;
         align-items: flex-start;
         padding: 1.5rem;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
         width: 100%;
         overflow-x: hidden;
       }
       
       .chat-row.user {
-        background-color: #343541;
+        background-color: transparent;
       }
       
       .chat-row.assistant {
-        background-color: #444654;
+        background-color: transparent;
       }
       
       .chat-row .flex {
@@ -473,15 +500,12 @@ export default function DoubtSolvingPage() {
       /* Sidebar transition */
       .sidebar-container {
         position: absolute;
-        right: 0;
+        left: 0;
         top: 0;
         bottom: 0;
-        transition: transform 0.3s ease;
         z-index: 50;
-      }
-      
-      .sidebar-hidden {
-        transform: translateX(100%);
+        background-color: #1f2937;
+        height: 100%;
       }
       
       .main-content {
@@ -489,23 +513,26 @@ export default function DoubtSolvingPage() {
         left: 0;
         top: 0;
         bottom: 0;
-        transition: all 0.3s ease;
-        background-color: #343541;
+        background-color: transparent;
         height: 100%;
-      }
-      
-      .main-content-full {
-        right: 0;
+        width: 100%;
+        z-index: 10;
+        margin: 0;
+        padding: 0;
+        border: none;
+        outline: none;
+        overflow: hidden;
+        box-shadow: none;
       }
       
       /* Resize handle */
       .resize-handle {
         position: absolute;
-        left: 0;
+        right: 0;
         top: 0;
         bottom: 0;
         width: 8px;
-        background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.3), transparent);
+        background: linear-gradient(to left, transparent, rgba(59, 130, 246, 0.3), transparent);
         cursor: col-resize;
         z-index: 60;
         transition: all 0.2s ease;
@@ -520,29 +547,26 @@ export default function DoubtSolvingPage() {
         height: 40px;
         background: rgba(59, 130, 246, 0.6);
         border-radius: 1px;
-        box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
         transition: all 0.2s ease;
       }
       
       .resize-handle:hover {
-        background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.6), transparent);
+        background: linear-gradient(to left, transparent, rgba(59, 130, 246, 0.6), transparent);
         width: 12px;
       }
       
       .resize-handle:hover::before {
         background: rgba(59, 130, 246, 1);
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
         height: 60px;
       }
       
       .resize-handle.resizing {
-        background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.8), transparent);
+        background: linear-gradient(to left, transparent, rgba(59, 130, 246, 0.8), transparent);
         width: 12px;
       }
       
       .resize-handle.resizing::before {
         background: rgba(59, 130, 246, 1);
-        box-shadow: 0 0 16px rgba(59, 130, 246, 1);
         height: 80px;
       }
       
@@ -613,9 +637,19 @@ export default function DoubtSolvingPage() {
         background-color: rgba(255, 255, 255, 0.1);
       }
       
-      /* Footer area */
-      .footer-area {
-        display: none;
+
+      
+      /* Ensure sidebar content doesn't overflow */
+      .sidebar-container > div {
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      
+      /* Prevent text overflow in sidebar */
+      .sidebar-container .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       
       /* Message bubble widths */
@@ -625,65 +659,102 @@ export default function DoubtSolvingPage() {
       
       /* Input area styling */
       .input-area {
-        border-color: rgba(217,217,227,.15);
-        background-color: transparent;
-        position: absolute;
-        bottom: 0;
-        left: 0;
+        position: fixed;
+        bottom: 12px;
+        left: ${sidebarWidth}px;
         right: 0;
+        z-index: 100;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        display: flex;
+        justify-content: center;
       }
       
       .input-container {
-        max-width: 80%;
-        margin: 0 auto;
+        width: 700px;
+        max-width: calc(100% - 60px);
+        margin: 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        padding: 0;
+        position: relative;
+      }
+      
+      .attachment-preview {
+        background: transparent;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        margin-bottom: 8px;
+      }
+      
+      /* Cursor pointer for all clickable elements */
+      button, 
+      [onClick], 
+      .cursor-pointer,
+      .hover\\:bg-gray-700,
+      .hover\\:bg-red-500\\/20,
+      .hover\\:bg-gray-800,
+      .hover\\:from-emerald-700,
+      .hover\\:to-teal-700,
+      .hover\\:from-gray-700,
+      .hover\\:to-gray-600,
+      .hover\\:from-purple-600,
+      .hover\\:to-indigo-600 {
+        cursor: pointer;
       }
       
       .input-textarea {
-        background-color: #40414f;
-        border-radius: 0.75rem;
-        color: white;
+        background-color: rgba(243, 244, 246, 0.9);
+        backdrop-filter: blur(8px);
+        border-radius: 16px;
+        color: #1f2937;
         resize: none;
-        min-height: 56px;
-        max-height: 300px;
+        height: 80px;
+        max-height: 80px;
+        min-height: 80px;
+        border: 1px solid rgba(156, 163, 175, 0.3);
+        outline: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        padding: 18px 20px;
+        font-size: 16px;
+        line-height: 1.5;
+        width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      
+      .dark .input-textarea {
+        background-color: rgba(64, 65, 79, 0.8);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
       }
       
       /* Message list styling */
       .message-list {
         position: absolute;
-        top: 49px; /* Height of header */
-        bottom: 100px; /* Height of input area */
+        top: 0px; /* Start immediately below header */
+        bottom: 100px; /* Account for floating input */
         left: 0;
         right: 0;
         overflow-y: auto;
         overflow-x: hidden;
         scroll-behavior: smooth;
-        padding-bottom: 20px; /* Add padding to ensure last message is fully visible */
+        padding-bottom: 30px; /* Add padding to ensure last message is fully visible */
+        background: transparent;
+        border: none;
+        outline: none;
+        box-shadow: none;
       }
       
-      /* Scroll button */
-      .scroll-bottom-button {
-        position: fixed;
-        bottom: 120px;
-        right: 20px;
-        background-color: rgba(32, 33, 35, 0.6);
-        color: white;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: opacity 0.3s;
-        z-index: 20;
-        opacity: 0;
-        pointer-events: none;
-      }
-      
-      .scroll-bottom-button.visible {
-        opacity: 1;
-        pointer-events: auto;
-      }
+
       
       /* Message content wrap */
       .message-content-wrap {
@@ -697,9 +768,9 @@ export default function DoubtSolvingPage() {
       
       /* Empty screen styling */
       .empty-screen {
-        background-color: #343541;
+        background-color: transparent;
         position: absolute;
-        top: 49px;
+        top: 0px;
         bottom: 100px;
         left: 0;
         right: 0;
@@ -707,6 +778,9 @@ export default function DoubtSolvingPage() {
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        border: none;
+        outline: none;
+        box-shadow: none;
       }
       
       .empty-screen .grid {
@@ -1101,12 +1175,12 @@ export default function DoubtSolvingPage() {
     processedContent = processedContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
     // Convert inline code (`text`) to <code>text</code>
-    processedContent = processedContent.replace(/`([^`]+)`/g, '<code class="inline-code text-white bg-gray-700 px-1 py-0.5 rounded">$1</code>');
+    processedContent = processedContent.replace(/`([^`]+)`/g, '<code class="inline-code text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">$1</code>');
 
     // Convert code blocks (```text```) to <pre><code>text</code></pre>
     processedContent = processedContent.replace(/```(?:(\w+)\n)?([\s\S]*?)```/g, (match, language, code) => {
       const languageClass = language ? ` language-${language}` : '';
-      return `<div class="bg-gray-800 rounded-md my-3 overflow-x-auto"><pre class="p-4 text-sm overflow-x-auto"><code class="text-gray-100${languageClass}">${code.trim()}</code></pre></div>`;
+      return `<div class="bg-gray-100 dark:bg-gray-800 rounded-md my-3 overflow-x-auto"><pre class="p-4 text-sm overflow-x-auto"><code class="text-gray-900 dark:text-gray-100${languageClass}">${code.trim()}</code></pre></div>`;
     });
 
     // Convert lists
@@ -1305,7 +1379,7 @@ export default function DoubtSolvingPage() {
       attachment: currentAttachment ? {
         type: currentAttachment.type,
         name: currentAttachment.name,
-        url: currentAttachmentPreview === 'pdf' ? '' : (currentAttachmentPreview || ''),
+        url: currentAttachment.type.startsWith('image/') ? currentAttachment.url : (currentAttachmentPreview || ''),
         size: currentAttachment.size
       } : undefined
     };
@@ -1476,7 +1550,7 @@ export default function DoubtSolvingPage() {
 
   const resize = (e: MouseEvent) => {
     if (isResizing) {
-      const newWidth = window.innerWidth - e.clientX;
+      const newWidth = e.clientX;
       if (newWidth >= 200 && newWidth <= 500) {
         setSidebarWidth(newWidth);
       }
@@ -1532,66 +1606,46 @@ export default function DoubtSolvingPage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-white dark:bg-gray-900">
       {/* Full-width Header */}
-      <div className="sticky top-0 z-50 flex items-center justify-between py-3 px-4 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 shadow-lg">
-        <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-50 flex items-center justify-between py-3 px-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700" style={{ margin: 0, paddingBottom: 0, height: '60px' }}>
+        <div className="flex items-center gap-4 align-middle">
           <a
             href="/home"
-            className="p-2 rounded-lg text-white hover:bg-white/10 transition-all duration-200 transform hover:scale-105 card-3d"
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
           >
             <ArrowLeft className="h-5 w-5" />
           </a>
-          <span className="font-semibold text-white text-lg bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">AI Doubt Solver</span>
+
+          <span className="font-semibold text-gray-900 dark:text-white text-lg">AI Doubt Solver</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Chat Sessions Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSidebar(!showSidebar)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 button-3d"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path>
-              </svg>
-              <span className="font-medium">Chat Sessions</span>
-              <svg
-                className={`w-4 h-4 transition-transform duration-200 ${showSidebar ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
+        <div className="flex items-center gap-4 align-middle">
+          <ThemeToggle />
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative" style={{ margin: 0, padding: 0, background: 'transparent' }}>
         {/* Sidebar */}
         <div
-          className={`sidebar-container h-full overflow-y-auto scrollbar-enhanced bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 flex flex-col ${!showSidebar ? 'sidebar-hidden' : ''}`}
-          style={{ width: showSidebar ? `${sidebarWidth}px` : '260px' }}
+          className="sidebar-container h-full overflow-y-auto scrollbar-enhanced bg-gradient-to-b from-gray-100 via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col border-r border-gray-200 dark:border-gray-700"
+          style={{ width: `${sidebarWidth}px` }}
         >
           {/* Resize Handle */}
-          {showSidebar && (
-            <div
-              ref={resizeRef}
-              className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-              onMouseDown={startResizing}
-            />
-          )}
+          <div
+            ref={resizeRef}
+            className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+            onMouseDown={startResizing}
+          />
           {/* New Chat button */}
           <div className="p-3">
             <button
               onClick={createNewSession}
-              className="flex items-center gap-3 w-full rounded-lg py-3 px-4 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium button-3d"
+              className="flex items-center gap-3 w-full rounded-lg py-3 px-4 text-gray-700 dark:text-white bg-gradient-to-r from-gray-200 to-gray-300 dark:from-emerald-600 dark:to-teal-600 hover:from-gray-300 hover:to-gray-400 dark:hover:from-emerald-700 dark:hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium button-3d"
             >
-              <Plus className="h-5 w-5 text-white" />
-              <span className="text-white">New Chat</span>
+              <Plus className="h-5 w-5 text-gray-600 dark:text-white" />
+              <span className="text-gray-700 dark:text-white">New Chat</span>
             </button>
           </div>
 
@@ -1600,11 +1654,11 @@ export default function DoubtSolvingPage() {
             <div className="flex flex-col gap-1 text-sm">
               {isLoadingSessions ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-400"></div>
-                  <span className="ml-2 text-gray-300 font-medium">Loading sessions...</span>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 dark:border-cyan-400"></div>
+                  <span className="ml-2 text-gray-600 dark:text-gray-300 font-medium">Loading sessions...</span>
                 </div>
               ) : chatSessions.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <p>No chat sessions yet</p>
                   <p className="text-sm mt-1">Start a new conversation!</p>
                 </div>
@@ -1616,8 +1670,8 @@ export default function DoubtSolvingPage() {
                     className={`
                   group py-3 px-3 rounded-lg cursor-pointer flex justify-between items-center mx-2 mb-2
                   ${session.id === activeSessionId
-                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg'
-                        : 'hover:bg-gradient-to-r hover:from-gray-700 hover:to-gray-600 hover:shadow-md'
+                        ? 'bg-gradient-to-r from-gray-300 to-gray-400 dark:from-purple-600 dark:to-indigo-600 shadow-lg'
+                        : 'hover:bg-gradient-to-r hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:shadow-md'
                       }
                   transition-all duration-200 transform hover:scale-105
                 `}
@@ -1638,7 +1692,7 @@ export default function DoubtSolvingPage() {
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
                       </span>
-                      <span className="truncate">{session.title}</span>
+                      <span className="truncate text-gray-700 dark:text-white">{session.title}</span>
                     </div>
                     <button
                       onClick={(e) => deleteSession(session.id, e)}
@@ -1656,44 +1710,56 @@ export default function DoubtSolvingPage() {
 
         {/* Main content area */}
         <div
-          className={`main-content flex flex-col ${!showSidebar ? 'main-content-full' : ''}`}
-          style={{ right: showSidebar ? `${sidebarWidth}px` : '0' }}
+          className="main-content flex flex-col bg-white dark:bg-gray-900"
+          style={{
+            left: `${sidebarWidth}px`,
+            width: `calc(100% - ${sidebarWidth}px)`,
+            top: '0px',
+            margin: 0,
+            padding: 0,
+            height: '100%',
+            position: 'absolute',
+            overflow: 'hidden',
+            border: 'none',
+            outline: 'none',
+            boxShadow: 'none'
+          }}
         >
 
           {/* Main chat area with scrollable content */}
           {isLoadingMessages ? (
             <div className="flex items-center justify-center flex-1">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
-              <span className="ml-3 text-gray-300 font-medium">Loading messages...</span>
+              <span className="ml-3 text-gray-600 dark:text-gray-300 font-medium">Loading messages...</span>
             </div>
           ) : currentChat.length === 0 ? (
-            <div className="empty-screen">
+            <div className="empty-screen" style={{ padding: 0, margin: 0 }}>
               {/* ChatGPT-style welcome screen */}
               <div className="text-center">
-                <h1 className="text-4xl font-bold text-white mb-8">AI Doubt Solver</h1>
+                <h1 className="text-10xl font-bold text-gray-900 dark:text-white mb-8">AI Doubt Solver</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-none mx-auto w-full px-4">
                   <div className="p-4 rounded-lg text-center group">
-                    <div className="h-14 w-14 rounded-full bg-gray-700 flex items-center justify-center mx-auto mb-4">
-                      <Stars className="h-7 w-7 text-gray-400" />
+                    <div className="h-14 w-14 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                      <Stars className="h-7 w-7 text-gray-500 dark:text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium mb-2 text-white">Need help with a concept?</h3>
-                    <p className="text-sm text-gray-400 mb-4">Get explanations for complex topics</p>
+                    <h3 className="text-lg font-medium mb-2 text-gray-800 dark:text-white">Need help with a concept?</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Get explanations for complex topics</p>
                     <button
                       onClick={() => setQuery("Explain the concept of quantum entanglement")}
-                      className="text-xs text-gray-400 px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors"
+                      className="text-xs text-gray-600 dark:text-gray-400 px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     >
                       &quot;Explain quantum entanglement&quot;
                     </button>
                   </div>
                   <div className="p-4 rounded-lg text-center group">
-                    <div className="h-14 w-14 rounded-full bg-gray-700 flex items-center justify-center mx-auto mb-4">
-                      <InfoIcon className="h-7 w-7 text-gray-400" />
+                    <div className="h-14 w-14 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mx-auto mb-4">
+                      <InfoIcon className="h-7 w-7 text-gray-500 dark:text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium mb-2 text-white">Solve a math problem</h3>
-                    <p className="text-sm text-gray-400 mb-4">Get step-by-step solutions</p>
+                    <h3 className="text-lg font-medium mb-2 text-gray-800 dark:text-white">Solve a math problem</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Get step-by-step solutions</p>
                     <button
                       onClick={() => setQuery("Solve the equation: 3x² + 6x - 9 = 0")}
-                      className="text-xs text-gray-400 px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors"
+                      className="text-xs text-gray-600 dark:text-gray-400 px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     >
                       &quot;Solve the equation: 3x² + 6x - 9 = 0&quot;
                     </button>
@@ -1743,27 +1809,41 @@ export default function DoubtSolvingPage() {
                             {message.attachment && (
                               <div className="mb-3">
                                 {message.attachment.type.startsWith('image/') ? (
-                                  <img
-                                    src={message.attachment.url}
-                                    alt="Uploaded image"
-                                    className="max-w-full max-h-64 rounded-lg shadow-md"
-                                  />
+                                  message.attachment.url ? (
+                                    <img
+                                      src={message.attachment.url}
+                                      alt="Uploaded image"
+                                      className="max-w-full max-h-64 rounded-lg shadow-md"
+                                    />
+                                  ) : (
+                                    <div className="flex items-center gap-2 p-3 bg-gray-200 dark:bg-white/10 rounded-lg border border-gray-300 dark:border-white/10">
+                                      <Image className="w-5 h-5 text-gray-700 dark:text-white" />
+                                      <span className="text-sm text-gray-700 dark:text-white">Image attached</span>
+                                    </div>
+                                  )
                                 ) : message.attachment.type === 'application/pdf' ? (
-                                  <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                                    <FileText className="w-6 h-6 text-red-600" />
-                                    <span className="text-sm font-medium">{message.attachment.name}</span>
+                                  <div className="flex items-center gap-2 p-3 bg-gray-200 dark:bg-white/10 rounded-lg border border-gray-300 dark:border-white/10">
+                                    <FileText className="w-5 h-5 text-gray-700 dark:text-white" />
+                                    <span className="text-sm text-gray-700 dark:text-white">{message.attachment.name}</span>
                                   </div>
-                                ) : null}
+                                ) : (
+                                  <div className="flex items-center gap-2 p-3 bg-gray-200 dark:bg-white/10 rounded-lg border border-gray-300 dark:border-white/10">
+                                    <FileText className="w-5 h-5 text-gray-700 dark:text-white" />
+                                    <span className="text-sm text-gray-700 dark:text-white">{message.attachment.name}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
-                            <p className="whitespace-pre-wrap break-words overflow-hidden">{message.content}</p>
+                            {message.content && (
+                              <p className="whitespace-pre-wrap break-words overflow-hidden mt-2">{message.content}</p>
+                            )}
                           </div>
                         )}
                       </div>
 
                       {message.role === "user" && (
                         <div className="chat-avatar user">
-                          <User className="w-4 h-4 text-white" />
+                          <User className="w-4 h-4 text-gray-900 dark:text-white" />
                         </div>
                       )}
                     </div>
@@ -1812,16 +1892,27 @@ export default function DoubtSolvingPage() {
             </div>
           )}
 
-          {/* ChatGPT-style input area */}
-          <div className="input-area border-t border-white/20 py-4 px-4">
-            <div className="input-container relative max-w-[90%]">
+          {/* Floating input area */}
+          <div
+            className="input-area"
+            style={{
+              position: 'fixed',
+              bottom: '12px',
+              left: `${sidebarWidth}px`,
+              right: '0',
+              display: 'flex',
+              justifyContent: 'center',
+              zIndex: 100
+            }}
+          >
+            <div className="input-container relative">
               <form
                 onSubmit={handleSubmit}
                 className="relative"
               >
                 {/* Show attachment if it exists */}
                 {uploadedFile && (
-                  <div className="attachment-preview p-3 border-b border-gray-600">
+                  <div className="attachment-preview p-3">
                     <div className="flex items-center justify-between">
                       {uploadedFile.type === 'application/pdf' ? (
                         <div className="flex items-center gap-3 flex-1">
@@ -1833,15 +1924,19 @@ export default function DoubtSolvingPage() {
                         </div>
                       ) : uploadedFile.type.startsWith('image/') ? (
                         <div className="flex items-center gap-3 flex-1">
-                          {uploadedFile.previewUrl && (
+                          {uploadedFile.url ? (
                             <img
-                              src={uploadedFile.previewUrl}
+                              src={uploadedFile.url}
                               alt="Preview"
-                              className="w-12 h-12 object-cover rounded-lg border border-gray-600 flex-shrink-0"
+                              className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
                             />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg flex-shrink-0 flex items-center justify-center">
+                              <Image className="w-6 h-6 text-gray-500" />
+                            </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-white text-sm truncate">{uploadedFile.name}</p>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{uploadedFile.name}</p>
                             <p className="text-xs text-gray-400">Image</p>
                           </div>
                         </div>
@@ -1870,15 +1965,15 @@ export default function DoubtSolvingPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Message AI Doubt Solver..."
-                  className={`resize-none w-full input-textarea focus:ring-0 focus:outline-none border-0 placeholder:text-gray-400 text-white py-3 pl-4 pr-24 ${uploadedFile ? 'rounded-b-xl' : 'rounded-xl'}`}
-                  rows={uploadedFile ? 4 : 3}
+                  placeholder="Ask anything"
+                  className={`resize-none w-full input-textarea focus:ring-0 focus:outline-none border-0 placeholder:text-gray-400 text-gray-900 dark:text-white py-3 pl-4 pr-24 ${uploadedFile ? 'rounded-b-xl' : 'rounded-xl'}`}
+                  rows={3}
                 />
 
                 <div className="absolute right-3 bottom-2.5 flex items-center space-x-2">
                   {!uploadedFile && (
-                    <label className="p-1 rounded-md cursor-pointer text-gray-400 hover:text-gray-200">
-                      <Image className="w-5 h-5" />
+                    <label className="p-1.5 rounded-md cursor-pointer text-gray-400 hover:text-gray-200 transition-colors">
+                      <Image className="w-4 h-4" />
                       <input
                         type="file"
                         className="hidden"
@@ -1912,7 +2007,7 @@ export default function DoubtSolvingPage() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="send-button"
+                    className="p-1.5 rounded-md text-gray-700 dark:text-white bg-gray-300 dark:bg-green-600 hover:bg-gray-400 dark:hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1926,14 +2021,9 @@ export default function DoubtSolvingPage() {
           </div>
 
           {/* Scroll to bottom button */}
-          <div
-            className={`scroll-bottom-button ${showScrollButton ? 'visible' : ''}`}
-            onClick={() => scrollToBottom(true)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </div>
+
+
+
         </div>
       </div>
     </div >

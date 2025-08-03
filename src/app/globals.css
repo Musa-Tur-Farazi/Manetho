@@ -20,6 +20,19 @@
   backface-visibility: hidden;
 }
 
+/* Custom 3D Transform Utilities */
+.hover\:translate-z-8:hover {
+  transform: translateZ(32px);
+}
+
+.hover\:translate-z-12:hover {
+  transform: translateZ(48px);
+}
+
+.hover\:translate-z-16:hover {
+  transform: translateZ(64px);
+}
+
 /* Enhanced 3D Card Effects */
 .card-3d {
   transform-style: preserve-3d;
@@ -316,6 +329,25 @@
     100% {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% auto;
+    animation: gradient 8s ease-in-out infinite;
+  }
+
+  @keyframes gradient {
+    0% {
+      background-position: 0% center;
+    }
+
+    50% {
+      background-position: 100% center;
+    }
+
+    100% {
+      background-position: 0% center;
     }
   }
 

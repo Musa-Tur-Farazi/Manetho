@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
 import { Button } from "../../ui/Button";
-import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+// Removed Framer Motion imports to fix React 19 compatibility
 
 type Testimonial = {
   id: number;
@@ -64,67 +64,21 @@ const testimonials: Testimonial[] = [
 
 const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-100, 100], [10, -10]);
-  const rotateY = useTransform(x, [-100, 100], [-10, 10]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-
-    // Calculate mouse position relative to card center
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    // Update motion values
-    x.set(e.clientX - centerX);
-    y.set(e.clientY - centerY);
-  };
-
-  const handleMouseLeave = () => {
-    // Reset to neutral position with animation
-    x.set(0);
-    y.set(0);
-  };
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
-      whileHover={{ scale: 1.03 }}
-      initial={{ opacity: 0, y: "20px" }}
-      animate={{ opacity: 1, y: "0px" }}
-      exit={{ opacity: 0, y: "-20px" }}
-      transition={{ duration: 0.5 }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
-      }}
-      className="relative h-full bg-gradient-to-br from-white via-white to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/20 rounded-2xl shadow-xl overflow-hidden border border-purple-100 dark:border-purple-900/30 transition-all duration-300 perspective"
+      className="relative h-full bg-gradient-to-br from-white via-white to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-purple-900/20 rounded-2xl shadow-xl overflow-hidden border border-purple-100 dark:border-purple-900/30 transition-all duration-300"
     >
       {/* Animated background effects */}
       <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-300/20 to-indigo-300/20 dark:from-purple-700/20 dark:to-indigo-700/20 rounded-2xl z-0 group-hover:opacity-100 blur animate-tilt"></div>
       <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full filter blur-xl z-0 animate-pulse"></div>
       <div className="absolute bottom-0 left-0 w-24 h-24 -ml-6 -mb-6 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-full filter blur-xl z-0 animate-pulse delay-700"></div>
 
-      {/* Quote icon with floating animation */}
-      <motion.div
-        className="absolute top-6 right-6 text-purple-200 dark:text-purple-800 opacity-50 z-10"
-        animate={{
-          y: ["0px", "-8px", "0px"],
-          rotate: ["0deg", "5deg", "0deg"]
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      >
+      {/* Quote icon */}
+      <div className="absolute top-6 right-6 text-purple-200 dark:text-purple-800 opacity-50 z-10">
         <Quote size={40} />
-      </motion.div>
+      </div>
 
       <div className="p-2 relative z-10" style={{ transform: "translateZ(20px)" }}>
         <div className="rounded-xl p-6">
@@ -138,22 +92,16 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
               <div className="flex items-center gap-4">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full blur-sm opacity-40 animate-pulse"></div>
-                  <motion.img
+                  <img
                     src={testimonial.image}
                     alt={testimonial.name}
-                    className="relative w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-md"
-                    whileHover={{ scale: 1.1, rotate: "5deg" }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                    className="relative w-14 h-14 rounded-full object-cover border-2 border-white dark:border-gray-700 shadow-md hover:scale-110 transition-transform duration-300"
                   />
                 </div>
                 <div>
-                  <motion.h3
-                    className="font-bold text-gray-900 dark:text-white"
-                    whileHover={{ x: "5px" }}
-                    transition={{ type: "spring", stiffness: 700 }}
-                  >
+                  <h3 className="font-bold text-gray-900 dark:text-white hover:translate-x-1 transition-transform duration-300">
                     {testimonial.name}
-                  </motion.h3>
+                  </h3>
                   <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">
                     {testimonial.role}
                   </p>
@@ -161,11 +109,10 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
               </div>
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <motion.div
+                  <div
                     key={i}
-                    initial={{ opacity: 0, y: "10px" }}
-                    animate={{ opacity: 1, y: "0px" }}
-                    transition={{ duration: 0.3, delay: i * 0.1 }}
+                    className="opacity-0 animate-fadeIn"
+                    style={{ animationDelay: `${i * 0.1}s` }}
                   >
                     <Star
                       className={`h-4 w-4 ${i < testimonial.rating
@@ -173,14 +120,14 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
                         : "text-gray-300 dark:text-gray-600"
                         }`}
                     />
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -248,59 +195,17 @@ const Testimonials = () => {
 
   return (
     <section className="py-16 px-6 md:px-10 relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Background elements */}
       <div className="absolute top-0 left-0 w-full h-full">
-        <motion.div
-          className="absolute top-20 right-[5%] w-64 h-64 bg-gradient-to-br from-purple-300/10 to-indigo-300/10 rounded-full filter blur-3xl"
-          animate={{
-            scale: ["1", "1.2", "1"],
-            opacity: [0.5, 0.8, 0.5]
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        ></motion.div>
-        <motion.div
-          className="absolute bottom-20 left-[5%] w-72 h-72 bg-gradient-to-tr from-indigo-300/10 to-purple-300/10 rounded-full filter blur-3xl"
-          animate={{
-            scale: ["1.2", "1", "1.2"],
-            opacity: [0.5, 0.8, 0.5]
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-        ></motion.div>
+        <div className="absolute top-20 right-[5%] w-64 h-64 bg-gradient-to-br from-purple-300/10 to-indigo-300/10 rounded-full filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-[5%] w-72 h-72 bg-gradient-to-tr from-indigo-300/10 to-purple-300/10 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
       </div>
 
       <div className="max-w-7xl mx-auto relative">
-        <motion.div
-          initial={{ opacity: 0, y: "20px" }}
-          whileInView={{ opacity: 1, y: "0px" }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true, margin: "-100px" }}
-          className="text-center mb-16"
-        >
-          <motion.h2
-            className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent"
-            animate={{
-              backgroundPosition: ['0% center', '100% center', '0% center']
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            style={{
-              backgroundSize: "200% auto"
-            }}
-          >
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent animate-gradient">
             What Our Students Say
-          </motion.h2>
+          </h2>
 
           <div className="relative">
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
@@ -308,47 +213,30 @@ const Testimonials = () => {
             </p>
 
             {/* Decorative underline */}
-            <motion.div
-              className="w-24 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 mx-auto mt-8 rounded-full"
-              animate={{
-                width: ["6rem", "8rem", "6rem"]
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            ></motion.div>
+            <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 mx-auto mt-8 rounded-full animate-pulse"></div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="relative"
           onMouseEnter={() => setAutoplay(false)}
           onMouseLeave={() => setAutoplay(true)}
         >
-          <AnimatePresence mode="wait">
-            <div className="flex gap-8 overflow-hidden">
-              {getVisibleTestimonials().map((testimonial, index) => (
-                <motion.div
-                  key={testimonial.id}
-                  initial={{ opacity: 0, x: "50px" }}
-                  animate={{ opacity: 1, x: "0px" }}
-                  exit={{ opacity: 0, x: "-50px" }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="w-full md:w-1/2 lg:w-1/3 flex-shrink-0"
-                >
-                  <TestimonialCard testimonial={testimonial} />
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
+          <div className="flex gap-8 overflow-hidden">
+            {getVisibleTestimonials().map((testimonial, index) => (
+              <div
+                key={testimonial.id}
+                className="w-full md:w-1/2 lg:w-1/3 flex-shrink-0 opacity-0 animate-fadeIn"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <TestimonialCard testimonial={testimonial} />
+              </div>
+            ))}
+          </div>
 
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onHoverStart={() => setIsHoverPrev(true)}
-            onHoverEnd={() => setIsHoverPrev(false)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10"
+          <div
+            onMouseEnter={() => setIsHoverPrev(true)}
+            onMouseLeave={() => setIsHoverPrev(false)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -ml-4 z-10 hover:scale-110 transition-transform duration-300"
           >
             <Button
               variant="outline"
@@ -359,14 +247,12 @@ const Testimonials = () => {
             >
               <ChevronLeft className={`h-5 w-5 ${isHoverPrev ? "text-purple-600 dark:text-purple-400" : "text-gray-600 dark:text-gray-300"}`} />
             </Button>
-          </motion.div>
+          </div>
 
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onHoverStart={() => setIsHoverNext(true)}
-            onHoverEnd={() => setIsHoverNext(false)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10"
+          <div
+            onMouseEnter={() => setIsHoverNext(true)}
+            onMouseLeave={() => setIsHoverNext(false)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 -mr-4 z-10 hover:scale-110 transition-transform duration-300"
           >
             <Button
               variant="outline"
@@ -377,16 +263,14 @@ const Testimonials = () => {
             >
               <ChevronRight className={`h-5 w-5 ${isHoverNext ? "text-purple-600 dark:text-purple-400" : "text-gray-600 dark:text-gray-300"}`} />
             </Button>
-          </motion.div>
+          </div>
         </div>
 
         <div className="flex justify-center gap-3 mt-12">
           {testimonials.slice(0, testimonials.length - visibleTestimonials + 1).map((_, index) => (
-            <motion.button
+            <button
               key={index}
-              whileHover={{ scale: 1.5 }}
-              whileTap={{ scale: 0.9 }}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${index === activeIndex
+              className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-150 ${index === activeIndex
                 ? "bg-gradient-to-r from-purple-500 to-indigo-600 shadow-md scale-125"
                 : "bg-gray-300 dark:bg-gray-600 hover:bg-purple-300 dark:hover:bg-purple-700"
                 }`}

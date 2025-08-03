@@ -20,16 +20,16 @@ export default function ThemeToggle() {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-md rounded-full h-10 w-10"
+      className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 flex items-center justify-center"
       aria-label="Toggle theme"
     >
       {theme === "dark" ? (
         <Sun className="h-5 w-5 text-amber-500" />
       ) : (
-        <Moon className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
+        <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
       )}
     </Button>
   );
